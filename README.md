@@ -4,7 +4,7 @@ Investigate a claim. Inspect the evidence. Recover the context.
 
 Clear Context is a multimodal research agent being built for the Meta Global AI Developer Hackathon (October 26–November 4, 2026), in the solo Indie Developer track.
 
-**Status: planning and initial setup. No working investigation pipeline is implemented yet.**
+**Status: initial local API implemented in mock mode. Real model inference, source retrieval, the web UI, and the Chrome extension are not implemented yet.**
 
 ## The problem
 
@@ -42,12 +42,12 @@ Accounts, subscriptions, and billing management are outside the MVP. A controlle
 
 ## Technology direction
 
-- **Backend:** Python + FastAPI, with validated data contracts and a bounded, persisted investigation state machine.
+- **Backend:** Python + FastAPI, with validated data contracts and a bounded LangGraph workflow. Investigation status, node progress, and reports persist in SQLite; graph checkpoints/resume are not implemented yet.
 - **Frontend:** React + TypeScript + Vite, for the responsive investigation and evidence interface.
 - **Extension:** a thin Chrome Manifest V3 client using the same backend; the full report stays on the web.
 - **Primary models:** Muse through Meta Model API; exact model selection follows small quality/cost experiments.
 - **Optional experiments:** Meta open-weight inference on Baseten, Fireworks, or Modal, subject to access and evaluation.
-- **Storage:** start with a small local persistence layer; introduce vector retrieval only if the workflow needs it.
+- **Storage:** SQLite with SQLAlchemy and Alembic migrations; no separate database server.
 
 Partner credits have been applied for; availability is not assumed. Search, page extraction, and reverse-image lookup providers still need to be selected and verified.
 
@@ -68,7 +68,31 @@ Partner credits have been applied for; availability is not assumed. Search, page
 
 ## Development
 
-Application setup and run instructions will be added with the first executable implementation. New project work starts on October 26, 2026. External dependencies and reused components must be attributed; earlier private work must not be presented as hackathon output.
+Python 3.12 or newer is required. From the repository root on Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend/requirements-dev.lock
+.\.venv\Scripts\python.exe -m pip install --no-deps -e backend
+# Copy only when creating your local settings; preserve an existing .env.
+# Copy-Item .env.example .env
+.\.venv\Scripts\python.exe -m alembic -c backend/alembic.ini upgrade head
+.\.venv\Scripts\python.exe -m clear_context
+```
+
+On Linux/macOS, use `.venv/bin/python` instead of `.venv\Scripts\python.exe`. The dependency snapshot was tested on Windows/Python 3.12. See [API guide](docs/API.md) for endpoints and limitations. Open the interactive API documentation at `http://127.0.0.1:8000/docs`.
+
+Mock mode is the only implemented mode. A configured API key does not enable external calls. Inputs are preserved as one claim and every mock finding is unresolved; no source has been searched or verified.
+
+Checks from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest backend/tests -q
+.\.venv\Scripts\python.exe -m ruff check backend
+.\.venv\Scripts\python.exe -m ruff format backend --check
+```
+
+New project work starts on October 26, 2026. External dependencies and reused components must be attributed; earlier private work must not be presented as hackathon output.
 
 ## Submission target
 

@@ -23,13 +23,14 @@ First demonstration: a verifiable event paired with an image documented in a dif
 | Frontend | React + TypeScript + Vite | Chosen direction |
 | Desktop capture | Thin Chrome Manifest V3 extension; preview, start, short status, open web report | In scope after the working web flow |
 | Mobile | Responsive web first; installable PWA / Android sharing only if time remains | Native apps deferred |
-| Orchestration | Bounded explicit state machine with persisted research steps | Initial direction; framework optional |
+| Orchestration | LangGraph with typed state, focused nodes, and bounded execution | Chosen; initial mock graph implemented |
 | Main inference service | Meta Model API | Chosen direction; access/balance still needs verification |
 | Retrieval | Per-investigation source collection first | Proposed; no vector database requirement yet |
 | Web search / extraction | Select a supported provider and measure failures | Open |
 | Image-source lookup | Verify a usable provider before committing to automatic origin search | Open; highest external dependency risk |
 | Open-weight inference | Small experiments on available partner services | Optional |
-| Hosting / persistence | Choose after the first local end-to-end run | Open |
+| Persistence | SQLite + SQLAlchemy + Alembic | Initial API implemented |
+| Packaging / hosting | Docker Compose after the working flow; hosted demo separate | Planned |
 
 ## Milestones
 
@@ -49,6 +50,8 @@ First demonstration: a verifiable event paired with an image documented in a dif
 Dates can shift; the deliverable order matters more than adding features.
 
 ## First implementation slice
+
+Current progress: the text-only mock API, model configuration validation, relational persistence, migrations, and API tests are implemented. The mock investigation now runs through a three-node LangGraph workflow with persisted node progress. Real inference, retrieval, graph checkpoints/resume, revisions, web UI, and extension capture remain pending. See [API guide](API.md).
 
 1. Define investigation, claim, source, evidence, and finding records.
 2. Implement a Meta provider adapter, with a mock for local work before billing is ready.

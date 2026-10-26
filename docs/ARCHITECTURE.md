@@ -1,6 +1,34 @@
 # Architecture and evidence contract
 
-Implementation has not started. Product scope and framework direction are selected; external tool providers and persistence are still being evaluated.
+The initial text-only API uses FastAPI, LangGraph, SQLite, SQLAlchemy, and Alembic. Mock processing, persisted status/steps, report storage, and model-selection validation are implemented. The remaining research, capture, and revision contracts below are targets, not working capabilities. See [API guide](API.md).
+
+## Backend layout
+
+```text
+backend/src/clear_context/
+  api/router.py                    # Route registration
+  api/routes/investigations.py      # Investigation HTTP endpoints
+  api/routes/system.py             # Health and configured models
+  schemas/investigation.py         # HTTP request/response contracts
+  services/investigation.py        # Job lifecycle and graph execution
+  repositories/investigation.py    # Investigation aggregate persistence
+  models/                          # ORM records by entity
+  db/base.py                       # SQLAlchemy metadata
+  db/session.py                    # SQLite engine and sessions
+  core/settings.py                 # Environment and model configuration
+  domain/investigation.py          # Evidence rules and report contracts
+  providers/base.py                # Model-provider boundary
+  providers/mock.py                # Offline development behavior
+  graph/state.py                   # Typed state and per-run dependencies
+  graph/investigation.py           # Node/edge construction
+  graph/nodes/                     # Focused workflow steps
+```
+
+The repository operates on an investigation aggregate; do not create empty repositories for every table. Graph nodes depend on domain/provider contracts, not API routes or database sessions. The service records node progress and saves the validated report in one transaction. Provider instances belong to runtime context, not persisted graph state.
+
+Implemented graph: `START -> extract_claims -> evaluate_evidence -> validate_report -> END`. Extraction currently preserves the full input as one claim, and mock evaluation produces only unresolved findings without sources. Validation checks evidence integrity, investigation ID, and claim scope. There is no retrieval node until a real retrieval tool is implemented.
+
+`GRAPH_RECURSION_LIMIT` bounds graph super-steps. It is not a token, time, or monetary budget; those need separate bounds when paid tools are added. Remote LangSmith tracing is disabled during local graph execution. No graph checkpointer is configured yet; SQLite stores application records and progress, not resumable graph snapshots.
 
 ## Request flow
 
@@ -43,7 +71,7 @@ Use one orchestrator with explicit tools initially. Multiple agents are justifie
 - React/TypeScript with Vite provides the web UI. Choose a small shared package for extension/web input types only when implementation needs it.
 - Research work runs outside an individual HTTP request's lifetime. Start with one service and persistent investigation state, not a distributed queue architecture.
 - Progress transport (polling or server-sent events) follows the first working flow's needs; expose tool outcomes and errors rather than internal chain-of-thought.
-- Use an explicit bounded state machine initially. LangGraph or another framework is a later choice if checkpointing, interruption, or branching requirements justify it.
+- Use LangGraph for workflow execution and explicit investigation states for API lifecycle. Add conditional research loops, checkpoints, or parallel branches only with implemented tools and focused tests.
 - No native mobile shell, Capacitor integration, or incoming-share dependency in the MVP.
 
 ## Records

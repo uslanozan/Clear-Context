@@ -12,6 +12,12 @@ credentials.json
 AGENTS.md
 
 # Dependencies and build output
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
 node_modules/
 dist/
 build/

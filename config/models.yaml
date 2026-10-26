@@ -12,7 +12,7 @@ defaults:
   model: spark_1_3
   allow_training_use: false
 selection:
-  status: planned_not_implemented
+  status: configuration_validation_implemented_mock_only
   default_env: MODEL_DEFAULT
   precedence: [task_env, MODEL_DEFAULT, defaults.model]
   invalid_or_unavailable_model: error

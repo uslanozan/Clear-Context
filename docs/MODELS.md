@@ -46,7 +46,7 @@ MODEL_SCREENSHOT=spark_1_3
 MODEL_JUDGE=wonder
 ```
 
-Planned resolution: non-empty task override -> `MODEL_DEFAULT` -> YAML default. Reject unknown aliases, incompatible modalities/output, unavailable providers and Contributor selection without explicit opt-in. No silent model fallback. **The backend loader is not implemented yet; these files define its configuration contract.**
+Implemented resolution: non-empty task override -> `MODEL_DEFAULT` -> YAML default. Startup rejects unknown aliases, non-text investigation models, unsupported access methods and Contributor selection without explicit opt-in. No silent fallback. `/api/models` shows configured selections, not live account availability. **Only mock processing is implemented; no model is called.** Image/audio-specific validation will be added with those input types.
 
 Wonder/Spark support text, image, video, audio and PDF input with text output and a 1M context window. Check version caveats and account access before use. Spark Open/Glimmer need verified serving configuration, capabilities and provider API IDs; their aliases are not Meta API IDs. Wonder Full is not API-selectable.
 
