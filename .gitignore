@@ -1,0 +1,39 @@
+notes.txt
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# Local coding-agent instructions
+AGENTS.md
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+bin/
+coverage/
+*.test
+*.out
+
+# Local data, research artifacts, and logs
+.local/
+data/
+uploads/
+evals/runs/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.log
+
+# OS and editor state
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
