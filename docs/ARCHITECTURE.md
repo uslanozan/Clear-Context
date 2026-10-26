@@ -1,6 +1,6 @@
 # Architecture and evidence contract
 
-The initial text-only API uses FastAPI, LangGraph, SQLite, SQLAlchemy, and Alembic. Mock processing, persisted status/steps, report storage, and model-selection validation are implemented. The remaining research, capture, and revision contracts below are targets, not working capabilities. See [API guide](API.md).
+The initial text-only API uses FastAPI, LangGraph, SQLite, SQLAlchemy, and Alembic. Mock processing, opt-in Meta claim extraction, token-usage records, persisted status/steps, report storage, and model-selection validation are implemented. The remaining retrieval, evidence-based judging, capture, and revision contracts below are targets, not working capabilities. See [API guide](API.md).
 
 ## Backend layout
 
@@ -26,7 +26,7 @@ backend/src/clear_context/
 
 The repository operates on an investigation aggregate; do not create empty repositories for every table. Graph nodes depend on domain/provider contracts, not API routes or database sessions. The service records node progress and saves the validated report in one transaction. Provider instances belong to runtime context, not persisted graph state.
 
-Implemented graph: `START -> extract_claims -> evaluate_evidence -> validate_report -> END`. Extraction currently preserves the full input as one claim, and mock evaluation produces only unresolved findings without sources. Validation checks evidence integrity, investigation ID, and claim scope. There is no retrieval node until a real retrieval tool is implemented.
+Implemented graph: `START -> extract_claims -> evaluate_evidence -> validate_report -> END`. Mock extraction preserves the full input as one claim. Meta extraction uses a strict JSON schema and accepts only unique, exact substrings of the input; this validates text anchoring, not semantic completeness or truth. Both modes produce only unresolved findings until sources exist; Meta evaluation currently makes no additional call. Validation checks evidence integrity, investigation ID, and claim scope. There is no retrieval node until a real retrieval tool is implemented. Usage from successful extraction nodes is saved before subsequent evaluation, including when a later step fails.
 
 `GRAPH_RECURSION_LIMIT` bounds graph super-steps. It is not a token, time, or monetary budget; those need separate bounds when paid tools are added. Remote LangSmith tracing is disabled during local graph execution. No graph checkpointer is configured yet; SQLite stores application records and progress, not resumable graph snapshots.
 

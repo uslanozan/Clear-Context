@@ -23,7 +23,11 @@ class Settings(BaseSettings):
         env_file=PROJECT_ROOT / ".env", extra="ignore", hide_input_in_errors=True
     )
 
-    app_mode: Literal["mock"] = "mock"
+    app_mode: Literal["mock", "meta"] = "mock"
+    allow_paid_api_calls: bool = False
+    meta_timeout_seconds: float = Field(default=60, gt=0, le=120)
+    meta_max_completion_tokens: int = Field(default=1024, ge=128, le=4096)
+    meta_max_claims: int = Field(default=8, ge=1, le=12)
     graph_recursion_limit: int = Field(default=12, ge=4, le=100)
     api_host: str = Field(default="127.0.0.1", min_length=1)
     api_port: int = Field(default=8000, ge=1, le=65535)

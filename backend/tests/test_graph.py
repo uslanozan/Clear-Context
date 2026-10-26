@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from langsmith import tracing_context
 
+from clear_context.domain.investigation import ClaimExtraction
 from clear_context.graph.investigation import build_investigation_graph
 from clear_context.graph.state import InvestigationContext
 from clear_context.main import create_app
@@ -36,7 +37,11 @@ def test_graph_runs_are_isolated():
 def test_invalid_graph_output_is_not_persisted(settings, failure):
     class InvalidProvider(MockInvestigationProvider):
         def extract_claims(self, text):
-            return [] if failure == "empty_claims" else super().extract_claims(text)
+            return (
+                ClaimExtraction(claims=[])
+                if failure == "empty_claims"
+                else super().extract_claims(text)
+            )
 
         def evaluate_evidence(self, investigation_id, claims):
             if failure == "mutated_claim":

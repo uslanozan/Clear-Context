@@ -16,7 +16,7 @@ def create_investigation(
     request: Request,
     response: Response,
 ):
-    row = request.app.state.repository.create(payload.text)
+    row = request.app.state.repository.create(payload.text, mode=request.app.state.mode)
     background_tasks.add_task(request.app.state.service.run, UUID(row.id))
     response.headers["Location"] = f"/api/investigations/{row.id}"
     return row

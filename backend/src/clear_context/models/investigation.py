@@ -16,3 +16,4 @@ class InvestigationRow(Base):
     updated_at: Mapped[str] = mapped_column(String(40))
     error_code: Mapped[str | None] = mapped_column(String(50))
     limitations: Mapped[list] = mapped_column(JSON, default=list)
+    model_usage: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")

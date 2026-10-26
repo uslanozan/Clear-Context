@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from clear_context.domain.investigation import InvestigationStatus
+from clear_context.domain.investigation import InvestigationStatus, ModelUsage
 
 
 class InvestigationCreate(BaseModel):
@@ -17,11 +17,12 @@ class InvestigationView(BaseModel):
     id: UUID
     text: str
     status: InvestigationStatus
-    mode: Literal["mock"]
+    mode: Literal["mock", "meta"]
     revision: int
     created_at: datetime
     updated_at: datetime
     error_code: str | None
+    model_usage: list[ModelUsage]
 
 
 class StepView(BaseModel):

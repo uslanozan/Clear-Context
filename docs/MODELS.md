@@ -1,6 +1,6 @@
 # Models
 
-Catalog: [config/models.yaml](../config/models.yaml). Checked October 26, 2026. Prices are USD; access depends on the account. Recommendations are **untested starting points**, not benchmark results.
+Catalog: [config/models.yaml](../config/models.yaml). Prices checked October 26, 2026, in USD; access depends on the account. Recommendations are starting points, not benchmark winners. One extraction connectivity smoke test was run October 27; no comparative evaluation exists yet.
 
 ## Catalog and prices
 
@@ -22,6 +22,8 @@ Token prices are per **1M tokens**, in input / cached input / output order.
 | Muse Spark 1.1 | Earlier multimodal/computer-use baseline | $1.25 / $0.15 / $4.25 |
 
 Standard mode does not use content to train Meta models; Contributor permits training use. Default to Standard for uploads. Spark 1.3 has an audio-quality caveat: use transcription or evaluate 1.2 for audio. Text-model web search adds **$2.50/1,000 queries** beyond tokens.
+
+Promotional credit notice: the account dashboard states that content may be used for product improvement while free credits are in use. Do not infer the promotion's data handling solely from a Standard model ID or `store=false`. The first live test used self-created fictional text, not private project or personal data.
 
 ## Task choices to evaluate
 
@@ -46,7 +48,7 @@ MODEL_SCREENSHOT=spark_1_3
 MODEL_JUDGE=wonder
 ```
 
-Implemented resolution: non-empty task override -> `MODEL_DEFAULT` -> YAML default. Startup rejects unknown aliases, non-text investigation models, unsupported access methods and Contributor selection without explicit opt-in. No silent fallback. `/api/models` shows configured selections, not live account availability. **Only mock processing is implemented; no model is called.** Image/audio-specific validation will be added with those input types.
+Implemented resolution: non-empty task override -> `MODEL_DEFAULT` -> YAML default. Startup rejects unknown aliases, non-text investigation models, unsupported access methods and Contributor selection without explicit opt-in. No silent fallback. `/api/models` shows configured selections, not live account availability. Mock mode makes no calls; opt-in Meta mode currently calls only the extraction model. Judge/report selections are reserved for later evidence workflows. Image/audio-specific validation will be added with those input types.
 
 Wonder/Spark support text, image, video, audio and PDF input with text output and a 1M context window. Check version caveats and account access before use. Spark Open/Glimmer need verified serving configuration, capabilities and provider API IDs; their aliases are not Meta API IDs. Wonder Full is not API-selectable.
 
@@ -58,7 +60,13 @@ Append actual runs using comparable cases and prompts. Model self-grading alone 
 
 | Date | Task / case set | Model / provider | Citation or extraction errors | Latency | Actual cost | Decision |
 | --- | --- | --- | --- | --- | --- | --- |
-| - | No runs yet | - | - | - | - | - |
+| 2026-10-27 | Claim extraction; one self-created fictional paragraph | Spark 1.3 / Meta | Two exact-span claims; no verification attempted | Not measured separately | Not reconciled with billing | Connectivity smoke passed; no quality ranking |
+| 2026-10-27 | Synthetic Turkish date and quantity, live HTTP workflow | Spark 1.3 / Meta | Two exact-span claims retained the date and quantity | 4.09 s end to end | Not reconciled with billing | This case passed manual inspection |
+| 2026-10-27 | Synthetic Turkish conditions and negation, live HTTP workflow | Spark 1.3 / Meta | Three spans retained age/student restriction, Tuesday-only condition, and negation | 4.06 s end to end | Not reconciled with billing | This case passed manual inspection |
+
+The API reported 180 input, 409 output and 0 cached-input tokens. Listed Standard rates imply approximately $0.00196325 in token cost; this is an estimate, not a confirmed billing deduction. Local smoke details are excluded from Git.
+
+The two live HTTP cases used 190/479 and 202/675 input/output tokens respectively, with zero cached-input tokens reported. Their combined listed-rate estimate is $0.0053945, not a confirmed billing deduction. Both persisted reports contained no sources/evidence and only unresolved findings. Two synthetic examples do not establish general extraction accuracy. Local details are excluded from Git.
 
 No billable calls until credits are confirmed or a test budget is authorized. Bound steps, retries and tokens; record usage. Meta's spend alert sends email and does not stop requests.
 

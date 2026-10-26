@@ -23,9 +23,22 @@ class Record(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class ModelUsage(Record):
+    task: str
+    model_id: str
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    cached_input_tokens: int | None = Field(default=None, ge=0)
+
+
 class Claim(Record):
     id: UUID
     text: str = Field(min_length=1)
+
+
+class ClaimExtraction(Record):
+    claims: list[Claim]
+    model_usage: list[ModelUsage] = Field(default_factory=list)
 
 
 class Source(Record):
@@ -52,13 +65,14 @@ class Finding(Record):
 
 class InvestigationReport(Record):
     investigation_id: UUID
-    mode: Literal["mock"] = "mock"
+    mode: Literal["mock", "meta"] = "mock"
     revision: int = Field(default=1, ge=1)
     claims: list[Claim]
     sources: list[Source]
     evidence: list[Evidence]
     findings: list[Finding]
     limitations: list[str]
+    model_usage: list[ModelUsage] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_evidence(self) -> Self:

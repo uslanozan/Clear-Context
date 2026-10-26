@@ -9,6 +9,7 @@ from clear_context.domain.investigation import (
     Finding,
     InvestigationReport,
     InvestigationStatus,
+    ModelUsage,
     Source,
     validate_transition,
 )
@@ -31,13 +32,13 @@ class InvestigationRepository:
     def __init__(self, session_factory):
         self.sessions = session_factory
 
-    def create(self, text: str) -> InvestigationRow:
+    def create(self, text: str, mode: str = "mock") -> InvestigationRow:
         now = utc_now()
         row = InvestigationRow(
             id=str(uuid4()),
             text=text,
             status=InvestigationStatus.QUEUED,
-            mode="mock",
+            mode=mode,
             revision=1,
             created_at=now,
             updated_at=now,
@@ -113,12 +114,16 @@ class InvestigationRepository:
                     )
                 )
 
-    def record_step(self, investigation_id: UUID, name: str) -> None:
+    def record_step(
+        self, investigation_id: UUID, name: str, model_usage: list[ModelUsage] | None = None
+    ) -> None:
         with self.sessions.begin() as session:
             row = session.get(InvestigationRow, str(investigation_id))
             if row is None or row.status != InvestigationStatus.RUNNING:
                 raise ValueError("Graph steps require a running investigation.")
             row.updated_at = utc_now()
+            if model_usage is not None:
+                row.model_usage = [item.model_dump(mode="json") for item in model_usage]
             session.add(
                 ResearchStepRow(
                     investigation_id=row.id,
@@ -175,6 +180,7 @@ class InvestigationRepository:
                         FindingEvidenceRow(finding_id=str(finding.id), evidence_id=str(evidence_id))
                     )
             row.limitations = report.limitations
+            row.model_usage = [item.model_dump(mode="json") for item in report.model_usage]
             row.status = InvestigationStatus.COMPLETED
             row.updated_at = utc_now()
             session.add(
@@ -243,4 +249,5 @@ class InvestigationRepository:
                     for item in findings
                 ],
                 limitations=row.limitations,
+                model_usage=row.model_usage,
             )

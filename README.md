@@ -4,7 +4,7 @@ Investigate a claim. Inspect the evidence. Recover the context.
 
 Clear Context is a multimodal research agent being built for the Meta Global AI Developer Hackathon (October 26–November 4, 2026), in the solo Indie Developer track.
 
-**Status: initial local API implemented in mock mode. Real model inference, source retrieval, the web UI, and the Chrome extension are not implemented yet.**
+**Status: local API and LangGraph workflow implemented, with mock mode by default and an opt-in Meta adapter for text claim extraction. Source retrieval, evidence-based judging, the web UI, and the Chrome extension are not implemented yet.**
 
 ## The problem
 
@@ -49,7 +49,7 @@ Accounts, subscriptions, and billing management are outside the MVP. A controlle
 - **Optional experiments:** Meta open-weight inference on Baseten, Fireworks, or Modal, subject to access and evaluation.
 - **Storage:** SQLite with SQLAlchemy and Alembic migrations; no separate database server.
 
-Partner credits have been applied for; availability is not assumed. Search, page extraction, and reverse-image lookup providers still need to be selected and verified.
+Search, page extraction, and reverse-image lookup providers still need to be selected and verified. Users must confirm their own billing/credit availability before enabling paid inference.
 
 ## Delivery order
 
@@ -82,7 +82,7 @@ python -m venv .venv
 
 On Linux/macOS, use `.venv/bin/python` instead of `.venv\Scripts\python.exe`. The dependency snapshot was tested on Windows/Python 3.12. See [API guide](docs/API.md) for endpoints and limitations. Open the interactive API documentation at `http://127.0.0.1:8000/docs`.
 
-Mock mode is the only implemented mode. A configured API key does not enable external calls. Inputs are preserved as one claim and every mock finding is unresolved; no source has been searched or verified.
+Mock mode is the default. A configured API key does not enable calls by itself. To enable Meta claim extraction, set both `APP_MODE=meta` and `ALLOW_PAID_API_CALLS=true`, then restart. Each investigation currently makes one bounded call using `MODEL_CLAIM_EXTRACTION` (or the default model). Neither mode retrieves sources yet, so findings remain unresolved. See the [API guide](docs/API.md) for limits and data handling.
 
 Checks from the repository root:
 

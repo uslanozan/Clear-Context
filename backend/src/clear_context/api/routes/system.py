@@ -4,10 +4,14 @@ router = APIRouter()
 
 
 @router.get("/health")
-def health():
-    return {"status": "ok", "mode": "mock", "paid_api_calls_enabled": False}
+def health(request: Request):
+    return {
+        "status": "ok",
+        "mode": request.app.state.mode,
+        "paid_api_calls_enabled": request.app.state.mode == "meta",
+    }
 
 
 @router.get("/models")
 def model_selection(request: Request):
-    return {"mode": "mock", "configured_models": request.app.state.models}
+    return {"mode": request.app.state.mode, "configured_models": request.app.state.models}

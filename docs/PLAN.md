@@ -51,7 +51,7 @@ Dates can shift; the deliverable order matters more than adding features.
 
 ## First implementation slice
 
-Current progress: the text-only mock API, model configuration validation, relational persistence, migrations, and API tests are implemented. The mock investigation now runs through a three-node LangGraph workflow with persisted node progress. Real inference, retrieval, graph checkpoints/resume, revisions, web UI, and extension capture remain pending. See [API guide](API.md).
+Current progress: the text-only API, model configuration validation, relational persistence, migrations, and API tests are implemented. The three-node LangGraph workflow supports mock processing and opt-in Meta claim extraction with token usage records. One live extraction smoke test succeeded after credits were confirmed. Retrieval, evidence-based judging, graph checkpoints/resume, revisions, web UI, and extension capture remain pending. See [API guide](API.md).
 
 1. Define investigation, claim, source, evidence, and finding records.
 2. Implement a Meta provider adapter, with a mock for local work before billing is ready.

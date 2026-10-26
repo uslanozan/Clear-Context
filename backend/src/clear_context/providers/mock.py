@@ -1,11 +1,17 @@
 from uuid import UUID, uuid4
 
-from clear_context.domain.investigation import Assessment, Claim, Finding, InvestigationReport
+from clear_context.domain.investigation import (
+    Assessment,
+    Claim,
+    ClaimExtraction,
+    Finding,
+    InvestigationReport,
+)
 
 
 class MockInvestigationProvider:
-    def extract_claims(self, text: str) -> list[Claim]:
-        return [Claim(id=uuid4(), text=text)]
+    def extract_claims(self, text: str) -> ClaimExtraction:
+        return ClaimExtraction(claims=[Claim(id=uuid4(), text=text)])
 
     def evaluate_evidence(self, investigation_id: UUID, claims: list[Claim]) -> InvestigationReport:
         return InvestigationReport(

@@ -1,6 +1,6 @@
 # Initial API
 
-Local development only, single process, mock provider. No Meta, search, or image services are called. A real key in `.env` does not activate paid inference. Only `APP_MODE=mock` is accepted.
+Local development only, single process. Mock mode is the default. Meta mode supports one claim-extraction call per investigation; retrieval, image input, and evidence-based judging are not implemented. A real key alone does not activate inference.
 
 ## Endpoints
 
@@ -42,8 +42,29 @@ Start with `python -m clear_context` to apply `.env` host, port, and logging set
 | `CORS_ALLOWED_ORIGINS` | `[]` | JSON array of explicit allowed HTTP(S) browser origins |
 | `DATABASE_PATH` | `.local/clear-context.db` | SQLite file; shared by server and migrations |
 | `MODEL_CATALOG_PATH` | `config/models.yaml` | Model catalog |
+| `APP_MODE` | `mock` | `mock` or `meta` |
+| `ALLOW_PAID_API_CALLS` | `false` | Explicit opt-in required with Meta mode and a non-empty key |
+| `META_TIMEOUT_SECONDS` | `60` | HTTP timeout; configurable up to 120 seconds |
+| `META_MAX_COMPLETION_TOKENS` | `1024` | Visible plus reasoning output tokens, range 128-4096 |
+| `META_MAX_CLAIMS` | `8` | Maximum extracted claims, range 1-12 |
 
 The example environment allows the future frontend on localhost/127.0.0.1 port 5173. The frontend is not implemented yet and has no configured listener. Adjust CORS origins when its address changes. CORS does not protect a network-exposed API from non-browser clients. Direct Uvicorn CLI commands use their own host/port flags; they do not read these custom settings automatically. One worker remains required.
+
+## Meta adapter
+
+Set `APP_MODE=meta`, `ALLOW_PAID_API_CALLS=true`, and a local `META_API_KEY` only after confirming credit or spending authorization. Restart the server. Mock remains the default and makes no external calls, even when a key is present.
+
+The adapter calls `https://api.meta.ai/v1/chat/completions` using Bearer authentication, a strict JSON schema, `reasoning_effort=low`, `store=false`, bounded completion tokens, and no tools. It does not follow redirects, inherit proxy settings, retry automatically, switch models, or repair outputs with another paid call. HTTP timeouts are not a guaranteed total job deadline.
+
+Successful extraction returns unique exact spans from the submitted input. UUIDs are assigned locally. This anchoring cannot establish semantic completeness or truth. Without external evidence, evaluation deterministically creates unresolved findings and makes no second model call. `MODEL_JUDGE` and `MODEL_REPORT` are validated selections but not called yet.
+
+Meta records and reports have `mode=meta`. `model_usage` stores the configured task/model and API-reported input/output/cache token counts; missing metrics remain null. Successful node usage survives later graph failures. Failed or rejected responses may still consume credit and may have no saved receipt; consult Meta Billing for authoritative totals. Local settings and per-call limits are not an account-wide monetary cap.
+
+Authentication failures, access denial, rate limits, timeouts, invalid JSON, refusals, truncation, and unanchored claims fail the investigation with sanitized error codes. No provider response bodies, keys, or raw exception text are returned. No automatic retry means a failed investigation requires a deliberate new submission.
+
+The account's promotional-credit notice says content may be used for product improvement while free credits are used. `store=false` is a request option, not a guarantee overriding promotion/account terms. Keep initial experiments limited to public or self-created non-sensitive text.
+
+Reference: [Meta structured output](https://dev.meta.ai/docs/structured-output), [Chat Completions schema](https://dev.meta.ai/docs/api-reference/chat-completions/schemas).
 
 ## Persistence and lifecycle
 

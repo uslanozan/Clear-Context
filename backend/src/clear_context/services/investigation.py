@@ -6,6 +6,7 @@ from clear_context.domain.investigation import InvestigationReport, Investigatio
 from clear_context.graph.investigation import build_investigation_graph
 from clear_context.graph.state import InvestigationContext
 from clear_context.providers.base import InvestigationProvider
+from clear_context.providers.errors import ProviderError
 from clear_context.repositories.investigation import InvestigationRepository
 
 
@@ -39,13 +40,15 @@ class InvestigationService:
                     stream_mode="updates",
                 ):
                     for node_name, values in update.items():
-                        self.repository.record_step(investigation_id, node_name)
+                        self.repository.record_step(
+                            investigation_id, node_name, values.get("model_usage")
+                        )
                         if node_name == "validate_report":
                             report = values["report"]
             if report is None:
                 raise ValueError("Graph finished without a validated report.")
             self.repository.complete(report)
-        except Exception:
+        except Exception as error:
             # Do not persist raw provider errors, which may contain secrets or input.
             current = self.repository.get(investigation_id)
             if current and current.status in {"queued", "running"}:
@@ -53,5 +56,7 @@ class InvestigationService:
                     investigation_id,
                     InvestigationStatus.FAILED,
                     "investigation_failed",
-                    error_code="processing_failed",
+                    error_code=error.code
+                    if isinstance(error, ProviderError)
+                    else "processing_failed",
                 )
