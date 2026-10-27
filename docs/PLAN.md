@@ -20,11 +20,11 @@ First demonstration: a verifiable event paired with an image documented in a dif
 | Main interaction | Investigate, inspect evidence, add new evidence | Chosen |
 | Distribution | Self-hosted, bring your own Meta API key; no membership or subscription system | Chosen; controlled hosted demo separate |
 | Backend | Python + FastAPI | Chosen |
-| Frontend | React + TypeScript + Vite | Chosen direction |
+| Frontend | React + TypeScript + Vite + Mantine | Text workspace implemented |
 | Desktop capture | Thin Chrome Manifest V3 extension; preview, start, short status, open web report | In scope after the working web flow |
 | Mobile | Responsive web first; installable PWA / Android sharing only if time remains | Native apps deferred |
 | Orchestration | LangGraph with typed state, focused nodes, and bounded execution | Chosen; initial mock graph implemented |
-| Main inference service | Meta Model API | Chosen direction; access/balance still needs verification |
+| Main inference service | Meta Model API | Credits confirmed; small extraction checks passed |
 | Retrieval | Per-investigation source collection first | Proposed; no vector database requirement yet |
 | Web search / extraction | Select a supported provider and measure failures | Open |
 | Image-source lookup | Verify a usable provider before committing to automatic origin search | Open; highest external dependency risk |
@@ -51,7 +51,7 @@ Dates can shift; the deliverable order matters more than adding features.
 
 ## First implementation slice
 
-Current progress: the text-only API, model configuration validation, relational persistence, migrations, and API tests are implemented. The three-node LangGraph workflow supports mock processing and opt-in Meta claim extraction with token usage records. One live extraction smoke test succeeded after credits were confirmed. Retrieval, evidence-based judging, graph checkpoints/resume, revisions, web UI, and extension capture remain pending. See [API guide](API.md).
+Current progress: the text-only API, model configuration validation, relational persistence, migrations, and API tests are implemented. The three-node LangGraph workflow supports mock processing and opt-in Meta claim extraction with token usage records. One live extraction smoke test succeeded after credits were confirmed. A responsive Mantine web workspace now supports text submission, history, progress, report inspection, and JSON export. Retrieval, evidence-based judging, graph checkpoints/resume, revisions, server-side media analysis, and extension capture remain pending. Local media paste, drop, selection, and previews are implemented. See [API guide](API.md).
 
 1. Define investigation, claim, source, evidence, and finding records.
 2. Implement a Meta provider adapter, with a mock for local work before billing is ready.

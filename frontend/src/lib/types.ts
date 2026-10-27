@@ -1,0 +1,47 @@
+export type Status = 'queued' | 'running' | 'completed' | 'failed';
+export type Assessment = 'supported' | 'contradicted' | 'mixed' | 'unresolved';
+export interface ModelUsage {
+  task: string;
+  model_id: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cached_input_tokens: number | null;
+}
+export interface Investigation {
+  id: string;
+  text: string;
+  status: Status;
+  mode: 'mock' | 'meta';
+  revision: number;
+  created_at: string;
+  updated_at: string;
+  error_code: string | null;
+  model_usage: ModelUsage[];
+}
+export interface ResearchStep {
+  name: string;
+  status: Status;
+  created_at: string;
+}
+export interface Report {
+  investigation_id: string;
+  mode: 'mock' | 'meta';
+  revision: number;
+  claims: { id: string; text: string }[];
+  sources: { id: string; url: string; title: string; content: string }[];
+  evidence: { id: string; claim_id: string; source_id: string; excerpt: string }[];
+  findings: {
+    id: string;
+    claim_id: string;
+    assessment: Assessment;
+    explanation: string;
+    evidence_ids: string[];
+  }[];
+  limitations: string[];
+  model_usage: ModelUsage[];
+}
+export interface Health {
+  status: string;
+  mode: 'mock' | 'meta';
+  paid_api_calls_enabled: boolean;
+}

@@ -1,0 +1,105 @@
+{
+  "status": "manually authored explanation; not a live model result",
+  "input": "The fictional Cedar Museum opened on 12 May 2024. It displays 120 objects. According to its director, entry is free for students aged 18 or over on Tuesdays; it is not free on other days. A post says the attached photograph was taken there yesterday, but the post provides no source for the date.",
+  "reference_spans_not_current_backend_fields": [
+    {
+      "id": "C1",
+      "quote": "The fictional Cedar Museum opened on 12 May 2024.",
+      "start": 0,
+      "end": 49
+    },
+    {
+      "id": "C2",
+      "quote": "It displays 120 objects.",
+      "start": 50,
+      "end": 74
+    },
+    {
+      "id": "C3",
+      "quote": "According to its director, entry is free for students aged 18 or over on Tuesdays;",
+      "start": 75,
+      "end": 157
+    },
+    {
+      "id": "C4",
+      "quote": "it is not free on other days.",
+      "start": 158,
+      "end": 187
+    },
+    {
+      "id": "C5",
+      "quote": "A post says the attached photograph was taken there yesterday, but the post provides no source for the date.",
+      "start": 188,
+      "end": 296
+    }
+  ],
+  "current_behavior": {
+    "input_processing": "one complete passage in one Meta request",
+    "default_max_claims": 8,
+    "default_max_completion_tokens": 1024,
+    "claim_fields": [
+      "id",
+      "text"
+    ],
+    "relations_implemented": false,
+    "verified": false
+  },
+  "proposed_fields_not_implemented": [
+    {
+      "claim_id": "C2",
+      "normalized_subject": "Cedar Museum",
+      "predicate": "displays",
+      "object": "120 objects",
+      "antecedent_source": "C1",
+      "context_required": true
+    },
+    {
+      "claim_id": "C3",
+      "attribution": "museum director",
+      "conditions": [
+        "student",
+        "age >= 18",
+        "Tuesday"
+      ],
+      "external_verification": "unresolved"
+    },
+    {
+      "claim_id": "C4",
+      "conditions": [
+        "other days"
+      ],
+      "negation": true
+    },
+    {
+      "claim_id": "C5",
+      "attribution": "a post",
+      "relative_date": "yesterday",
+      "absolute_date": null,
+      "missing_context": [
+        "original posting time",
+        "timezone",
+        "earlier image source"
+      ]
+    }
+  ],
+  "proposed_relations_not_implemented": [
+    {
+      "from": "C2",
+      "to": "C1",
+      "type": "shared_subject"
+    },
+    {
+      "from": "C3",
+      "to": "C4",
+      "type": "different_conditions",
+      "contradiction": false
+    },
+    {
+      "from": "C5",
+      "to": "image",
+      "type": "caption_context_claim",
+      "verified": false
+    }
+  ],
+  "acceptance_caveat": "These exact spans pass literal-inclusion checks; semantic completeness, recall, attribution, and truth still need separate evaluation."
+}

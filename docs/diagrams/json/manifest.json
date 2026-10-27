@@ -1,0 +1,38 @@
+[
+  {
+    "slug": "01-text-sequence",
+    "title": "Text request: from browser to saved report",
+    "status": "IMPLEMENTED",
+    "notes": "The API saves queued state before responding. Background processing starts after the response. One successful extraction makes one Meta call. Internal evaluation and report validation do not call Meta. GET results groups status, steps, and report polling; it is not a single endpoint. Message spacing is illustrative, not latency. Failure paths are detailed in diagram 02."
+  },
+  {
+    "slug": "02-extraction-guards",
+    "title": "Selecting claims is not checking their truth",
+    "status": "IMPLEMENTED",
+    "notes": "Guards also enforce configured count and completion status. Exact substring membership prevents new wording, but does not verify semantic completeness, qualifier retention, attribution, or truth. Default completion budget is 1,024 tokens. Factuality classification, source offsets, coreference, and relation edges are absent."
+  },
+  {
+    "slug": "03-media-today",
+    "title": "What happens to an image or video today",
+    "status": "IMPLEMENTED",
+    "notes": "Clipboard works when it contains actual file data; copying a media URL does not automatically fetch the file. Selection and drag/drop share validation. Duplicates are skipped. Preview errors offer removal. Attached media blocks normal and keyboard text submission rather than being silently dropped. Navigating away releases the local object URLs. No OCR, ASR, image lookup, C2PA, or generation detector is integrated."
+  },
+  {
+    "slug": "04-long-text-proposal",
+    "title": "Preserving context in longer text",
+    "status": "PROPOSED",
+    "notes": "A larger context window alone does not guarantee recall. Preserve source spans separately from normalized propositions. Add bounded extraction budgets, chunk/document reconciliation, coverage checks, and explicit missing context. Relationship extraction is not automatic verification. No chunking or entity/relation schema is implemented today."
+  },
+  {
+    "slug": "05-photo-proposal",
+    "title": "A true event can have an unrelated photograph",
+    "status": "PROPOSED / OPTIONAL",
+    "notes": "Synthetic case: a current event uses an older photograph. No source lookup has been performed for this example. Metadata/credentials and any AI-generation detector would be optional independent signals. Missing credentials do not imply generation. A model cannot prove date, location, or authenticity from appearance alone. No detector or media provider is selected or integrated."
+  },
+  {
+    "slug": "06-video-proposal",
+    "title": "Video claims need timestamps and coverage limits",
+    "status": "PROPOSED / OPTIONAL",
+    "notes": "A silent clip takes only the frame branch. If transcription or decoding fails, preserve that gap. Compare claims with external sources and the relevant interval. Sampling can miss edits or events; neither a few real frames nor a detector score proves the entire clip. Media analysis, sampling, ASR, and AI detection are not implemented."
+  }
+]

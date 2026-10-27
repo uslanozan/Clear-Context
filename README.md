@@ -4,7 +4,7 @@ Investigate a claim. Inspect the evidence. Recover the context.
 
 Clear Context is a multimodal research agent being built for the Meta Global AI Developer Hackathon (October 26–November 4, 2026), in the solo Indie Developer track.
 
-**Status: local API and LangGraph workflow implemented, with mock mode by default and an opt-in Meta adapter for text claim extraction. Source retrieval, evidence-based judging, the web UI, and the Chrome extension are not implemented yet.**
+**Status: local API and LangGraph workflow implemented, with mock mode by default and an opt-in Meta adapter for text claim extraction. The responsive web workspace supports text submission, saved history, progress, and claim reports. Source retrieval, evidence-based judging, server-side media analysis, and the Chrome extension are not implemented yet. Local image/video attachment previews are available.**
 
 ## The problem
 
@@ -43,7 +43,7 @@ Accounts, subscriptions, and billing management are outside the MVP. A controlle
 ## Technology direction
 
 - **Backend:** Python + FastAPI, with validated data contracts and a bounded LangGraph workflow. Investigation status, node progress, and reports persist in SQLite; graph checkpoints/resume are not implemented yet.
-- **Frontend:** React + TypeScript + Vite, for the responsive investigation and evidence interface.
+- **Frontend:** React + TypeScript + Vite, Mantine for shared components/theme, and TanStack Query for API state.
 - **Extension:** a thin Chrome Manifest V3 client using the same backend; the full report stays on the web.
 - **Primary models:** Muse through Meta Model API; exact model selection follows small quality/cost experiments.
 - **Optional experiments:** Meta open-weight inference on Baseten, Fireworks, or Modal, subject to access and evaluation.
@@ -61,8 +61,11 @@ Search, page extraction, and reverse-image lookup providers still need to be sel
 ## Project documents
 
 - [Build plan](docs/PLAN.md)
+- [Text analysis explained](docs/TEXT_ANALYSIS.md)
+- [Workflow diagrams](docs/diagrams/md/README.md)
 - [Model plan](docs/MODELS.md)
 - [Architecture and evidence contract](docs/ARCHITECTURE.md)
+- [Frontend guide and design system](docs/FRONTEND.md)
 - [Evaluation plan](evals/README.md)
 - [Initial case specifications](evals/case-specs.json)
 
@@ -83,6 +86,16 @@ python -m venv .venv
 On Linux/macOS, use `.venv/bin/python` instead of `.venv\Scripts\python.exe`. The dependency snapshot was tested on Windows/Python 3.12. See [API guide](docs/API.md) for endpoints and limitations. Open the interactive API documentation at `http://127.0.0.1:8000/docs`.
 
 Mock mode is the default. A configured API key does not enable calls by itself. To enable Meta claim extraction, set both `APP_MODE=meta` and `ALLOW_PAID_API_CALLS=true`, then restart. Each investigation currently makes one bounded call using `MODEL_CLAIM_EXTRACTION` (or the default model). Neither mode retrieves sources yet, so findings remain unresolved. See the [API guide](docs/API.md) for limits and data handling.
+
+Start the web workspace in a second terminal (Node.js 22.12+ or a supported newer release):
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+Open `http://127.0.0.1:5173`. Root `.env` settings `WEB_HOST`, `WEB_PORT`, and optional `API_PROXY_TARGET` configure the dev server; by default `/api` proxies to `API_HOST` / `API_PORT`. Selecting an example fills the form without submitting. Starting an investigation in Meta mode uses credits. Opening saved reports does not call the model. See the [frontend guide](docs/FRONTEND.md) for production routing and checks.
 
 Checks from the repository root:
 

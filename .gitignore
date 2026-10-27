@@ -43,3 +43,9 @@ evals/runs/
 Thumbs.db
 .idea/
 .vscode/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Private discussion snapshots and temporary working notes
+/temp/

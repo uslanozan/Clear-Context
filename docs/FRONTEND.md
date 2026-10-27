@@ -1,0 +1,51 @@
+# Frontend
+
+React, TypeScript, Vite, Mantine, TanStack Query, and React Router power the local web workspace. The backend remains the only place that holds the Meta key.
+
+## Run
+
+Start the backend from the repository root, then run `npm ci` and `npm run dev` in `frontend/`. The default URL is `http://127.0.0.1:5173`.
+
+| Root environment setting | Default | Purpose |
+| --- | --- | --- |
+| `WEB_HOST` | `127.0.0.1` | Web dev server bind address |
+| `WEB_PORT` | `5173` | Strict dev server port |
+| `API_HOST` / `API_PORT` | `127.0.0.1` / `8000` | Backend proxy destination |
+| `API_PROXY_TARGET` | Empty | Optional HTTP(S) backend override |
+
+Restart Vite after changing settings. Browser requests use relative `/api` paths. Only deliberately public variables prefixed `VITE_PUBLIC_` can enter client code; never put credentials in that namespace. Binding a dev server on a network interface is not a production deployment or authentication solution.
+
+## Shared design
+
+- `src/theme.ts`: Mantine palette, fonts, radii, and component defaults.
+- `src/styles.css`: shared surface/text tokens, layout, reusable domain classes, responsive rules, focus, and reduced-motion styles.
+- Warm paper surfaces, dark ink, restrained orange accents, Source Sans 3 interface text, and Source Sans 3 headings. Fonts are bundled locally.
+- `Composer`, `Sidebar`, and `ReportView` share this system. Use Mantine controls for forms, dialogs, alerts, and disclosure rather than introducing a second component library.
+
+## Working flow
+
+Paste text, explicitly start an investigation, follow recorded progress, and inspect the saved report. Examples only fill the form. History links and report reloads do not run inference. Reports support copying their local URL and exporting JSON; a local link requires access to the same server and database.
+
+Submission never retries automatically. A failed submission preserves the passage, and a failed investigation can reopen its original text for editing. Query polling stops at terminal status. The current API has no idempotency key: a lost network response can leave an accepted investigation in history, so check history before manually resubmitting.
+
+Source research and server-side media analysis are pending. Clipboard, file picker, and drag/drop accept up to 4 local image/video previews (20 MB per image, 100 MB per video, 100 MB combined). Previews can be removed and are cleaned up on unmount. Media is not uploaded or persisted; attached media explicitly blocks text-only submission. Video playback depends on browser codec support, with a visible failure fallback. All current findings remain unresolved; the UI displays this explicitly. Activity and token usage come from stored API data. Mobile layout uses a navigation drawer and a single-column report; it is not an installable PWA yet.
+
+## Checks
+
+Run in `frontend/`:
+
+```sh
+npm test
+npm run build
+npm run format:check
+```
+
+Behavior tests mock HTTP responses and cover example loading without POST, double-click submission protection, report rendering, input preservation with no automatic retry, saved-report reads, and disconnected submission. They do not spend Meta credits. Browser checks use the actual local API and saved reports.
+
+For production, build output is `frontend/dist/`. Serve it with SPA fallback to `index.html` for `/investigations/:id` and reverse-proxy `/api` to FastAPI before that fallback. Vite preview alone does not proxy the API. Docker/reverse-proxy packaging is pending.
+
+## Dependencies and assets
+
+Mantine (MIT), React (MIT), Vite (MIT), TanStack Query (MIT), React Router (MIT), and Lucide (ISC) retain their upstream licenses. Source Sans 3 fonts use the SIL Open Font License; packaged font licenses remain in their installed dependencies. The current wordmark uses a Lucide icon; custom branding is deferred.
+
+The durable visual rules are in [DESIGN.md](../DESIGN.md). The official Meta and Muse assets have separate [attribution](../frontend/public/brand/README.md).
