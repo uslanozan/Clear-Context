@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "corpus_version": "v1",
+  "collection_date": "2026-10-27",
+  "status": "development_draft_not_a_benchmark",
+  "selection_seed": 20261027,
+  "selection_policy": "Purposive topic/source selection; lead windows plus four reproducible random interior windows. Not a random sample of the web.",
+  "case_count": 36,
+  "source_count": 14,
+  "language_counts": {
+    "tr": 5,
+    "en": 26,
+    "es": 3,
+    "fr": 2
+  },
+  "length_bucket_counts": {
+    "long": 10,
+    "medium": 15,
+    "short": 11
+  },
+  "target_label_counts": {
+    "true": 13,
+    "false": 13,
+    "unknown": 6
+  },
+  "unannotated_case_count": 4,
+  "model_calls": 0,
+  "scored_runs": 0,
+  "inputs_file": "inputs.jsonl",
+  "reference_files": [
+    "reference/annotations.jsonl",
+    "reference/sources.json",
+    "reference/evidence.json",
+    "reference/catalog.md"
+  ],
+  "input_file_sha256": "e63990642fd3eb5a3d67631836357ed2dc2bc5c368a2151b097e09cf5a353fcc"
+}

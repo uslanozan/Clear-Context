@@ -17,6 +17,7 @@ def meta_settings(**overrides):
         "allow_paid_api_calls": True,
         "meta_api_key": "synthetic-test-key",
         "model_default": "spark_1_3",
+        "prompt_claim_extraction": "v1",
     }
     return Settings(_env_file=None, **(values | overrides))
 

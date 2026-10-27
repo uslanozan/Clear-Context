@@ -24,7 +24,9 @@ def write_catalog(tmp_path, system="Return at most ${max_claims} claims.", versi
 
 
 def test_default_prompt_preserves_extraction_instructions():
-    prompt = load_claim_extraction_prompt(Settings(_env_file=None, meta_max_claims=3))
+    prompt = load_claim_extraction_prompt(
+        Settings(_env_file=None, meta_max_claims=3, prompt_claim_extraction="v1")
+    )
     assert prompt.version == "v1"
     assert "Return at most 3 unique claims." in prompt.system
     assert "exact, contiguous substrings" in prompt.system
@@ -36,10 +38,13 @@ def test_default_prompt_preserves_extraction_instructions():
 def test_selected_version_and_rendered_limit_affect_receipt(tmp_path):
     path = write_catalog(tmp_path, version="v2")
     settings = Settings(
-        _env_file=None, prompt_catalog_path=path, prompt_claim_extraction="v2", meta_max_claims=2
+        _env_file=None,
+        prompt_catalog_path=path,
+        prompt_claim_extraction="v2",
+        extraction_response_capacity=2,
     )
     first = load_claim_extraction_prompt(settings)
-    settings.meta_max_claims = 4
+    settings.extraction_response_capacity = 4
     second = load_claim_extraction_prompt(settings)
     assert first.version == second.version == "v2"
     assert first.system == "Return at most 2 claims."

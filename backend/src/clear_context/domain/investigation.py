@@ -31,16 +31,56 @@ class ModelUsage(Record):
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
     cached_input_tokens: int | None = Field(default=None, ge=0)
+    chunk_start: int | None = Field(default=None, ge=0)
+    chunk_end: int | None = Field(default=None, ge=0)
+    outcome: Literal["accepted", "capacity_reached", "truncated", "invalid"] | None = None
+
+
+class TextSpan(Record):
+    start: int = Field(ge=0)
+    end: int = Field(ge=1)
+    text: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_span(self) -> Self:
+        if self.end <= self.start or len(self.text) != self.end - self.start:
+            raise ValueError("Span length must match its Unicode code-point offsets.")
+        return self
+
+
+class ExtractionChunk(Record):
+    start: int = Field(ge=0)
+    end: int = Field(ge=1)
+    status: Literal["processed", "split", "partial"]
+    reason: str | None = None
+
+
+class ExtractionCoverage(Record):
+    status: Literal["processed", "partial"]
+    model_calls: int = Field(ge=0)
+    chunks: list[ExtractionChunk]
+    notes: list[str] = Field(default_factory=list)
 
 
 class Claim(Record):
     id: UUID
     text: str = Field(min_length=1)
+    statement: str | None = Field(default=None, min_length=1)
+    source_span: TextSpan | None = None
+    context_spans: list[TextSpan] = Field(default_factory=list)
+    context_status: Literal["standalone", "context_linked", "ambiguous"] | None = None
+
+    @model_validator(mode="after")
+    def validate_source_quote(self) -> Self:
+        if self.source_span and self.source_span.text != self.text:
+            raise ValueError("Claim text must equal its original source quote.")
+        return self
 
 
 class ClaimExtraction(Record):
     claims: list[Claim]
     model_usage: list[ModelUsage] = Field(default_factory=list)
+    coverage: ExtractionCoverage | None = None
 
 
 class Source(Record):
@@ -75,6 +115,7 @@ class InvestigationReport(Record):
     findings: list[Finding]
     limitations: list[str]
     model_usage: list[ModelUsage] = Field(default_factory=list)
+    extraction_coverage: ExtractionCoverage | None = None
 
     @model_validator(mode="after")
     def validate_evidence(self) -> Self:

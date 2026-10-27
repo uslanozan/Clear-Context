@@ -1,33 +1,33 @@
 # Prompt management
 
-Model instructions live in [config/prompts.yaml](../config/prompts.yaml). Currently only
-`claim_extraction` calls a model. Evidence evaluation remains deterministic and unresolved
-without sources; report validation and persistence do not need prompts.
+Instructions live in [config/prompts.yaml](../config/prompts.yaml). Only claim extraction
+currently calls a model. Evidence evaluation and report validation do not use prompts.
 
 | Setting | Default | Purpose |
 | --- | --- | --- |
-| `PROMPT_CATALOG_PATH` | `config/prompts.yaml` | YAML file, relative to the project root or absolute |
-| `PROMPT_CLAIM_EXTRACTION` | `v1` | Version under `prompts.claim_extraction.versions` |
-| `META_MAX_CLAIMS` | `8` | Supplies the `${max_claims}` placeholder and the JSON schema limit |
+| `PROMPT_CATALOG_PATH` | `config/prompts.yaml` | Project-relative or absolute catalog path |
+| `PROMPT_CLAIM_EXTRACTION` | `v2` | Select an extraction contract version |
+| `EXTRACTION_RESPONSE_CAPACITY` | `24` | V2 per-response capacity, not a document claim limit |
+| `META_MAX_CLAIMS` | `8` | V1 legacy single-call limit only |
 
-The catalog is validated at application creation in both mock and Meta modes. Invalid
-templates, unknown versions, or a missing file stop startup. Restart the backend after
-editing the catalog or settings; there is no hot reload of prompts inside a provider.
+Both versions render `${max_claims}` from their corresponding capacity setting. V1 uses a
+single string-list response. V2 uses exact quotes, interpreted statements, context quotes,
+ambiguity, and a `has_more` signal within bounded chunk processing. Add future v2-compatible
+instruction variants under a new version; v1 remains the explicit legacy contract.
 
-The system instruction is rendered once from trusted configuration. Submitted text stays
-in a separate user message and is never used as a template. Output schemas, token limits,
-exact-substring checks, and evidence validation remain Python responsibilities.
+Catalogs are validated at application creation in mock and Meta modes. Invalid templates,
+unknown versions, or missing files stop startup. Restart after changing configuration.
+There is no hot reload inside an existing provider.
 
-Each successful extraction stores `prompt_version` and `prompt_sha256` with model/token
-usage. The hash covers the rendered system instruction, including the configured claim
-limit, and contains no submitted text. Existing records without these fields still load.
-These fields identify the instruction; they do not capture every inference parameter or
-constitute a complete evaluation record.
+User text is never a template. V2 sends target and context as user-message JSON; its system
+instruction treats both as untrusted content. Schemas, source anchoring, chunk decisions,
+HTTP guards, and budgets remain Python responsibilities.
 
-To compare prompts, add a new version such as `v2`, retain the previous version, select
-it in `.env`, and restart. Keep the same reviewed examples and record model, limits, and
-results. Changing a prompt is not evidence of improved extraction quality.
+Usage records store prompt version and SHA-256 of the rendered system instruction, model,
+reported tokens, source range, and call outcome. The hash includes response capacity, not
+submitted text. It does not capture every inference parameter; the evaluation runner also
+records limits and input hashes. Historical records remain readable.
 
-Model selection remains independent through `MODEL_CLAIM_EXTRACTION` and the model
-catalog. Future model-calling tasks can receive their own validated templates when their
-nodes are implemented; the current catalog intentionally contains no placeholder tasks.
+Use the same cases and budgets when comparing models or prompts. Coverage status `processed`
+means all target ranges reached a normal response, not that every claim was found.
+See [text analysis](TEXT_ANALYSIS.md) for the implemented contract and limitations.

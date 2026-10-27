@@ -45,22 +45,30 @@ Start with `python -m clear_context` to apply `.env` host, port, and logging set
 | `APP_MODE` | `mock` | `mock` or `meta` |
 | `ALLOW_PAID_API_CALLS` | `false` | Explicit opt-in required with Meta mode and a non-empty key |
 | `META_TIMEOUT_SECONDS` | `60` | HTTP timeout; configurable up to 120 seconds |
-| `META_MAX_COMPLETION_TOKENS` | `1024` | Visible plus reasoning output tokens, range 128-4096 |
-| `META_MAX_CLAIMS` | `8` | Maximum extracted claims, range 1-12 |
+| `META_MAX_COMPLETION_TOKENS` | `4096` | Visible plus reasoning output tokens per request, range 128-4096 |
+| `META_MAX_CLAIMS` | `8` | V1 legacy single-call limit only |
+| `PROMPT_CLAIM_EXTRACTION` | `v2` | Bounded extraction contract; v1 remains available |
+| `EXTRACTION_RESPONSE_CAPACITY` | `24` | Capacity per response, not a document-wide limit |
+| `EXTRACTION_CHUNK_CHARACTERS` | `600` | Initial target bound in Unicode characters |
+| `EXTRACTION_MIN_CHUNK_CHARACTERS` | `200` | Splitting stops at at most twice this size |
+| `EXTRACTION_CONTEXT_CHARACTERS` | `600` | Bound per head/adjacent context window |
+| `EXTRACTION_MAX_CALLS` | `24` | Maximum model calls per document |
+| `EXTRACTION_MAX_OUTPUT_TOKENS` | `32768` | Total output budget; unknown usage stays reserved |
+| `EXTRACTION_MAX_SECONDS` | `120` | Time budget constraining subsequent requests |
 
-The example environment allows the future frontend on localhost/127.0.0.1 port 5173. The frontend is not implemented yet and has no configured listener. Adjust CORS origins when its address changes. CORS does not protect a network-exposed API from non-browser clients. Direct Uvicorn CLI commands use their own host/port flags; they do not read these custom settings automatically. One worker remains required.
+The example environment allows the implemented Vite frontend on localhost/127.0.0.1 port 5173. Adjust CORS origins when its address changes. CORS does not protect a network-exposed API from non-browser clients. Direct Uvicorn CLI commands use their own host/port flags; they do not read these custom settings automatically. One worker remains required.
 
 ## Meta adapter
 
 Set `APP_MODE=meta`, `ALLOW_PAID_API_CALLS=true`, and a local `META_API_KEY` only after confirming credit or spending authorization. Restart the server. Mock remains the default and makes no external calls, even when a key is present.
 
-The adapter calls `https://api.meta.ai/v1/chat/completions` using Bearer authentication, a strict JSON schema, `reasoning_effort=low`, `store=false`, bounded completion tokens, and no tools. It does not follow redirects, inherit proxy settings, retry automatically, switch models, or repair outputs with another paid call. HTTP timeouts are not a guaranteed total job deadline.
+The adapter calls `https://api.meta.ai/v1/chat/completions` using Bearer authentication, a strict JSON schema, `reasoning_effort=low`, `store=false`, bounded completion tokens, and no tools. It does not follow redirects, inherit proxy settings, retry automatically, switch models, or repair invalid outputs with another paid call. V2 explicitly splits capacity/truncation cases into smaller targets, within a bounded budget. HTTP timeouts are not a guaranteed total job deadline.
 
-Successful extraction returns unique exact spans from the submitted input. UUIDs are assigned locally. This anchoring cannot establish semantic completeness or truth. Without external evidence, evaluation deterministically creates unresolved findings and makes no second model call. `MODEL_JUDGE` and `MODEL_REPORT` are validated selections but not called yet.
+V2 extraction returns literal source/context spans plus separately interpreted statements and extraction coverage. V1 retains unique string spans for legacy baselines. UUIDs are assigned locally. This anchoring cannot establish semantic completeness or truth. Without external evidence, evaluation deterministically creates unresolved findings and makes no second model call. `MODEL_JUDGE` and `MODEL_REPORT` are validated selections but not called yet.
 
 Meta records and reports have `mode=meta`. `model_usage` stores the configured task/model, prompt version, rendered-system-prompt SHA-256, and API-reported input/output/cache token counts; missing metrics remain null. Historical records without prompt metadata remain readable. See [Prompt management](PROMPTS.md). Successful node usage survives later graph failures. Failed or rejected responses may still consume credit and may have no saved receipt; consult Meta Billing for authoritative totals. Local settings and per-call limits are not an account-wide monetary cap.
 
-Authentication failures, access denial, rate limits, timeouts, invalid JSON, refusals, truncation, and unanchored claims fail the investigation with sanitized error codes. No provider response bodies, keys, or raw exception text are returned. No automatic retry means a failed investigation requires a deliberate new submission.
+V1 provider errors fail the investigation. V2 invalid or deferred ranges produce explicit partial coverage; service errors stop further model calls and retain available results and receipts. No provider response bodies, keys, or raw exception text are returned. No automatic retry means a failed investigation requires a deliberate new submission.
 
 The account's promotional-credit notice says content may be used for product improvement while free credits are used. `store=false` is a request option, not a guarantee overriding promotion/account terms. Keep initial experiments limited to public or self-created non-sensitive text.
 
@@ -81,3 +89,17 @@ Bind to loopback for this slice. Network-accessible self-hosting, HTTPS, and acc
 ## Checks
 
 Run pytest, Ruff lint, and Ruff format checks using the README commands. Tests use temporary migrated databases, exercise restart persistence, migration round trips, failure handling, evidence validation, input boundaries, and model selection. They block external connections, allowing loopback for Windows event-loop internals. Synthetic evidence fixtures are not real research results.
+
+
+## V2 report fields
+
+Claims may include `statement`, `source_span`, `context_spans`, and `context_status`.
+Original quote text remains in `text`; the interpreted statement is not literal evidence.
+`extraction_coverage` records `processed` or `partial`, model-call count, chunk ranges,
+outcomes and notes. `processed` is not a semantic completeness guarantee. Partial reports
+can have investigation status `completed`: processing ended, but extraction coverage is
+explicitly partial. These reports must not be presented as fully extracted documents.
+
+Database revision `0003` adds provenance and coverage while retaining legacy rows. Run
+Alembic upgrade head before restarting. SQLite offsets are Python Unicode code points;
+JavaScript clients must not use them directly as UTF-16 string indexes.

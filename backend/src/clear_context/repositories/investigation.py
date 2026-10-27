@@ -143,7 +143,17 @@ class InvestigationRepository:
             if report.revision != row.revision or report.mode != row.mode:
                 raise ValueError("Report scope does not match the investigation.")
             for claim in report.claims:
-                session.add(ClaimRow(id=str(claim.id), investigation_id=row.id, text=claim.text))
+                for span in [claim.source_span, *claim.context_spans]:
+                    if span and row.text[span.start : span.end] != span.text:
+                        raise ValueError("Claim provenance does not match saved input.")
+                session.add(
+                    ClaimRow(
+                        id=str(claim.id),
+                        investigation_id=row.id,
+                        text=claim.text,
+                        provenance=claim.model_dump(mode="json", exclude={"id", "text"}),
+                    )
+                )
             for source in report.sources:
                 session.add(
                     SourceRow(
@@ -181,6 +191,11 @@ class InvestigationRepository:
                     )
             row.limitations = report.limitations
             row.model_usage = [item.model_dump(mode="json") for item in report.model_usage]
+            row.extraction_coverage = (
+                report.extraction_coverage.model_dump(mode="json")
+                if report.extraction_coverage
+                else None
+            )
             row.status = InvestigationStatus.COMPLETED
             row.updated_at = utc_now()
             session.add(
@@ -224,7 +239,7 @@ class InvestigationRepository:
                 investigation_id=investigation_id,
                 mode=row.mode,
                 revision=row.revision,
-                claims=[Claim(id=item.id, text=item.text) for item in claims],
+                claims=[Claim(id=item.id, text=item.text, **item.provenance) for item in claims],
                 sources=[
                     Source(id=item.id, url=item.url, title=item.title, content=item.content)
                     for item in sources
@@ -250,4 +265,5 @@ class InvestigationRepository:
                 ],
                 limitations=row.limitations,
                 model_usage=row.model_usage,
+                extraction_coverage=row.extraction_coverage,
             )

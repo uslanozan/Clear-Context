@@ -9,7 +9,7 @@
     "slug": "02-extraction-guards",
     "title": "Selecting claims is not checking their truth",
     "status": "IMPLEMENTED",
-    "notes": "Guards also enforce configured count and completion status. Exact substring membership prevents new wording, but does not verify semantic completeness, qualifier retention, attribution, or truth. Default completion budget is 1,024 tokens. Factuality classification, source offsets, coreference, and relation edges are absent."
+    "notes": "V2 validates exact quotes and source/context offsets while storing the independent statement as a model interpretation. The default per-call completion budget is 4,096 tokens. A saturated or truncated range can split; invalid or deferred ranges remain partial. V1 remains a legacy single-call contract. Literal anchoring does not verify statement meaning or truth. See diagram 07 for bounded chunk processing."
   },
   {
     "slug": "03-media-today",
@@ -21,7 +21,7 @@
     "slug": "04-long-text-proposal",
     "title": "Preserving context in longer text",
     "status": "PROPOSED",
-    "notes": "A larger context window alone does not guarantee recall. Preserve source spans separately from normalized propositions. Add bounded extraction budgets, chunk/document reconciliation, coverage checks, and explicit missing context. Relationship extraction is not automatic verification. No chunking or entity/relation schema is implemented today."
+    "notes": "Character-budget partitioning, context windows, literal offsets, separate interpreted statements, and partial coverage are now implemented; see diagram 07. This figure remains a proposal for richer document reconciliation and explicit entity/relation records. Processing all input ranges does not establish exhaustive claim coverage. Relationship extraction is not automatic verification."
   },
   {
     "slug": "05-photo-proposal",
@@ -34,5 +34,11 @@
     "title": "Video claims need timestamps and coverage limits",
     "status": "PROPOSED / OPTIONAL",
     "notes": "A silent clip takes only the frame branch. If transcription or decoding fails, preserve that gap. Compare claims with external sources and the relevant interval. Sampling can miss edits or events; neither a few real frames nor a detector score proves the entire clip. Media analysis, sampling, ASR, and AI detection are not implemented."
+  },
+  {
+    "slug": "07-chunked-claims",
+    "title": "Claim coverage without an eight-claim ceiling",
+    "status": "IMPLEMENTED",
+    "notes": "The default target budget is 600 Unicode characters, not tokens. Context includes document-head, previous, and next windows, each bounded to 600 characters. A response can hold 24 claims by default; capacity is not a document-wide limit. Capacity or truncation can split a target. Minimum-size, invalid, timeout, and budget cases remain partial. All source spans are anchored literally; statements remain model interpretations. No external evidence is retrieved. The figure groups error paths for readability."
   }
 ]

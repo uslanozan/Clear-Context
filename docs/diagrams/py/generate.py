@@ -184,8 +184,8 @@ def guards():
         392,
         320,
         112,
-        "Fail the investigation",
-        ["No automatic paid retry", "Original text stays saved"],
+        "Reject the target range",
+        ["Record partial coverage", "Original text stays saved"],
         terminal=True,
     )
     body += node(
@@ -197,7 +197,7 @@ def guards():
         [
             "Required guards",
             "Completed output; valid schema",
-            "Unique, nonblank substrings",
+            "Grounded source/context spans",
             "No tool calls or refusal",
         ],
         16,
@@ -210,7 +210,7 @@ def guards():
         "The model proposes spans; Python accepts or rejects the returned structure.",
         "IMPLEMENTED",
         body,
-        "Guards also enforce configured count and completion status. Exact substring membership prevents new wording, but does not verify semantic completeness, qualifier retention, attribution, or truth. Default completion budget is 1,024 tokens. Factuality classification, source offsets, coreference, and relation edges are absent.",
+        "V2 validates exact quotes and source/context offsets while storing the independent statement as a model interpretation. The default per-call completion budget is 4,096 tokens. A saturated or truncated range can split; invalid or deferred ranges remain partial. V1 remains a legacy single-call contract. Literal anchoring does not verify statement meaning or truth. See diagram 07 for bounded chunk processing.",
         "providers/meta.py: ExtractedClaims and extract_claims; domain/investigation.py: Claim; graph/nodes/validate_report.py",
         "Solid: implemented flow | VALID / INVALID: response acceptance, not truth",
     )
@@ -370,10 +370,10 @@ def longtext():
     return write(
         "04-long-text-proposal",
         "Preserving context in longer text",
-        "A proposed extension, not the current single-call implementation.",
+        "A richer document model remains proposed; bounded chunk processing now exists in diagram 07.",
         "PROPOSED",
         body,
-        "A larger context window alone does not guarantee recall. Preserve source spans separately from normalized propositions. Add bounded extraction budgets, chunk/document reconciliation, coverage checks, and explicit missing context. Relationship extraction is not automatic verification. No chunking or entity/relation schema is implemented today.",
+        "Character-budget partitioning, context windows, literal offsets, separate interpreted statements, and partial coverage are now implemented; see diagram 07. This figure remains a proposal for richer document reconciliation and explicit entity/relation records. Processing all input ranges does not establish exhaustive claim coverage. Relationship extraction is not automatic verification.",
         "Proposed extension to providers/meta.py and domain/investigation.py; see docs/TEXT_ANALYSIS.md",
         "Dashed nodes and connectors: proposed, not implemented",
     )
@@ -534,10 +534,97 @@ def video():
     )
 
 
+def chunked():
+    body = arrow([(320, 234), (432, 234)])
+    body += arrow([(744, 234), (888, 234)])
+    body += arrow([(1044, 284), (1044, 330)])
+    body += arrow([(896, 400), (744, 400)], "YES")
+    body += arrow([(588, 348), (588, 284)], "SMALLER TARGETS")
+    body += arrow([(1044, 470), (1044, 520)], "NO")
+    body += arrow([(432, 252), (380, 252), (380, 564), (348, 564)])
+    body += text(370, 416, "NO BUDGET", 12, MUTED, anchor="end")
+    body += node(
+        48,
+        184,
+        272,
+        100,
+        "Original document",
+        ["Preserve every character", "Short input stays whole"],
+    )
+    body += node(
+        432,
+        184,
+        312,
+        100,
+        "Target + context queue",
+        ["Prefer paragraph boundaries", "Head and nearby text are context"],
+    )
+    body += node(
+        888,
+        184,
+        312,
+        100,
+        "One bounded model call",
+        ["Quotes + independent statements", "No search or factual verdict"],
+    )
+    body += (
+        f'<polygon points="1044,330 1192,400 1044,470 896,400" fill="{PAPER}" stroke="{ACCENT}" stroke-width="1.5"/>'
+        + text(1044, 395, "More / truncated?", 16, weight=600, anchor="middle")
+        + text(1044, 420, "Capacity is per response", 16, MUTED, anchor="middle")
+    )
+    body += node(
+        432,
+        348,
+        312,
+        104,
+        "Split only this target",
+        ["Keep its global source positions", "Stop at the minimum size"],
+        focal=True,
+    )
+    body += node(
+        48,
+        520,
+        300,
+        88,
+        "Partial extraction",
+        ["Keep available claims and receipts", "Expose deferred/invalid ranges"],
+        terminal=True,
+    )
+    body += node(
+        888,
+        520,
+        312,
+        88,
+        "Save literal provenance",
+        ["Deduplicate exact span + statement", "Processed does not mean exhaustive"],
+        terminal=True,
+    )
+    body += text(
+        432,
+        555,
+        [
+            "Global guards: calls, output tokens, time",
+            "Unsplittable capacity stays partial",
+        ],
+        16,
+        MUTED,
+    )
+    return write(
+        "07-chunked-claims",
+        "Claim coverage without an eight-claim ceiling",
+        "Implemented v2: bounded text ranges, supplied context, adaptive splitting, and explicit partial outcomes.",
+        "IMPLEMENTED",
+        body,
+        "The default target budget is 600 Unicode characters, not tokens. Context includes document-head, previous, and next windows, each bounded to 600 characters. A response can hold 24 claims by default; capacity is not a document-wide limit. Capacity or truncation can split a target. Minimum-size, invalid, timeout, and budget cases remain partial. All source spans are anchored literally; statements remain model interpretations. No external evidence is retrieved. The figure groups error paths for readability.",
+        "services/text_chunks.py; providers/meta.py; domain/investigation.py; graph/nodes/validate_report.py",
+        "Solid: implemented | Partial extraction is distinct from unresolved truth",
+    )
+
+
 if __name__ == "__main__":
     for folder in ["html", "svg", "png", "json", "md", "py"]:
         (OUT / folder).mkdir(parents=True, exist_ok=True)
-    records = [sequence(), guards(), media(), longtext(), photo(), video()]
+    records = [sequence(), guards(), media(), longtext(), photo(), video(), chunked()]
     (OUT / "json/manifest.json").write_text(
         json.dumps(records, indent=2) + "\n", encoding="utf-8"
     )
@@ -546,7 +633,7 @@ if __name__ == "__main__":
         for row in records
     )
     (OUT / "html/index.html").write_text(
-        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>October 27, 2026. Diagrams 01-03 describe working code. Diagrams 04-06 describe proposals. All cases are synthetic explanations, not live inference results. Source HTML is self-contained; PNG exports are 2560 x 1440.</p><ol>{links}</ol></body></html>',
+        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>October 27, 2026. Diagrams 01-03 and 07 describe working code. Diagrams 04-06 describe proposals; 04 also notes the implemented subset. All examples are synthetic explanations, not live inference results. Source HTML is self-contained; PNG exports are 2560 x 1440.</p><ol>{links}</ol></body></html>',
         encoding="utf-8",
     )
     print(f"Generated {len(records)} HTML diagrams and index.")

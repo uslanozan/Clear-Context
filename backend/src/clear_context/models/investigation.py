@@ -17,3 +17,4 @@ class InvestigationRow(Base):
     error_code: Mapped[str | None] = mapped_column(String(50))
     limitations: Mapped[list] = mapped_column(JSON, default=list)
     model_usage: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
+    extraction_coverage: Mapped[dict | None] = mapped_column(JSON, nullable=True)

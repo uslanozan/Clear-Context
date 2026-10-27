@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProcessTimeline } from './ProcessTimeline';
+import { ClaimSource } from './ClaimSource';
 import type { Assessment, Investigation, Report, ResearchStep } from '../lib/types';
 
 const ASSESSMENTS: Record<Assessment, { label: string; color: string }> = {
@@ -47,6 +48,21 @@ export function ReportView({
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const evidenceMissing = report.sources.length === 0;
+  const usageGroups = [...new Set(report.model_usage.map((usage) => usage.model_id))].map(
+    (modelId) => {
+      const calls = report.model_usage.filter((usage) => usage.model_id === modelId);
+      return {
+        model_id: modelId,
+        calls: calls.length,
+        input_tokens: calls.every((usage) => usage.input_tokens !== null)
+          ? calls.reduce((sum, usage) => sum + (usage.input_tokens ?? 0), 0)
+          : null,
+        output_tokens: calls.every((usage) => usage.output_tokens !== null)
+          ? calls.reduce((sum, usage) => sum + (usage.output_tokens ?? 0), 0)
+          : null,
+      };
+    },
+  );
 
   async function copyLink() {
     try {
@@ -106,16 +122,50 @@ export function ReportView({
           The link couldn’t be copied. You can copy it from your address bar.
         </Alert>
       )}
+      {report.extraction_coverage && (
+        <Alert
+          color={report.extraction_coverage.status === 'partial' ? 'orange' : 'gray'}
+          title={
+            report.extraction_coverage.status === 'partial'
+              ? 'Claim extraction is partial'
+              : 'Input ranges processed'
+          }
+          mb="md"
+        >
+          {report.extraction_coverage.status === 'partial'
+            ? 'Some parts need another extraction pass. This report may omit claims.'
+            : 'Processing all input ranges does not guarantee that every claim was identified.'}
+          <details className="claim-provenance">
+            <summary>Review processing coverage</summary>
+            <p>{report.extraction_coverage.model_calls} model calls recorded</p>
+            <ul>
+              {report.extraction_coverage.chunks
+                .filter((chunk) => chunk.status !== 'split')
+                .map((chunk) => (
+                  <li key={`${chunk.start}-${chunk.end}`}>
+                    Characters {chunk.start + 1}–{chunk.end}:{' '}
+                    {chunk.status === 'processed' ? 'processed' : 'needs further extraction'}
+                  </li>
+                ))}
+            </ul>
+          </details>
+        </Alert>
+      )}
       {evidenceMissing && (
         <div className="evidence-notice">
           <span className="notice-icon">
             <CircleHelp size={20} />
           </span>
           <div>
-            <strong>Claims extracted. Evidence is still missing.</strong>
+            <strong>
+              {report.claims.length
+                ? 'Claims extracted; evidence is still missing'
+                : 'No factual claims were extracted'}
+            </strong>
             <p>
-              These statements haven’t been verified. Source research is not connected yet, so every
-              finding remains unresolved.
+              {report.claims.length
+                ? 'These statements haven’t been verified. Source research is not connected yet, so every finding remains unresolved.'
+                : 'Check extraction coverage before treating an empty result as a passage without factual claims.'}
             </p>
           </div>
           <span className="notice-tag">NEEDS EVIDENCE</span>
@@ -160,7 +210,11 @@ export function ReportView({
                       </Badge>
                     )}
                   </div>
-                  <h3>{claim.text}</h3>
+                  <h3 dir="auto">{claim.statement || claim.text}</h3>
+                  {claim.context_status === 'ambiguous' && (
+                    <p className="claim-explanation">The source context is ambiguous.</p>
+                  )}
+                  <ClaimSource claim={claim} input={investigation.text} />
                   <p className="claim-explanation">
                     {finding?.explanation || 'A finding is not available for this claim.'}
                   </p>
@@ -248,13 +302,14 @@ export function ReportView({
           <section className="side-panel usage-panel">
             <h3>Model usage</h3>
             {report.model_usage.length ? (
-              report.model_usage.map((usage, index) => (
-                <div key={`${usage.task}-${index}`}>
+              usageGroups.map((usage, index) => (
+                <div key={`${usage.model_id}-${index}`}>
                   <p className="model-name">
                     {usage.model_id
                       .replace('muse-spark-', 'Muse Spark ')
                       .replace('muse-wonder-', 'Muse Wonder ')}
                   </p>
+                  <p className="muted">{usage.calls} recorded model calls</p>
                   <div className="token-pair">
                     <div>
                       <span>Input tokens</span>

@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     app_mode: Literal["mock", "meta"] = "mock"
     allow_paid_api_calls: bool = False
     meta_timeout_seconds: float = Field(default=60, gt=0, le=120)
-    meta_max_completion_tokens: int = Field(default=1024, ge=128, le=4096)
+    meta_max_completion_tokens: int = Field(default=4096, ge=128, le=4096)
     meta_max_claims: int = Field(default=8, ge=1, le=12)
     graph_recursion_limit: int = Field(default=12, ge=4, le=100)
     api_host: str = Field(default="127.0.0.1", min_length=1)
@@ -37,7 +37,14 @@ class Settings(BaseSettings):
     database_path: Path = PROJECT_ROOT / ".local" / "clear-context.db"
     model_catalog_path: Path = PROJECT_ROOT / "config" / "models.yaml"
     prompt_catalog_path: Path = PROJECT_ROOT / "config" / "prompts.yaml"
-    prompt_claim_extraction: str = Field(default="v1", min_length=1)
+    prompt_claim_extraction: str = Field(default="v2", min_length=1)
+    extraction_response_capacity: int = Field(default=24, ge=1, le=64)
+    extraction_chunk_characters: int = Field(default=600, ge=400, le=8000)
+    extraction_min_chunk_characters: int = Field(default=200, ge=80, le=400)
+    extraction_context_characters: int = Field(default=600, ge=0, le=2000)
+    extraction_max_calls: int = Field(default=24, ge=1, le=100)
+    extraction_max_output_tokens: int = Field(default=32768, ge=128, le=131072)
+    extraction_max_seconds: float = Field(default=120, ge=1, le=600)
     model_default: str = ""
     model_claim_extraction: str = ""
     model_screenshot: str = ""

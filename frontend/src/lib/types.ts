@@ -8,6 +8,22 @@ export interface ModelUsage {
   input_tokens: number | null;
   output_tokens: number | null;
   cached_input_tokens: number | null;
+  chunk_start?: number | null;
+  chunk_end?: number | null;
+  outcome?: 'accepted' | 'capacity_reached' | 'truncated' | 'invalid' | null;
+}
+export interface TextSpan {
+  start: number;
+  end: number;
+  text: string;
+}
+export interface ExtractedClaim {
+  id: string;
+  text: string;
+  statement?: string | null;
+  source_span?: TextSpan | null;
+  context_spans?: TextSpan[];
+  context_status?: 'standalone' | 'context_linked' | 'ambiguous' | null;
 }
 export interface Investigation {
   id: string;
@@ -29,7 +45,7 @@ export interface Report {
   investigation_id: string;
   mode: 'mock' | 'meta';
   revision: number;
-  claims: { id: string; text: string }[];
+  claims: ExtractedClaim[];
   sources: { id: string; url: string; title: string; content: string }[];
   evidence: { id: string; claim_id: string; source_id: string; excerpt: string }[];
   findings: {
@@ -41,6 +57,17 @@ export interface Report {
   }[];
   limitations: string[];
   model_usage: ModelUsage[];
+  extraction_coverage?: {
+    status: 'processed' | 'partial';
+    model_calls: number;
+    chunks: {
+      start: number;
+      end: number;
+      status: 'processed' | 'split' | 'partial';
+      reason: string | null;
+    }[];
+    notes: string[];
+  } | null;
 }
 export interface Health {
   status: string;

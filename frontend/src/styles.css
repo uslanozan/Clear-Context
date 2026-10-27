@@ -772,6 +772,34 @@ h3 {
   margin: 18px 0 12px;
   overflow-wrap: anywhere;
 }
+
+.claim-provenance {
+  margin: 12px 0 16px;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.claim-provenance summary {
+  cursor: pointer;
+  color: var(--accent);
+  padding-block: 10px;
+}
+.claim-provenance summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.source-location {
+  color: var(--muted);
+  font-size: 14px;
+}
+.source-context {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+.source-context mark {
+  background: #f4dcc8;
+  color: var(--ink);
+  padding: 1px 2px;
+}
 .claim-explanation {
   color: var(--muted);
   font-size: 13px;

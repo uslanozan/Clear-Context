@@ -5,9 +5,21 @@ from clear_context.graph.state import InvestigationState
 def validate_report(state: InvestigationState) -> dict:
     data = state["report"].model_dump()
     data["model_usage"] = state.get("model_usage", [])
+    data["extraction_coverage"] = state.get("extraction_coverage")
     report = InvestigationReport.model_validate(data)
     if report.investigation_id != state["investigation_id"]:
         raise ValueError("Report belongs to a different investigation.")
     if report.claims != state["claims"]:
         raise ValueError("Report changed the extracted claims.")
+    text = state["text"]
+    for claim in report.claims:
+        for span in [claim.source_span, *claim.context_spans]:
+            if span and text[span.start : span.end] != span.text:
+                raise ValueError("Claim provenance does not match the original input.")
+    if report.extraction_coverage:
+        if report.extraction_coverage.status == "partial":
+            report.limitations.append(
+                "Claim extraction is partial; some input ranges remain unresolved."
+            )
+        report.limitations.extend(report.extraction_coverage.notes)
     return {"report": report}

@@ -1,0 +1,75 @@
+[
+  {
+    "id": "axolotl-aquatic",
+    "url": "https://www.amnh.org/explore/ology/ology-cards/366-axolotl",
+    "access_date": "2026-10-27",
+    "excerpt": "But axolotls live their whole lives in water.",
+    "source_type": "museum_education",
+    "role": "Corroborates the aquatic property; not every claim in the Wikipedia passage.",
+    "reuse": "Short attributed quotation. No open license claimed."
+  },
+  {
+    "id": "reef-location",
+    "url": "https://whc.unesco.org/en/list/154/",
+    "access_date": "2026-10-27",
+    "excerpt": "Off the east coast of the Queensland mainland",
+    "source_type": "intergovernmental_property_record",
+    "role": "The same property record lists Australia. Do not use its area or reef counts as interchangeable with differently scoped Wikipedia figures.",
+    "reuse": "Short attributed property metadata."
+  },
+  {
+    "id": "voynich-donation",
+    "url": "https://beinecke.library.yale.edu/beinecke/collections/beinecke-cipher-voynich-manuscript",
+    "access_date": "2026-10-27",
+    "excerpt": "Nill sold the volume to the New York bookseller H. P. Kraus in 1961 and he in turn gave the book to Beinecke Library eight years later.",
+    "source_type": "holding_institution",
+    "role": "1961 plus eight years establishes the 1969 donation date.",
+    "reuse": "Short attributed quotation. No open license claimed."
+  },
+  {
+    "id": "curie-chemistry-year",
+    "url": "https://www.nobelprize.org/prizes/physics/1903/marie-curie/facts/",
+    "access_date": "2026-10-27",
+    "excerpt": "Also awarded: Nobel Prize in Chemistry 1911",
+    "source_type": "award_organization",
+    "role": "Confirms Chemistry 1911. The page body was available through web search; a direct biography URL returned 403 during collection.",
+    "retrieval_method": "web_search_index_excerpt",
+    "reuse": "Short attributed quotation. No open license claimed."
+  },
+  {
+    "id": "gobekli-region",
+    "url": "https://whc.unesco.org/en/list/1572/",
+    "access_date": "2026-10-27",
+    "excerpt": "Located in the Germuş mountains of south-eastern Anatolia",
+    "source_type": "intergovernmental_heritage",
+    "role": "Corroborates the south-eastern Anatolia region; preserves archaeological uncertainty elsewhere.",
+    "reuse": "UNESCO description, CC BY-SA 3.0 IGO."
+  },
+  {
+    "id": "cappadocia-inscription",
+    "url": "https://whc.unesco.org/en/list/357/",
+    "access_date": "2026-10-27",
+    "excerpt": "Date of Inscription: 1985",
+    "source_type": "intergovernmental_property_record",
+    "role": "Applies to Göreme National Park and the Rock Sites of Cappadocia, rather than every location in the historical region.",
+    "reuse": "Short attributed property metadata."
+  },
+  {
+    "id": "eiffel-height",
+    "url": "https://www.toureiffel.paris/fr/actualites/histoire-et-culture/133-ans-et-330-metres",
+    "access_date": "2026-10-27",
+    "excerpt": "A quelques jours d’écart, la tour Eiffel célèbre son passage à 330 mètres de hauteur (22 mars) et son 133ème anniversaire (31 mars).",
+    "source_type": "monument_operator",
+    "role": "The 2022 article describes the height including the new antenna; historical heights differ.",
+    "reuse": "Short attributed quotation. No open license claimed."
+  },
+  {
+    "id": "earth-shape",
+    "url": "https://fullfact.org/online/earth-is-spherical-not-flat/",
+    "access_date": "2026-10-27",
+    "excerpt": "And the Earth is round. Or to be precise, it is roughly spherical.",
+    "source_type": "fact_checker",
+    "role": "The input claim box is quoted to refute it. The original Instagram post was not fetched.",
+    "reuse": "Short attributed quotation. No open license claimed."
+  }
+]

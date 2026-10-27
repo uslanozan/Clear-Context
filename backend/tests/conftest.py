@@ -41,4 +41,5 @@ def settings(tmp_path):
         database_path=database_path,
         meta_api_key="test-secret-never-expose",
         model_default="spark_1_3",
+        prompt_claim_extraction="v1",
     )

@@ -2,7 +2,12 @@ from dataclasses import dataclass, field
 from typing import NotRequired, TypedDict
 from uuid import UUID
 
-from clear_context.domain.investigation import Claim, InvestigationReport, ModelUsage
+from clear_context.domain.investigation import (
+    Claim,
+    ExtractionCoverage,
+    InvestigationReport,
+    ModelUsage,
+)
 from clear_context.providers.base import InvestigationProvider
 
 
@@ -12,6 +17,7 @@ class InvestigationState(TypedDict):
     claims: NotRequired[list[Claim]]
     report: NotRequired[InvestigationReport]
     model_usage: NotRequired[list[ModelUsage]]
+    extraction_coverage: NotRequired[ExtractionCoverage | None]
 
 
 @dataclass(frozen=True)

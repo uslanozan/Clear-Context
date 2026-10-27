@@ -55,7 +55,8 @@ def load_claim_extraction_prompt(settings: Settings) -> RenderedPrompt:
     version = settings.prompt_claim_extraction
     if prompt is None or version not in prompt.versions:
         raise ValueError("Unknown claim extraction prompt version.")
-    system = Template(prompt.versions[version].system).substitute(
-        max_claims=settings.meta_max_claims
+    capacity = (
+        settings.meta_max_claims if version == "v1" else settings.extraction_response_capacity
     )
+    system = Template(prompt.versions[version].system).substitute(max_claims=capacity)
     return RenderedPrompt(version=version, system=system)

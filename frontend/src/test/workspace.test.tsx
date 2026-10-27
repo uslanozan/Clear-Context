@@ -112,7 +112,7 @@ describe('Investigation workspace', () => {
       target: { value: ' A synthetic claim. ' },
     });
     await userEvent.dblClick(screen.getByRole('button', { name: 'Start investigation' }));
-    await screen.findByText('Claims extracted. Evidence is still missing.');
+    await screen.findByText('Claims extracted; evidence is still missing');
     expect(posts).toEqual(['A synthetic claim.']);
     expect(screen.getByText('Unresolved')).toBeInTheDocument();
     expect(screen.getByText('No evidence attached')).toBeInTheDocument();
