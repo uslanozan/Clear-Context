@@ -1,0 +1,61 @@
+from dataclasses import dataclass
+from hashlib import sha256
+from string import Template
+from typing import Literal
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from clear_context.core.settings import Settings, resolve_path
+
+
+class PromptTemplate(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    system: str = Field(min_length=1)
+
+    @field_validator("system")
+    @classmethod
+    def validate_template(cls, value: str) -> str:
+        template = Template(value)
+        if not value.strip() or not template.is_valid():
+            raise ValueError("Prompt must contain a valid, non-empty template.")
+        if set(template.get_identifiers()) != {"max_claims"}:
+            raise ValueError("Claim extraction requires only the max_claims placeholder.")
+        return value
+
+
+class PromptVersions(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    versions: dict[str, PromptTemplate] = Field(min_length=1)
+
+
+class PromptCatalog(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal[1]
+    prompts: dict[Literal["claim_extraction"], PromptVersions]
+
+
+@dataclass(frozen=True)
+class RenderedPrompt:
+    version: str
+    system: str
+
+    @property
+    def sha256(self) -> str:
+        return sha256(self.system.encode("utf-8")).hexdigest()
+
+
+def load_claim_extraction_prompt(settings: Settings) -> RenderedPrompt:
+    with resolve_path(settings.prompt_catalog_path).open(encoding="utf-8-sig") as stream:
+        catalog = PromptCatalog.model_validate(yaml.safe_load(stream))
+    prompt = catalog.prompts.get("claim_extraction")
+    version = settings.prompt_claim_extraction
+    if prompt is None or version not in prompt.versions:
+        raise ValueError("Unknown claim extraction prompt version.")
+    system = Template(prompt.versions[version].system).substitute(
+        max_claims=settings.meta_max_claims
+    )
+    return RenderedPrompt(version=version, system=system)

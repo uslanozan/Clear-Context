@@ -3,6 +3,8 @@ export type Assessment = 'supported' | 'contradicted' | 'mixed' | 'unresolved';
 export interface ModelUsage {
   task: string;
   model_id: string;
+  prompt_version?: string | null;
+  prompt_sha256?: string | null;
   input_tokens: number | null;
   output_tokens: number | null;
   cached_input_tokens: number | null;

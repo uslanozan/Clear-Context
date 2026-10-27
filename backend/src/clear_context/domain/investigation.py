@@ -26,6 +26,8 @@ class Record(BaseModel):
 class ModelUsage(Record):
     task: str
     model_id: str
+    prompt_version: str | None = None
+    prompt_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
     cached_input_tokens: int | None = Field(default=None, ge=0)

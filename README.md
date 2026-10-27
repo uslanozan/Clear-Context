@@ -64,6 +64,7 @@ Search, page extraction, and reverse-image lookup providers still need to be sel
 - [Text analysis explained](docs/TEXT_ANALYSIS.md)
 - [Workflow diagrams](docs/diagrams/md/README.md)
 - [Model plan](docs/MODELS.md)
+- [Prompt management](docs/PROMPTS.md)
 - [Architecture and evidence contract](docs/ARCHITECTURE.md)
 - [Frontend guide and design system](docs/FRONTEND.md)
 - [Evaluation plan](evals/README.md)

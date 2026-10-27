@@ -11,7 +11,8 @@ Status checked against the source on October 27, 2026. This document explains im
 | Run the graph and record completed node events | `backend/src/clear_context/services/investigation.py` |
 | Wire the three graph nodes | `backend/src/clear_context/graph/investigation.py` |
 | Delegate extraction to the selected provider | `backend/src/clear_context/graph/nodes/extract_claims.py` |
-| Build the Meta prompt, call HTTP, and validate output | `backend/src/clear_context/providers/meta.py` |
+| Load and render the versioned system instruction | `config/prompts.yaml` and `backend/src/clear_context/core/prompts.py` |
+| Build the Meta request, call HTTP, and validate output | `backend/src/clear_context/providers/meta.py` |
 | Check the report and evidence references | `backend/src/clear_context/domain/investigation.py` and `graph/nodes/validate_report.py` |
 
 ## Implemented extraction
@@ -21,7 +22,10 @@ Status checked against the source on October 27, 2026. This document explains im
 3. The system prompt asks Muse for independently checkable, unique, exact contiguous substrings, preserving the original language, dates, negations, conditions, and attribution. It asks the model to treat the passage as data and not to verify or add sources. These are instructions, not a guarantee of semantic compliance.
 4. A strict JSON schema requests `claims: list[str]`. The default maximum is 8 claims, configurable from 1 to 12; the default output budget is 1,024 completion tokens. No chunks or continuation call recover omitted claims.
 5. The code requires a completed response without refusal or tool calls, valid schema, count within the configured limit, no duplicate strings, and every nonblank claim occurring literally in the input. Reworded or invented text fails the job. There is no automatic paid retry.
-6. Accepted claim strings receive UUIDs. Token usage is recorded. Evidence evaluation currently makes no second model call: sources and evidence are empty and every finding is unresolved. The validated report is saved to SQLite.
+6. Accepted claim strings receive UUIDs. Token usage, prompt version, and a hash of the rendered system instruction are recorded. Evidence evaluation currently makes no second model call: sources and evidence are empty and every finding is unresolved. The validated report is saved to SQLite.
+
+See [Prompt management](PROMPTS.md) for catalog settings and version selection. The graph
+sequence is unchanged; configuration is loaded before investigations begin.
 
 If no factual claim exists, the prompt currently asks the model to return the whole input for later clarification. There is no implemented fact/opinion/clarification classifier, and that fallback is not a proof that the input is a factual proposition.
 

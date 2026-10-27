@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     cors_allowed_origins: list[str] = Field(default_factory=list)
     database_path: Path = PROJECT_ROOT / ".local" / "clear-context.db"
     model_catalog_path: Path = PROJECT_ROOT / "config" / "models.yaml"
+    prompt_catalog_path: Path = PROJECT_ROOT / "config" / "prompts.yaml"
+    prompt_claim_extraction: str = Field(default="v1", min_length=1)
     model_default: str = ""
     model_claim_extraction: str = ""
     model_screenshot: str = ""

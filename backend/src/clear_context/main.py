@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from clear_context.api.router import router
+from clear_context.core.prompts import load_claim_extraction_prompt
 from clear_context.core.settings import Settings, load_model_selections, resolve_path
 from clear_context.db.session import create_database, create_session_factory
 from clear_context.providers.meta import MetaInvestigationProvider
@@ -16,8 +17,9 @@ from clear_context.services.investigation import InvestigationService
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     selections = load_model_selections(settings)
+    prompt = load_claim_extraction_prompt(settings)
     provider = (
-        MetaInvestigationProvider(settings, selections["claim_extraction"])
+        MetaInvestigationProvider(settings, selections["claim_extraction"], prompt=prompt)
         if settings.app_mode == "meta"
         else MockInvestigationProvider()
     )

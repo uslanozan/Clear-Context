@@ -63,6 +63,7 @@ def test_meta_request_uses_configured_model_schema_and_limits():
         assert payload["response_format"]["json_schema"]["strict"] is True
         assert payload["response_format"]["json_schema"]["schema"]["additionalProperties"] is False
         assert payload["messages"][1]["content"] == "A synthetic claim."
+        assert "Return at most 8 unique claims." in payload["messages"][0]["content"]
         return httpx.Response(200, json=completion())
 
     provider = provider_with(
@@ -74,6 +75,8 @@ def test_meta_request_uses_configured_model_schema_and_limits():
     assert result.model_usage[0].input_tokens == 100
     assert result.model_usage[0].output_tokens == 20
     assert result.model_usage[0].model_id == "muse-wonder-1.0"
+    assert result.model_usage[0].prompt_version == "v1"
+    assert result.model_usage[0].prompt_sha256 == provider.prompt.sha256
 
 
 @pytest.mark.parametrize(
@@ -195,6 +198,8 @@ def test_meta_api_flow_persists_usage_and_mode(settings):
         report = client.get(location + "/report").json()
         assert report["mode"] == "meta"
         assert report["model_usage"][0]["output_tokens"] == 20
+        assert report["model_usage"][0]["prompt_version"] == "v1"
+        assert len(report["model_usage"][0]["prompt_sha256"]) == 64
         assert client.get(location).json()["model_usage"] == report["model_usage"]
         assert client.get("/api/health").json()["paid_api_calls_enabled"] is True
     settings.app_mode = "mock"
