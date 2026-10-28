@@ -49,6 +49,20 @@ class ChunkClaims(Record):
     has_more: bool
 
 
+class DirectAttributes(Record):
+    statement: str = Field(min_length=1)
+    group: str = Field(min_length=1)
+
+
+class DirectItem(Record):
+    claim: str = Field(min_length=1)
+    claim_attributes: DirectAttributes
+
+
+class DirectResponse(Record):
+    extractions: list[DirectItem]
+
+
 class MetaInvestigationProvider:
     def __init__(
         self,
@@ -70,6 +84,8 @@ class MetaInvestigationProvider:
         self.prompt = prompt or load_claim_extraction_prompt(settings)
 
     def extract_claims(self, text: str) -> ClaimExtraction:
+        if self.prompt.version == "d_v1":
+            return self._extract_direct(text)
         if self.prompt.version == "v1":
             return self._extract_legacy(text)
         return self._extract_document(text)
@@ -87,7 +103,8 @@ class MetaInvestigationProvider:
             if self.prompt.version == "v1"
             else self.settings.extraction_response_capacity
         )
-        schema["properties"]["claims"]["maxItems"] = capacity
+        if "claims" in schema.get("properties", {}):
+            schema["properties"]["claims"]["maxItems"] = capacity
         payload = {
             "model": self.model.api_model_id,
             "messages": [
@@ -171,6 +188,75 @@ class MetaInvestigationProvider:
             if receipt:
                 receipt.outcome = "invalid"
             raise ProviderError("meta_invalid_response", receipt) from None
+
+    def _extract_direct(self, text: str) -> ClaimExtraction:
+        from clear_context.domain.investigation import TextSpan
+
+        content, receipt = self._request(
+            json.dumps(
+                {
+                    "processing_context": {
+                        "target_language": "same language as the source",
+                        "source_published_at": None,
+                    },
+                    "source": text,
+                },
+                ensure_ascii=False,
+            ),
+            DirectResponse.model_json_schema(),
+            self.settings.meta_max_completion_tokens,
+            self.settings.meta_timeout_seconds,
+        )
+        claims, notes = (
+            [],
+            [
+                "Semantic completeness is not established; source research is pending.",
+                "Source language is inferred by the model; publication date is unknown.",
+            ],
+        )
+        partial = False
+        try:
+            response = DirectResponse.model_validate_json(content)
+        except (ValueError, ValidationError):
+            raise ProviderError("meta_invalid_response", receipt) from None
+        for item in response.extractions:
+            start = text.find(item.claim)
+            if start < 0:
+                partial = True
+                notes.append("A proposed source quote did not match literally and was excluded.")
+                continue
+            claims.append(
+                Claim(
+                    id=uuid4(),
+                    text=item.claim,
+                    statement=item.claim_attributes.statement,
+                    group=item.claim_attributes.group,
+                    source_span=TextSpan(start=start, end=start + len(item.claim), text=item.claim),
+                )
+            )
+        if not response.extractions:
+            partial = True
+            notes.append(
+                "Empty extraction requires review; it does not establish absence of factual claims."
+            )
+        receipt.outcome = "invalid" if partial else "accepted"
+        return ClaimExtraction(
+            claims=claims,
+            model_usage=[receipt],
+            coverage=ExtractionCoverage(
+                status="partial" if partial else "processed",
+                model_calls=1,
+                chunks=[
+                    ExtractionChunk(
+                        start=0,
+                        end=len(text),
+                        status="partial" if partial else "processed",
+                        reason="review_required" if partial else None,
+                    )
+                ],
+                notes=notes,
+            ),
+        )
 
     def _extract_legacy(self, text: str) -> ClaimExtraction:
         content, receipt = self._request(

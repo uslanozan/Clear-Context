@@ -60,6 +60,16 @@ class RenderedPrompt:
 def load_claim_extraction_prompt(settings: Settings) -> RenderedPrompt:
     with resolve_path(settings.prompt_catalog_path).open(encoding="utf-8-sig") as stream:
         catalog = PromptCatalog.model_validate(yaml.safe_load(stream))
+    if settings.prompt_claim_extraction == "d_v1":
+        import json
+
+        entry = catalog.experiments["claim_extraction_tail_v1"]
+        return RenderedPrompt(
+            version="d_v1",
+            system=entry.system
+            + "\nSynthetic demonstrations:\n"
+            + json.dumps(entry.few_shot_examples, ensure_ascii=False),
+        )
     prompt = catalog.prompts.get("claim_extraction")
     version = settings.prompt_claim_extraction
     if prompt is None or version not in prompt.versions:

@@ -18,6 +18,7 @@ export interface TextSpan {
   text: string;
 }
 export interface ExtractedClaim {
+  group?: string | null;
   id: string;
   text: string;
   statement?: string | null;
@@ -66,7 +67,7 @@ export interface Report {
       status: 'processed' | 'split' | 'partial';
       reason: string | null;
     }[];
-    notes: string[];
+    notes?: string[];
   } | null;
 }
 export interface Health {

@@ -63,6 +63,7 @@ class ExtractionCoverage(Record):
 
 
 class Claim(Record):
+    group: str | None = None
     id: UUID
     text: str = Field(min_length=1)
     statement: str | None = Field(default=None, min_length=1)

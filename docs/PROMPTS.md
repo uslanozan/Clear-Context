@@ -40,3 +40,13 @@ These use the local experiment response schema and are not selected by
 `PROMPT_CLAIM_EXTRACTION`; the live v1/v2 contracts remain separate. Local runners
 read named entries from this catalog. Experiment-local YAML files are historical
 snapshots only. The user-facing review is `docs/local/experiments/claim-extraction-bcd-v2/review.html`.
+
+## Provisional direct extraction
+
+`PROMPT_CLAIM_EXTRACTION=d_v1` selects the direct experimental schema using
+`experiments.claim_extraction_tail_v1`. It preserves group labels in claim provenance
+without a database migration. It performs one bounded call over the entire input;
+truncated responses fail explicitly, unmatched quotes are excluded with partial coverage,
+and an empty extraction requires review. This path does not use the v2 chunk/split loop.
+Source language is inferred by the model and publication time remains unknown; these
+runtime adaptations have not been validated by the offline corpus comparison. v1/v2 remain available.

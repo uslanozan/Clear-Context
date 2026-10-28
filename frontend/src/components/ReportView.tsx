@@ -137,6 +137,11 @@ export function ReportView({
             : 'Processing all input ranges does not guarantee that every claim was identified.'}
           <details className="claim-provenance">
             <summary>Review processing coverage</summary>
+            <ul>
+              {(report.extraction_coverage.notes ?? []).map((note, index) => (
+                <li key={index}>{note}</li>
+              ))}
+            </ul>
             <p>{report.extraction_coverage.model_calls} model calls recorded</p>
             <ul>
               {report.extraction_coverage.chunks
