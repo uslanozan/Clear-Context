@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     database_path: Path = PROJECT_ROOT / ".local" / "clear-context.db"
     model_catalog_path: Path = PROJECT_ROOT / "config" / "models.yaml"
     prompt_catalog_path: Path = PROJECT_ROOT / "config" / "prompts.yaml"
+    extractor_catalog_path: Path = PROJECT_ROOT / "config" / "extractors.yaml"
     prompt_claim_extraction: str = Field(default="v2", min_length=1)
     extraction_response_capacity: int = Field(default=24, ge=1, le=64)
     extraction_chunk_characters: int = Field(default=600, ge=400, le=8000)

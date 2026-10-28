@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from hashlib import sha256
 from string import Template
@@ -6,6 +7,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from clear_context.core.extractors import ExtractorImplementation, load_extractor_profile
 from clear_context.core.settings import Settings, resolve_path
 
 
@@ -51,6 +53,7 @@ class PromptCatalog(BaseModel):
 class RenderedPrompt:
     version: str
     system: str
+    implementation: ExtractorImplementation = "chunked"
 
     @property
     def sha256(self) -> str:
@@ -58,24 +61,28 @@ class RenderedPrompt:
 
 
 def load_claim_extraction_prompt(settings: Settings) -> RenderedPrompt:
+    profile = load_extractor_profile(settings)
     with resolve_path(settings.prompt_catalog_path).open(encoding="utf-8-sig") as stream:
         catalog = PromptCatalog.model_validate(yaml.safe_load(stream))
-    if settings.prompt_claim_extraction == "d_v1":
-        import json
-
-        entry = catalog.experiments["claim_extraction_tail_v1"]
+    if profile.prompt_source == "experiments":
+        entry = catalog.experiments.get(profile.prompt)
+        if entry is None:
+            raise ValueError("Unknown extraction experiment prompt reference.")
         return RenderedPrompt(
-            version="d_v1",
+            version=settings.prompt_claim_extraction,
+            implementation=profile.implementation,
             system=entry.system
             + "\nSynthetic demonstrations:\n"
             + json.dumps(entry.few_shot_examples, ensure_ascii=False),
         )
     prompt = catalog.prompts.get("claim_extraction")
     version = settings.prompt_claim_extraction
-    if prompt is None or version not in prompt.versions:
+    if prompt is None or profile.prompt not in prompt.versions:
         raise ValueError("Unknown claim extraction prompt version.")
     capacity = (
-        settings.meta_max_claims if version == "v1" else settings.extraction_response_capacity
+        settings.meta_max_claims
+        if profile.implementation == "legacy"
+        else settings.extraction_response_capacity
     )
-    system = Template(prompt.versions[version].system).substitute(max_claims=capacity)
-    return RenderedPrompt(version=version, system=system)
+    system = Template(prompt.versions[profile.prompt].system).substitute(max_claims=capacity)
+    return RenderedPrompt(version=version, system=system, implementation=profile.implementation)

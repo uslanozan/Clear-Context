@@ -6,7 +6,8 @@ currently calls a model. Evidence evaluation and report validation do not use pr
 | Setting | Default | Purpose |
 | --- | --- | --- |
 | `PROMPT_CATALOG_PATH` | `config/prompts.yaml` | Project-relative or absolute catalog path |
-| `PROMPT_CLAIM_EXTRACTION` | `v2` | Select an extraction contract version |
+| `EXTRACTOR_CATALOG_PATH` | `config/extractors.yaml` | Validated extraction profiles |
+| `PROMPT_CLAIM_EXTRACTION` | `v2` | Select an extractor profile; existing setting name retained |
 | `EXTRACTION_RESPONSE_CAPACITY` | `24` | V2 per-response capacity, not a document claim limit |
 | `META_MAX_CLAIMS` | `8` | V1 legacy single-call limit only |
 
@@ -36,8 +37,8 @@ See [text analysis](TEXT_ANALYSIS.md) for the implemented contract and limitatio
 
 The same catalog now includes an optional `experiments` mapping. Named entries hold a
 `system` instruction, synthetic `few_shot_examples`, and an optional `missing_check`.
-These use the local experiment response schema and are not selected by
-`PROMPT_CLAIM_EXTRACTION`; the live v1/v2 contracts remain separate. Local runners
+These use the local experiment response schema; only an explicitly mapped compatible
+extractor profile can select them for the application. The v1/v2 contracts remain separate. Local runners
 read named entries from this catalog. Experiment-local YAML files are historical
 snapshots only. The user-facing review is `docs/local/experiments/claim-extraction-bcd-v2/review.html`.
 
@@ -50,3 +51,19 @@ truncated responses fail explicitly, unmatched quotes are excluded with partial 
 and an empty extraction requires review. This path does not use the v2 chunk/split loop.
 Source language is inferred by the model and publication time remains unknown; these
 runtime adaptations have not been validated by the offline corpus comparison. v1/v2 remain available.
+
+## Extractor profiles
+
+[config/extractors.yaml](../config/extractors.yaml) separates a profile name from its
+Python implementation and prompt reference. `d_v1` maps to `direct` and the tail-coverage
+prompt above; `v1` maps to `legacy`, and `v2` maps to `chunked`. Their execution and
+validation behavior is unchanged. `b_system` records the LangExtract candidate but is
+evaluation-only: selecting it for the application fails before a model call.
+
+The provider dispatches through an explicit Python handler map. A YAML entry never loads
+a Python file or arbitrary module. A new prompt variant using an existing compatible
+contract needs only a profile and prompt entry; a new algorithm also needs a Python
+implementation and registration. Profile status is descriptive, not an accuracy score.
+`PROMPT_CLAIM_EXTRACTION=d_v1` remains the current local selection; no extra selector is
+required. Restart the backend after changing profiles or prompts. Historical evaluation
+runners retain their recorded configurations and do not automatically switch profiles.

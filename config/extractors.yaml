@@ -1,0 +1,22 @@
+schema_version: 1
+extractors:
+  v1:
+    implementation: legacy
+    prompt_source: versions
+    prompt: v1
+    status: legacy
+  v2:
+    implementation: chunked
+    prompt_source: versions
+    prompt: v2
+    status: legacy
+  d_v1:
+    implementation: direct
+    prompt_source: experiments
+    prompt: claim_extraction_tail_v1
+    status: provisional
+  b_system:
+    implementation: langextract
+    prompt_source: experiments
+    prompt: claim_extraction_tail_v1
+    status: evaluation_only

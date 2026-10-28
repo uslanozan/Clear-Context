@@ -84,11 +84,15 @@ class MetaInvestigationProvider:
         self.prompt = prompt or load_claim_extraction_prompt(settings)
 
     def extract_claims(self, text: str) -> ClaimExtraction:
-        if self.prompt.version == "d_v1":
-            return self._extract_direct(text)
-        if self.prompt.version == "v1":
-            return self._extract_legacy(text)
-        return self._extract_document(text)
+        handlers = {
+            "direct": self._extract_direct,
+            "legacy": self._extract_legacy,
+            "chunked": self._extract_document,
+        }
+        handler = handlers.get(self.prompt.implementation)
+        if handler is None:
+            raise ValueError("Selected extractor implementation is unavailable.")
+        return handler(text)
 
     def _request(
         self,
@@ -100,7 +104,7 @@ class MetaInvestigationProvider:
     ) -> tuple[str, ModelUsage]:
         capacity = (
             self.settings.meta_max_claims
-            if self.prompt.version == "v1"
+            if self.prompt.implementation == "legacy"
             else self.settings.extraction_response_capacity
         )
         if "claims" in schema.get("properties", {}):
