@@ -1,0 +1,28 @@
+schema_version: 1
+selected: v5
+planners:
+  v1:
+    implementation: structured_llm
+    prompt: query_planning_v1
+    status: historical
+    response_schema: claim
+  v2:
+    implementation: structured_llm
+    prompt: query_planning_v2
+    status: historical
+    response_schema: claim
+  v3:
+    implementation: structured_llm
+    prompt: query_planning_v3
+    status: historical
+    response_schema: component
+  v4:
+    implementation: structured_llm
+    prompt: query_planning_v4
+    status: historical
+    response_schema: mapped_component
+  v5:
+    implementation: structured_llm
+    prompt: query_planning_v5
+    status: candidate
+    response_schema: mapped_component

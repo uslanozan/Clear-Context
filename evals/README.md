@@ -1,5 +1,22 @@
 # Evaluation plan
 
+## Query planning overview
+
+`query_catalog.py` selects the evaluation method from `config/query_planners.yaml`;
+`selected: v5` is the current candidate. `query_planning.py` builds and validates
+structured research plans from saved claims. Prompt text and synthetic examples
+remain in `config/prompts.yaml`.
+
+Plans retain original claim IDs, separate information needs, and map each query to
+its needs. Validation rejects unknown IDs, silent omissions, duplicate queries,
+conflicting deferrals and exceeded budgets. Structural validity does not establish
+semantic coverage, source relevance or factual truth. This prototype does not
+execute searches or change the live application graph.
+
+Local trials and Turkish review pages live under ignored `docs/local/experiments/`.
+Run offline checks with
+`python -m pytest evals/test_query_catalog.py evals/test_query_planning.py -q`.
+
 The specifications in `case-specs.json` describe broader product cases to collect; they are **not** a finished dataset or measured results.
 
 An initial [web text development corpus](corpus/v1/README.md) now contains 36 original and
@@ -120,3 +137,52 @@ context, demonstrations, and source text remain in the user message. Other reque
 parameters are unchanged. The adapter fails before inference if the expected prefix
 is absent; it does not modify the installed LangExtract package. Historical comparisons
 must explicitly retain their original user-role layout and keep result directories separate.
+
+## Query profiles and validation
+
+`query_planning.py` builds strict structured-output requests without executing search.
+Named `experiments.query_planning_v1`, `query_planning_v2` and `query_planning_v3`
+entries in `config/prompts.yaml` keep historical prompt contracts replayable.
+Pass `prompt_version="query_planning_v3"` to both `build_request` and `validate_plan`
+to select the component contract. The default remains the historical v1 contract;
+this prototype is not integrated into the application graph.
+
+V3 keeps original claims unchanged and records separate information needs with
+`planned`, `needs_context` or `budget_deferred` status. Questions reference need IDs,
+so one claim can retain searchable parts while another part waits for context.
+Validators reject missing/unknown claims, duplicate needs and queries, deferred
+needs attached to questions, unreferenced planned needs and query-budget overflow.
+These checks establish structural coverage, not semantic completeness or factual truth.
+
+Run offline checks with `.venv/Scripts/python.exe -m pytest evals/test_query_planning.py -q`.
+Recorded outputs and Turkish review reports remain in ignored `docs/local/experiments/`.
+
+### Query method catalog
+
+`config/query_planners.yaml` selects an evaluation method with `selected`; pass a
+`method` argument to `build_planner_request` in `query_catalog.py` for an explicit
+per-run override. Profiles select an allowlisted implementation, a central prompt
+and a typed response schema. No arbitrary module import or executable YAML is used.
+The application research graph is not wired to this catalog yet.
+
+`v4` adds per-query `need_ids`, validates that each question's needs are
+covered by its own queries, and uses focused-predicate, causal-coverage and temporal
+count rules. These structural checks do not prove semantic adequacy or retrieval
+quality. Historical component/claim plans keep their original contracts.
+
+Future spaCy or other deterministic planners require a real implementation, a new
+allowlisted contract if needed, offline tests and a catalog entry. Unimplemented
+methods fail before inference. Prompt changes remain in `config/prompts.yaml`.
+
+Private comparison adapters, copied templates, licenses and recorded outputs belong
+only under ignored `docs/local/benchmarks/` and `docs/local/experiments/`. They are
+not distributed profiles, application dependencies or public planner implementations.
+
+
+`v5` retains the mapped-component schema and adds claim-bound research goals and
+explicit restrictive-scope queries. A helper inventory, address or location must not
+become a new information need unless asserted in the claim. Restrictive qualifiers
+need a focused query even in batch planning. These are prompt-level rules, not a
+semantic validator or a guarantee of complete, faithful output. Historical `v4`
+requests remain replayable by explicit method selection. The selected evaluation
+candidate is `v5`; no application graph integration or search execution is implied.
