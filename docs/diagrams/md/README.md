@@ -11,8 +11,10 @@ Updated October 27, 2026 from the actual implementation. Start with [the gallery
 | [05 Photo/caption](../html/05-photo-proposal.html) | Caption claims, visual observations, independent evidence, optional authenticity signals | Proposed / optional |
 | [06 Video](../html/06-video-proposal.html) | Bounded frame sampling, optional speech transcription, timestamps, and partial coverage | Proposed / optional |
 | [07 Chunked claims](../html/07-chunked-claims.html) | Bounded targets/context, adaptive splitting, source provenance, partial outcomes | Implemented |
+| [08 Method B](../html/08-langextract-b.html) | LangExtract with system-role instructions and source alignment checks | Experimental |
+| [09 Method D](../html/09-direct-d.html) | Direct schema-constrained extraction and literal quote checks | Experimental |
 
-Each numbered HTML source has matching SVG and 2560 x 1440 PNG exports in the format-specific sibling folders. HTML is the editable source of truth. Its layout and inline SVG are standalone; the only external resource is the approved Google Fonts stylesheet for Source Sans 3. SVG exports embed the local font for portability; PNGs are static pixels. Font licensing remains SIL Open Font License from the frontend font dependency.
+HTML is the editable source of truth, with SVG and 2560 x 1440 PNG exports in the format-specific sibling folders. HTML uses the approved Google Fonts stylesheet for Source Sans 3. Font licensing remains SIL Open Font License from the frontend font dependency.
 
 All cases are synthetic, manually authored explanations, not live model results. [claim-example.json](../json/claim-example.json) verifies exact character spans and explicitly labels proposed data fields. `Unresolved` is a result, not an error and not evidence of falsehood. An image detector is not integrated or required in the proposed core research path.
 

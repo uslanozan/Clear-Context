@@ -113,3 +113,10 @@ Run the offline checks from the repository root:
 
 Tests use synthetic responses and make no network calls. Live diagnosis must have a
 fixed call budget, immutable prompt/source conditions, and no automatic paid retries.
+
+For new method-B experiments, `langextract_instructions.create_system_instruction_model`
+moves the exact extraction-rule prefix into the provider's system message. Processing
+context, demonstrations, and source text remain in the user message. Other request
+parameters are unchanged. The adapter fails before inference if the expected prefix
+is absent; it does not modify the installed LangExtract package. Historical comparisons
+must explicitly retain their original user-role layout and keep result directories separate.

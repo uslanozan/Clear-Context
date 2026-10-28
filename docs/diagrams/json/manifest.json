@@ -40,5 +40,17 @@
     "title": "Claim coverage without an eight-claim ceiling",
     "status": "IMPLEMENTED",
     "notes": "The default target budget is 600 Unicode characters, not tokens. Context includes document-head, previous, and next windows, each bounded to 600 characters. A response can hold 24 claims by default; capacity is not a document-wide limit. Capacity or truncation can split a target. Minimum-size, invalid, timeout, and budget cases remain partial. All source spans are anchored literally; statements remain model interpretations. No external evidence is retrieved. The figure groups error paths for readability."
+  },
+  {
+    "slug": "08-langextract-b",
+    "title": "Method B: LangExtract claim extraction",
+    "status": "EXPERIMENTAL",
+    "notes": "Experimental B uses LangExtract to construct and parse a one-call request. The current system-role adapter moves the exact rules prefix to system; historical runs used user. The model writes statements and group labels; Python checks the schema and literal source quote. Empty arrays may be structurally valid. This is an experimental runner, not the deployed application pipeline."
+  },
+  {
+    "slug": "09-direct-d",
+    "title": "Method D: direct claim extraction",
+    "status": "EXPERIMENTAL",
+    "notes": "Experimental D sends a direct schema-constrained request to Meta. Rules are in system, and source with supplied context is in user. The model writes statements and group labels; Pydantic and literal matching validate structure and provenance. Empty arrays may be structurally valid. This is an experimental runner, not the deployed application pipeline."
   }
 ]

@@ -621,19 +621,47 @@ def chunked():
     )
 
 
+def experimental_extraction(method):
+    is_b = method == "B"
+    slug = "08-langextract-b" if is_b else "09-direct-d"
+    title = "Method B: LangExtract claim extraction" if is_b else "Method D: direct claim extraction"
+    body = ""
+    positions = [(48, 178), (442, 178), (836, 178), (836, 383), (442, 383), (48, 383)]
+    for start, end in [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]:
+        x1, y1 = positions[start]; x2, y2 = positions[end]
+        if y1 == y2:
+            body += arrow([(x1 + 320, y1 + 55), (x2, y2 + 55)] if x2 > x1 else [(x1, y1 + 55), (x2 + 320, y2 + 55)])
+        else:
+            body += arrow([(x1 + 160, y1 + 110), (x2 + 160, y2)])
+    nodes = [
+        ("Input and context", ["Original text + supplied language", "Publication date if known"]),
+        (("LangExtract builds prompt" if is_b else "Build JSON request"), ["Rules in system; source in user", "Synthetic examples, schema"]),
+        ("Meta Spark 1.3", ["One bounded experimental call", "Model proposes claims and groups"]),
+        (("LangExtract parses response" if is_b else "Receive JSON response"), [("Parser count checked" if is_b else "No LangExtract parsing step"), "Incomplete response is not success"]),
+        ("Validate and anchor", ["Pydantic + literal source search", "Unmatched quotes marked partial"]),
+        ("Review the result", ["Quote + statement + group", "Not fact-checked; coverage unknown"]),
+    ]
+    for (x, y), (heading, lines) in zip(positions, nodes):
+        body += node(x, y, 320, 110, heading, lines, focal=heading == "Meta Spark 1.3")
+    body += text(48, 584, ["Empty JSON can pass the schema: review its meaning separately", "Language and publication date are supplied in these experiments"], 16, MUTED)
+    notes = ("Experimental B uses LangExtract to construct and parse a one-call request. The current system-role adapter moves the exact rules prefix to system; historical runs used user. The model writes statements and group labels; Python checks the schema and literal source quote. Empty arrays may be structurally valid. This is an experimental runner, not the deployed application pipeline." if is_b else "Experimental D sends a direct schema-constrained request to Meta. Rules are in system, and source with supplied context is in user. The model writes statements and group labels; Pydantic and literal matching validate structure and provenance. Empty arrays may be structurally valid. This is an experimental runner, not the deployed application pipeline.")
+    code = ("evals/langextract_instructions.py; docs/local/experiments/claim-extraction-bcd-v2/run.py" if is_b else "docs/local/experiments/claim-extraction-bcd-v2/run.py; docs/local/experiments/previous/claim_extraction_trial.py")
+    return write(slug, title, "Experimental text-only path: extraction and grouping, before research or verification", "EXPERIMENTAL", body, notes, code, "One model call per attempted input | Literal matching does not establish truth")
+
+
 if __name__ == "__main__":
     for folder in ["html", "svg", "png", "json", "md", "py"]:
         (OUT / folder).mkdir(parents=True, exist_ok=True)
-    records = [sequence(), guards(), media(), longtext(), photo(), video(), chunked()]
+    records = [sequence(), guards(), media(), longtext(), photo(), video(), chunked(), experimental_extraction("B"), experimental_extraction("D")]
     (OUT / "json/manifest.json").write_text(
         json.dumps(records, indent=2) + "\n", encoding="utf-8"
     )
     links = "".join(
-        f'<li><strong>{html.escape(row["title"])}</strong> <span>{row["status"]}</span><p>{html.escape(row["notes"])}</p><a href="{row["slug"]}.html">Open HTML</a> / <a href="../svg/{row["slug"]}.svg">SVG</a> / <a href="../png/{row["slug"]}.png">PNG for slides</a></li>'
+        f'<li><strong>{html.escape(row["title"])}</strong> <span>{row["status"]}</span><p>{html.escape(row["notes"])}</p><a href="{row["slug"]}.html">Open HTML</a> / <a href="../svg/{row["slug"]}.svg">SVG</a>' + (f' / <a href="../png/{row["slug"]}.png">PNG for slides</a>' if (OUT / "png" / (row["slug"] + ".png")).exists() else ' / PNG export pending') + '</li>'
         for row in records
     )
     (OUT / "html/index.html").write_text(
-        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>October 27, 2026. Diagrams 01-03 and 07 describe working code. Diagrams 04-06 describe proposals; 04 also notes the implemented subset. All examples are synthetic explanations, not live inference results. Source HTML is self-contained; PNG exports are 2560 x 1440.</p><ol>{links}</ol></body></html>',
+        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>Diagrams 01-03 and 07 describe working application code. Diagrams 04-06 describe proposals; 08-09 show experimental runners, not the application pipeline. Examples are explanatory, not measured inference results.</p><ol>{links}</ol></body></html>',
         encoding="utf-8",
     )
     print(f"Generated {len(records)} HTML diagrams and index.")
