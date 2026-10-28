@@ -49,3 +49,7 @@ Thumbs.db
 
 # Private discussion snapshots and temporary working notes
 /temp/
+
+# Local-only research data and reports
+/evals/corpus/local/
+/docs/local/

@@ -92,3 +92,24 @@ Use controlled local fixtures for deterministic failure/security scenarios, labe
 8. What are the observed latency, tool calls, and model costs?
 
 Record per-case outputs and review notes. Report numerator/denominator counts and failures. Ten cases are a development check, not a validated general accuracy claim. Budget and latency targets will be set after measuring the first working examples.
+
+## Extraction debugging
+
+`extraction_debug.py` provides offline response inspection and a one-call HTTP capture
+transport for explicitly authorized diagnostics. It records the actual request JSON,
+raw response body, and ordered processing stages. Authorization headers are excluded.
+Keep traces in the Git-ignored `docs/local/` directory and use permitted source data.
+
+Schema validity, empty extraction, exact quotation matching, and semantic review are
+separate outcomes. Invisible-character and apostrophe comparisons are diagnostic
+candidates only; they never silently repair a quotation or make it pass exact matching.
+Duplicate JSON keys, unexpected fields, and wrong types are rejected.
+
+Run the offline checks from the repository root:
+
+```powershell
+.venv/Scripts/python.exe -m unittest discover -s evals -p test_extraction_debug.py -v
+```
+
+Tests use synthetic responses and make no network calls. Live diagnosis must have a
+fixed call budget, immutable prompt/source conditions, and no automatic paid retries.

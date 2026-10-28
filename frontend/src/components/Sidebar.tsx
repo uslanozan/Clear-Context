@@ -1,5 +1,13 @@
 import { Button, Loader } from '@mantine/core';
-import { ArrowUpRight, BookOpenText, CircleHelp, Focus, Plus, RefreshCw } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BookOpenText,
+  CircleHelp,
+  Focus,
+  Plus,
+  RefreshCw,
+  FlaskConical,
+} from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import type { Investigation } from '../lib/types';
 
@@ -35,6 +43,13 @@ export function Sidebar(props: Props) {
       >
         New investigation
       </Button>
+      <NavLink
+        to="/evaluations"
+        className={({ isActive }) => `evaluation-nav ${isActive ? 'active' : ''}`}
+        onClick={props.onNavigate}
+      >
+        <FlaskConical size={16} /> Extraction review
+      </NavLink>
       <div className="sidebar-section-label">
         <span>YOUR INVESTIGATIONS</span>
         <span>{props.items.length || '—'}</span>

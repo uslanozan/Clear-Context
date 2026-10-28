@@ -73,6 +73,7 @@ Search, page extraction, and reverse-image lookup providers still need to be sel
 - [Prompt management](docs/PROMPTS.md)
 - [Architecture and evidence contract](docs/ARCHITECTURE.md)
 - [Frontend guide and design system](docs/FRONTEND.md)
+- [Research resources: claim extraction and verification](docs/RESEARCH_RESOURCES.md)
 - [Evaluation plan](evals/README.md)
 - [Initial case specifications](evals/case-specs.json)
 

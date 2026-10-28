@@ -49,3 +49,7 @@ For production, build output is `frontend/dist/`. Serve it with SPA fallback to 
 Mantine (MIT), React (MIT), Vite (MIT), TanStack Query (MIT), React Router (MIT), and Lucide (ISC) retain their upstream licenses. Source Sans 3 fonts use the SIL Open Font License; packaged font licenses remain in their installed dependencies. The current wordmark uses a Lucide icon; custom branding is deferred.
 
 The durable visual rules are in [DESIGN.md](../DESIGN.md). The official Meta and Muse assets have separate [attribution](../frontend/public/brand/README.md).
+
+## Review saved extraction runs
+
+Open **Extraction review** in the web workspace and choose the local `evals/runs` folder. The browser reads matching `run.json` and `results.jsonl` files locally; it does not upload them or start model calls. Select up to two runs and an input to inspect their recorded claims, source passages, processing ranges, and token-based cost estimates. The folder is ignored by Git and may not be present in another checkout. Reloading the page requires selecting the folder again. Extracted statements and processed ranges do not establish truth or exhaustive extraction.

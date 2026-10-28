@@ -31,11 +31,20 @@ class PromptVersions(BaseModel):
     versions: dict[str, PromptTemplate] = Field(min_length=1)
 
 
+class ExperimentalPrompt(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    system: str = Field(min_length=1)
+    few_shot_examples: list[dict[str, object]] = Field(default_factory=list)
+    missing_check: str | None = None
+
+
 class PromptCatalog(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     schema_version: Literal[1]
     prompts: dict[Literal["claim_extraction"], PromptVersions]
+    experiments: dict[str, ExperimentalPrompt] = Field(default_factory=dict)
 
 
 @dataclass(frozen=True)

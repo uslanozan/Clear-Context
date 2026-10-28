@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { EvaluationView } from './components/EvaluationView';
 import { Composer } from './components/Composer';
 import { Activity, ReportView } from './components/ReportView';
 import { Sidebar } from './components/Sidebar';
@@ -23,6 +24,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Workspace />} />
+      <Route path="/evaluations" element={<Workspace />} />
       <Route path="/investigations/:id" element={<Workspace />} />
       <Route
         path="*"
@@ -41,6 +43,7 @@ function Workspace() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const isEvaluations = location.pathname === '/evaluations';
   const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -146,7 +149,9 @@ function Workspace() {
             </button>
             <Link to="/">Workspace</Link>
             <span className="breadcrumb-divider">/</span>
-            <span>{id ? 'Investigation' : 'New investigation'}</span>
+            <span>
+              {isEvaluations ? 'Extraction review' : id ? 'Investigation' : 'New investigation'}
+            </span>
           </div>
           <div className="topbar-right">
             <button
@@ -159,7 +164,7 @@ function Workspace() {
           </div>
         </header>
         <main id="main-content" className="workspace-main">
-          {health.isError && (
+          {health.isError && !isEvaluations && (
             <Alert
               color="orange"
               title="Your investigation service is unavailable"
@@ -178,7 +183,9 @@ function Workspace() {
               </button>
             </Alert>
           )}
-          {!id ? (
+          {isEvaluations ? (
+            <EvaluationView />
+          ) : !id ? (
             <Composer
               key={location.key}
               initialText={typeof location.state?.draft === 'string' ? location.state.draft : ''}

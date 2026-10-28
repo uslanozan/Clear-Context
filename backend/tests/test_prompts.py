@@ -51,6 +51,28 @@ def test_selected_version_and_rendered_limit_affect_receipt(tmp_path):
     assert first.sha256 != second.sha256
 
 
+def test_experiment_prompts_do_not_replace_selected_live_contract(tmp_path):
+    path = write_catalog(tmp_path)
+    catalog = yaml.safe_load(path.read_text(encoding="utf-8"))
+    catalog["experiments"] = {
+        "targeted_review": {
+            "system": "Extract with the experimental schema.",
+            "missing_check": "Return only missing information.",
+            "few_shot_examples": [],
+        }
+    }
+    path.write_text(yaml.safe_dump(catalog), encoding="utf-8")
+    prompt = load_claim_extraction_prompt(
+        Settings(
+            _env_file=None,
+            prompt_catalog_path=path,
+            prompt_claim_extraction="v1",
+            meta_max_claims=3,
+        )
+    )
+    assert prompt.system == "Return at most 3 claims."
+
+
 @pytest.mark.parametrize("system", ["", "  ", "No placeholder.", "${input}", "${max_claims"])
 def test_invalid_templates_fail_before_an_investigation(tmp_path, system):
     path = write_catalog(tmp_path, system=system)

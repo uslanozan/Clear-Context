@@ -31,3 +31,12 @@ records limits and input hashes. Historical records remain readable.
 Use the same cases and budgets when comparing models or prompts. Coverage status `processed`
 means all target ranges reached a normal response, not that every claim was found.
 See [text analysis](TEXT_ANALYSIS.md) for the implemented contract and limitations.
+
+## Experimental extraction instructions
+
+The same catalog now includes an optional `experiments` mapping. Named entries hold a
+`system` instruction, synthetic `few_shot_examples`, and an optional `missing_check`.
+These use the local experiment response schema and are not selected by
+`PROMPT_CLAIM_EXTRACTION`; the live v1/v2 contracts remain separate. Local runners
+read named entries from this catalog. Experiment-local YAML files are historical
+snapshots only. The user-facing review is `docs/local/experiments/claim-extraction-bcd-v2/review.html`.
