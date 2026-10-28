@@ -186,3 +186,26 @@ need a focused query even in batch planning. These are prompt-level rules, not a
 semantic validator or a guarantee of complete, faithful output. Historical `v4`
 requests remain replayable by explicit method selection. The selected evaluation
 candidate is `v5`; no application graph integration or search execution is implied.
+
+
+## Search retrieval evaluation
+
+`search_retrieval.py` provides typed Tavily Basic request/response contracts and
+claim/need bindings for saved query plans. It does not execute HTTP requests or
+integrate search into the application graph. An explicit live runner must send
+`X-Tavily-Access-Mode: keyless`, enforce a fixed call budget and avoid automatic
+retries or paid fallback. No credentials are loaded by these helpers.
+
+Exact request hashes include endpoint, access mode, language and all request
+parameters. Identical queries share a request while retaining distinct case/need
+bindings. URL identities strip tracking parameters and fragments while preserving
+meaningful parameters; they identify repeated results, not independent sources.
+No page fetching or persistent application cache is implemented here.
+
+Record raw requests/responses and retrieval times in ignored local experiment
+folders. Provider publication dates remain optional, unverified strings. Search
+scores express provider relevance, never factual confidence; an empty or irrelevant
+result is not a false-claim verdict. Human snippet review does not verify full pages.
+
+Run offline checks with
+`.venv/Scripts/python.exe -m pytest evals/test_search_retrieval.py -q`.
