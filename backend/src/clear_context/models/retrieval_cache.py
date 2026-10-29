@@ -115,3 +115,26 @@ events = Table(
     Column("kind", String, nullable=False),
     Column("payload", Text, nullable=False),
 )
+
+selections = Table(
+    "research_selections",
+    metadata,
+    Column("id", String, primary_key=True),
+    Column("case_id", String, ForeignKey("research_cases.id"), nullable=False),
+    Column("page_id", String, ForeignKey("research_pages.id"), nullable=False),
+    Column("method", String, nullable=False),
+    Column("model", String, nullable=False),
+    Column("prompt_sha256", String, nullable=False),
+    Column("request_key", String, nullable=False),
+    Column("result", Text, nullable=False),
+    Column("created_at", Float, nullable=False),
+)
+selection_passages = Table(
+    "research_selection_passages",
+    metadata,
+    Column("selection_id", String, ForeignKey("research_selections.id"), primary_key=True),
+    Column("passage_id", String, ForeignKey("research_passages.id"), primary_key=True),
+    Column("case_id", String, primary_key=True),
+    Column("need_id", String, primary_key=True),
+    ForeignKeyConstraint(["case_id", "need_id"], ["research_needs.case_id", "research_needs.id"]),
+)

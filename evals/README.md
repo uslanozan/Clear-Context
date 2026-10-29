@@ -279,3 +279,57 @@ Recorded page snapshots, prewritten case expectations, outgoing requests, provid
 responses, usage and Turkish HTML assessment stay in ignored local directories.
 Run offline checks with
 `.venv/Scripts/python.exe -m pytest evals/test_passage_selection.py -q`.
+
+
+## Concurrent source-bound selection
+
+`config/passage_selectors.yaml` selects the allowlisted `full_page_v1` profile.
+Its prompt stays in `config/prompts.yaml`; the research task's model follows the
+existing `MODEL_RESEARCH` / `MODEL_DEFAULT` selection. The current defaults allow
+two simultaneous requests and four model calls per service instance. Oversized
+pages return `page_too_large`; there is no silent truncation or implicit chunking.
+
+`services/passage_selection.py` groups repeated case/page jobs and evaluates all
+associated planned needs in one request. It validates all associations before
+inference, preserves source identity when requests finish out of order, and caches
+valid outputs by complete request and page snapshot. Unknown paragraph IDs or
+inconsistent selection output are rejected. Failed requests stop queued live work;
+already active requests may finish within the configured bound. No retry occurs.
+
+The isolated workspace now also stores selection receipts and their passage/need
+links. Receipts distinguish one model output from historical term-window candidates.
+Selected paragraph text is copied using validated original offsets and persisted
+atomically with its links. A receipt's `relevant` status is a candidate assessment,
+not a factual verdict, source credibility score or guarantee of complete evidence.
+
+Run against an existing workspace and an explicit jobs JSON file:
+
+```powershell
+.venv/Scripts/python.exe evals/select_passages.py `
+  --workspace .local/retrieval/parallel-selection.sqlite `
+  --jobs docs/local/experiments/passage-selection-parallel/jobs.json `
+  --output docs/local/experiments/selection-replay
+```
+
+The default is cache-only with zero model calls. Each job specifies `case_id`,
+`page_id` and `need_ids`. A separate `--allow-live-selection` flag enables bounded
+Meta calls, requiring the existing paid-call opt-in and backend key. It does not
+modify `.env` or the application's default mode. Use a new output directory for
+each run. This standalone workflow remains separate from the app graph and UI.
+
+
+Passage coverage experiment: `full_page_v2` is opt-in and adds `direct`, `partial`,
+and `none` coverage plus missing components. Coverage describes relevance to the
+research need, not support, contradiction, credibility, or truth. The existing
+`full_page_v1` remains selected: a local four-page trial exposed a missing sentence
+continuation in v2. Both contracts preserve source paragraph IDs and exact offsets.
+Concurrency and the per-run model-call budget default to ten. Set `max_concurrency: null` in an experiment catalog
+to start the finite batch together, still bounded by `max_model_calls`. This is a
+scheduling option, not a provider concurrency guarantee. The provider records only allowlisted
+rate-limit headers, without credentials or cookies. See Meta's
+[rate-limit documentation](https://dev.meta.ai/docs/pricing-rate-limits).
+
+All-at-once evaluations retain response bodies before parsing in the local output
+`raw-responses.json`, including error or incomplete responses. Rate-limit metadata
+uses an explicit header allowlist; request credentials are never recorded. A null
+concurrency value does not remove the total call budget, timeout or no-retry policy.

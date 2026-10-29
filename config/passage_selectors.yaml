@@ -1,0 +1,22 @@
+schema_version: 1
+selected: full_page_v1
+selectors:
+  full_page_v1:
+    implementation: full_page
+    prompt: passage_selection_v1
+    status: provisional
+  full_page_v2:
+    implementation: full_page
+    prompt: passage_selection_v2
+    response_contract: coverage_v2
+    status: provisional
+limits:
+  # null starts the finite batch together, within max_model_calls.
+  max_concurrency: 10
+  max_model_calls: 10
+  max_page_chars: 40000
+  paragraph_max_chars: 1000
+  max_completion_tokens: 4096
+  effort: low
+  timeout_seconds: 100
+  cache_ttl_seconds: 86400

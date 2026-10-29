@@ -8,7 +8,9 @@ Clear Context is a multimodal research agent being built for the Meta Global AI 
 
 A separate evaluation workspace now replays saved query plans, shares source URLs,
 reads selected pages through Tavily keyless, and preserves claim/need/passage links
-with bounded calls and TTL caches. This service is not connected to the application
+with bounded calls and TTL caches. Full-page Muse paragraph selection now supports
+ten concurrent requests by default and persists source-bound selection receipts. This service
+is not connected to the application
 graph or UI and does not produce factual verdicts. See [retrieval evaluation](evals/README.md#retrieval-workspace-evaluation-runner).
 
 V2 extraction now partitions long text under bounded character budgets, carries source

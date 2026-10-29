@@ -20,6 +20,8 @@ from clear_context.models.retrieval_cache import (
     passages,
     queries,
     query_needs,
+    selection_passages,
+    selections,
     sources,
 )
 from clear_context.schemas.retrieval import SavedResearchPlan, canonical_source_url, parse_response
@@ -219,6 +221,84 @@ class RetrievalRepository:
                 )
         return passage_id
 
+    def check_selection_source(self, case_id, page_id, need_ids):
+        page = self.page(page_id)
+        plan = self.plan(case_id)
+        known = {n.id for n in plan.needs if n.status == "planned"}
+        if not need_ids or len(need_ids) != len(set(need_ids)) or not set(need_ids) <= known:
+            raise ValueError("Selection must reference existing planned needs.")
+        with self.engine.connect() as conn:
+            discovered = conn.scalar(
+                select(hits.c.source_id).where(
+                    hits.c.case_id == case_id, hits.c.source_id == page["source_id"]
+                )
+            )
+        if discovered is None:
+            raise ValueError("Selected source was not discovered in this case.")
+        return page, plan
+
+    def save_selection(
+        self, case_id, page_id, method, model, prompt_sha256, request_key, output, units, created_at
+    ):
+        need_ids = [s.need_id for s in output.selections]
+        page, _ = self.check_selection_source(case_id, page_id, need_ids)
+        bindings = []
+        for selection in output.selections:
+            for paragraph_id in selection.paragraph_ids:
+                unit = units[paragraph_id]
+                if (
+                    not 0 <= unit.start < unit.end <= len(page["content"])
+                    or page["content"][unit.start : unit.end] != unit.text
+                ):
+                    raise ValueError("Selected paragraph differs from its page snapshot.")
+                passage_id = identity("e_", encode([page_id, unit.start, unit.end]))
+                bindings.append((selection.need_id, passage_id, unit))
+        selection_id = identity("sel_", encode([case_id, page_id, request_key, float(created_at)]))
+        with self.engine.begin() as conn:
+            conn.execute(
+                insert(selections)
+                .values(
+                    id=selection_id,
+                    case_id=case_id,
+                    page_id=page_id,
+                    method=method,
+                    model=model,
+                    prompt_sha256=prompt_sha256,
+                    request_key=request_key,
+                    result=encode(output.model_dump()),
+                    created_at=created_at,
+                )
+                .on_conflict_do_nothing()
+            )
+            for need_id, passage_id, unit in bindings:
+                conn.execute(
+                    insert(passages)
+                    .values(
+                        id=passage_id,
+                        page_id=page_id,
+                        start=unit.start,
+                        end=unit.end,
+                        quote=unit.text,
+                    )
+                    .on_conflict_do_nothing()
+                )
+                conn.execute(
+                    insert(passage_needs)
+                    .values(passage_id=passage_id, case_id=case_id, need_id=need_id)
+                    .on_conflict_do_nothing()
+                )
+                conn.execute(
+                    insert(selection_passages)
+                    .values(
+                        selection_id=selection_id,
+                        passage_id=passage_id,
+                        case_id=case_id,
+                        need_id=need_id,
+                    )
+                    .on_conflict_do_nothing()
+                )
+        return selection_id
+
     def log(self, event_kind, at, **payload):
         with self.engine.begin() as conn:
             conn.execute(insert(events).values(kind=event_kind, at=at, payload=encode(payload)))
@@ -238,6 +318,8 @@ class RetrievalRepository:
                     pages,
                     passages,
                     passage_needs,
+                    selections,
+                    selection_passages,
                     events,
                 )
             }
