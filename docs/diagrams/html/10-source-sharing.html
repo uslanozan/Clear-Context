@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shared sources | Clear Context</title><style>body{margin:0;padding:24px;background:#f8f7f4;color:#252c28;font:18px/1.6 'Source Sans 3',sans-serif}main{max-width:1600px;margin:auto}svg{width:100%;height:auto}a{color:#a84315}code{font-size:15px}</style></head><body><main><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="sharing-title sharing-description">
+<title id="sharing-title">Two queries share a source without losing their needs</title>
+<desc id="sharing-description">Synthetic example. Q1 references need n1 and Q2 references need n2; both needs reference C1. They discover one URL S1. One cached page P1 supplies a literal candidate E1 that may be linked for review to both needs. No factual verdict or application integration is implied.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#62695f"/></marker></defs>
+<rect width="1600" height="900" fill="#f8f7f4"/>
+<g font-family="Source Sans 3, sans-serif" fill="#252c28">
+<text x="60" y="76" font-size="36" font-weight="600">Share the page, preserve every research link</text>
+<text x="60" y="122" font-size="22" fill="#62695f">Implemented research service and evaluation runner · Not connected to the app graph</text>
+<g fill="none" stroke="#62695f" stroke-width="2" marker-end="url(#arrow)"><path d="M330 266H380V369H430"/><path d="M330 471H380V369H430"/>
+<path d="M700 369H800"/><path d="M1070 369H1170"/></g><g><rect x="60" y="200" width="270" height="132" rx="8" fill="white" stroke="#bfc0c0" stroke-width="2"/>
+<text x="82" y="236" font-size="24" font-weight="600">Q1 · Founding date</text>
+<text x="82" y="272" font-size="19">Need n1 → claim C1</text>
+<text x="82" y="304" font-size="19" fill="#62695f">One search request</text></g><g><rect x="60" y="405" width="270" height="132" rx="8" fill="white" stroke="#bfc0c0" stroke-width="2"/>
+<text x="82" y="441" font-size="24" font-weight="600">Q2 · Faculty history</text>
+<text x="82" y="477" font-size="19">Need n2 → claim C1</text>
+<text x="82" y="509" font-size="19" fill="#62695f">A different query</text></g><g><rect x="430" y="303" width="270" height="132" rx="8" fill="white" stroke="#a84315" stroke-width="2"/>
+<text x="452" y="339" font-size="24" font-weight="600">Source S1</text>
+<text x="452" y="375" font-size="19">Same canonical URL</text>
+<text x="452" y="407" font-size="19" fill="#62695f">Keep both query hits</text></g><g><rect x="800" y="303" width="270" height="132" rx="8" fill="white" stroke="#bfc0c0" stroke-width="2"/>
+<text x="822" y="339" font-size="24" font-weight="600">Page P1</text>
+<text x="822" y="375" font-size="19">Read once; reuse cache</text>
+<text x="822" y="407" font-size="19" fill="#62695f">Keep dated snapshots</text></g><g><rect x="1170" y="303" width="270" height="132" rx="8" fill="white" stroke="#bfc0c0" stroke-width="2"/>
+<text x="1192" y="339" font-size="24" font-weight="600">Passage E1</text>
+<text x="1192" y="375" font-size="19">Exact text + offsets</text>
+<text x="1192" y="407" font-size="19" fill="#62695f">Candidate, not a verdict</text></g>
+<text x="60" y="642" font-size="25" font-weight="600">The relationships are records, not guessed similarities</text>
+<text x="60" y="694" font-size="22">Q1 → n1 → C1     ·     Q2 → n2 → C1     ·     E1 → n1, n2 for review</text>
+<text x="60" y="743" font-size="22" fill="#62695f">Case-scoped IDs + foreign keys prevent cross-case collisions and orphan links</text>
+<text x="60" y="801" font-size="20" fill="#62695f">Source discovery is shared; each hit retains its own rank, snippet and retrieval time</text>
+<text x="60" y="849" font-size="18" fill="#62695f">Synthetic illustration · Existing planned needs only · No automatic truth judgment</text>
+</g></svg><p>Arrows show data movement. The bottom row shows the stored identity links. Candidate passages require semantic review; exact offsets alone do not prove support.</p><p>Code: <code>backend/src/clear_context/services/retrieval.py</code> and <code>backend/src/clear_context/repositories/retrieval.py</code></p></main></body></html>

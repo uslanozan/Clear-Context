@@ -67,4 +67,4 @@ if __name__ == "__main__":
     for folder in ["svg", "png"]:
         (OUT / folder).mkdir(exist_ok=True)
     with ThreadPoolExecutor(max_workers=2) as pool:
-        list(pool.map(export, sorted((OUT / "html").glob("0*.html"))))
+        list(pool.map(export, sorted((OUT / "html").glob("[0-9][0-9]-*.html"))))

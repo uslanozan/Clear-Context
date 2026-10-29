@@ -1,0 +1,8 @@
+# Evaluation retrieval limits. No credentials or automatic paid fallback.
+search_ttl_seconds: 21600
+page_ttl_seconds: 86400
+failure_ttl_seconds: 300
+max_search_calls: 30
+max_extract_calls: 6
+max_followup_queries: 2
+timeout_seconds: 45

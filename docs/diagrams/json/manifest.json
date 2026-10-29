@@ -52,5 +52,11 @@
     "title": "Method D: direct claim extraction",
     "status": "EXPERIMENTAL",
     "notes": "Experimental D sends a direct schema-constrained request to Meta. Rules are in system, and source with supplied context is in user. The model writes statements and group labels; Pydantic and literal matching validate structure and provenance. Empty arrays may be structurally valid. This is an experimental runner, not the deployed application pipeline."
+  },
+  {
+    "slug": "10-source-sharing",
+    "title": "Shared sources and preserved research links",
+    "status": "EVALUATION SERVICE",
+    "notes": "Two saved queries share a source while keeping their need and claim links. Literal candidate passages are not factual verdicts. Not connected to the application graph."
   }
 ]

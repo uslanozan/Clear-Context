@@ -6,6 +6,11 @@ Clear Context is a multimodal research agent being built for the Meta Global AI 
 
 **Status: local API and LangGraph workflow implemented, with mock mode by default and an opt-in Meta adapter for text claim extraction. The responsive web workspace supports text submission, saved history, progress, and claim reports. Source retrieval, evidence-based judging, server-side media analysis, and the Chrome extension are not implemented yet. Local image/video attachment previews are available.**
 
+A separate evaluation workspace now replays saved query plans, shares source URLs,
+reads selected pages through Tavily keyless, and preserves claim/need/passage links
+with bounded calls and TTL caches. This service is not connected to the application
+graph or UI and does not produce factual verdicts. See [retrieval evaluation](evals/README.md#retrieval-workspace-evaluation-runner).
+
 V2 extraction now partitions long text under bounded character budgets, carries source
 context, and saves exact quote positions separately from interpreted statements. There is
 no document-wide eight-claim cap. Budget or validation gaps appear as partial extraction;

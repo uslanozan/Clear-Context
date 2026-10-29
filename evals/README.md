@@ -209,3 +209,53 @@ result is not a false-claim verdict. Human snippet review does not verify full p
 
 Run offline checks with
 `.venv/Scripts/python.exe -m pytest evals/test_search_retrieval.py -q`.
+
+## Retrieval workspace (evaluation runner)
+
+Reusable retrieval contracts, a keyless transport and a bounded service are now
+available under `schemas/retrieval.py`, `providers/tavily.py` and
+`services/retrieval.py`. They are not wired into the investigation API or graph.
+`repositories/retrieval.py` uses SQLAlchemy and a separate, rebuildable SQLite
+workspace with `research_*` tables. Do not point it at the application database.
+There is no application database migration for this isolated evaluation store.
+
+A plan has immutable, case-scoped claim/need/query IDs. Composite foreign keys
+preserve query-to-need and need-to-claim edges. A canonical URL has one shared
+source ID; every query keeps its own source hit, rank, snippet and provider date.
+Successful search and page responses use separate TTL caches. An extracted page
+snapshot retains its own ID and timestamp; existing passages keep their old page
+when a later read refreshes the cache. Quote text must exactly match its recorded
+character offsets. Passage/need links are candidates, not support or truth labels.
+
+`config/retrieval.yaml` configures per-session call limits and cache lifetimes.
+Unavailable pages are negatively cached for five minutes by default. Rate limits,
+invalid responses and transport failures halt new live calls in that session;
+there are no automatic retries, key discovery, paid fallback or local URL fetching.
+Follow-up registration requires existing planned needs, an explicit gap and reason,
+and a separate count limit. Query rewriting, semantic relevance detection and
+judging are not automatically performed by this service.
+
+Replay a private recorded pilot without live search or extraction:
+
+```powershell
+.venv/Scripts/python.exe evals/retrieval_workspace.py `
+  --recordings docs/local/experiments/tavily-keyless-pilot `
+  --selection docs/local/experiments/retrieval-workspace/selection.json `
+  --workspace .local/retrieval/offline.sqlite `
+  --output docs/local/experiments/retrieval-workspace-offline
+```
+
+These local inputs are not distributed fixtures. The recordings folder must contain
+`cases.json`, `plans.json`, `queries.json` and `results.json` from the saved-plan
+search pilot. Selection rows contain `label`, `case_id`, `query_id`, `need_ids`,
+`url` and optional literal `anchors`. A selected URL must have been discovered in
+the case. The runner always disables new search calls. Without
+`--allow-live-extract`, only unexpired page-cache reads are permitted. This flag
+explicitly allows bounded keyless Extract calls; never use it for offline replay.
+Choose a new output directory to preserve historical reports.
+
+Term windows are a deterministic inspection aid. A matching word may be in a menu,
+title or unrelated passage. This does not establish relevance, semantic coverage
+or factual support. Record empty/failed extraction separately from false claims.
+The full successful provider JSON is kept in the workspace cache; failure events
+record error codes, not complete raw failure bodies.
