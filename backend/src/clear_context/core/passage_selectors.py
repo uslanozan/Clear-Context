@@ -28,6 +28,8 @@ class SelectionLimits(BaseModel):
     max_model_calls: int = Field(default=10, ge=0, le=100)
     max_page_chars: int = Field(default=40000, ge=100, le=200000)
     paragraph_max_chars: int = Field(default=1000, ge=50, le=4000)
+    context_before_chars: int = Field(default=500, ge=0, le=4000)
+    context_after_chars: int = Field(default=500, ge=0, le=4000)
     max_completion_tokens: int = Field(default=4096, ge=256, le=8192)
     effort: Literal["minimal", "low", "medium", "high"] = "low"
     timeout_seconds: float = Field(default=100, gt=0, le=120)

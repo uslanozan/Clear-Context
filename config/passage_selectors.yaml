@@ -16,6 +16,8 @@ limits:
   max_model_calls: 10
   max_page_chars: 40000
   paragraph_max_chars: 1000
+  context_before_chars: 500
+  context_after_chars: 500
   max_completion_tokens: 4096
   effort: low
   timeout_seconds: 100

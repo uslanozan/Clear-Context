@@ -374,3 +374,68 @@ def test_null_concurrency_still_obeys_total_call_budget(workspace):
     rows = asyncio.run(service.select_pages([SelectionJob("case", p, ("n1",)) for p in pages]))
     assert service.calls == 3
     assert sum(r["status"] == "call_budget_exhausted" for r in rows) == 4
+
+
+def test_context_keeps_raw_selection_and_new_policy_reuses_model_cache(workspace):
+    repo, _ = workspace
+    page = repo.save_page(
+        identity("s_", "https://example.org/a"),
+        "The report says " + "a detail " * 10 + "but this is uncertain. Another fact.",
+        1001,
+    )
+    service = make_service(repo, completion, paragraph_max_chars=50)
+    job = SelectionJob("case", page, ("n1",))
+    first = asyncio.run(service.select_pages([job]))[0]
+    assert first["output"]["selections"][0]["paragraph_ids"] == ["P001"]
+    original_quote = repo.export()["research_passages"][0]["quote"]
+    assert len(first["context_windows"][0]["quote"]) > len(original_quote)
+    assert "uncertain" in first["context_windows"][0]["quote"]
+    receipt = json.loads(repo.export()["research_selections"][0]["result"])
+    assert receipt["context_windows"] == first["context_windows"]
+    replay = make_service(
+        repo,
+        lambda _: pytest.fail("Model cache must be reused"),
+        paragraph_max_chars=50,
+        context_after_chars=0,
+    )
+    second = asyncio.run(replay.select_pages([job]))[0]
+    assert replay.calls == 0 and second["cached"]
+    assert second["context_windows"][0]["after_truncated"]
+    assert first["selection_id"] != second["selection_id"]
+
+
+def test_repository_rejects_context_with_modified_source_text(workspace):
+    from dataclasses import replace
+
+    from clear_context.schemas.passage_selection import NeedSelection, Selections
+    from clear_context.services.paragraphs import paragraphs
+    from clear_context.services.passage_context import source_context
+
+    repo, pages = workspace
+    page = repo.page(pages[0])
+    units = paragraphs(page["content"])
+    context = source_context(page["content"], units[0], "n1", 500, 500)
+    output = Selections(
+        selections=[
+            NeedSelection(
+                need_id="n1",
+                status="relevant",
+                paragraph_ids=["P001"],
+                reason="Source text",
+            )
+        ]
+    )
+    with pytest.raises(ValueError, match="Context differs"):
+        repo.save_selection(
+            "case",
+            pages[0],
+            "full_page_v1",
+            "model",
+            "prompt",
+            "key",
+            output,
+            {u.id: u for u in units},
+            1000,
+            context_windows=[replace(context, quote="Altered source quote")],
+        )
+    assert not repo.export()["research_selections"]

@@ -20,12 +20,12 @@
 <text x="822" y="339" font-size="24" font-weight="600">Page P1</text>
 <text x="822" y="375" font-size="19">Read once; reuse cache</text>
 <text x="822" y="407" font-size="19" fill="#62695f">Keep dated snapshots</text></g><g><rect x="1170" y="303" width="270" height="132" rx="8" fill="white" stroke="#bfc0c0" stroke-width="2"/>
-<text x="1192" y="339" font-size="24" font-weight="600">Passage E1</text>
-<text x="1192" y="375" font-size="19">Muse selects paragraph IDs</text>
-<text x="1192" y="407" font-size="19" fill="#62695f">Candidate, not a verdict</text></g>
+<text x="1192" y="339" font-size="24" font-weight="600">E1 + source context</text>
+<text x="1192" y="375" font-size="19">Original IDs and quote</text>
+<text x="1192" y="407" font-size="19" fill="#62695f">Separate source offsets</text></g>
 <text x="60" y="642" font-size="25" font-weight="600">The relationships are records, not guessed similarities</text>
 <text x="60" y="694" font-size="22">Q1 → n1 → C1     ·     Q2 → n2 → C1     ·     E1 → n1, n2 for review</text>
-<text x="60" y="743" font-size="22" fill="#62695f">Case-scoped IDs + foreign keys prevent cross-case collisions and orphan links</text>
+<text x="60" y="743" font-size="22" fill="#62695f">Source context restores cut sentences: up to 500 characters per side, with truncation flags</text>
 <text x="60" y="801" font-size="20" fill="#62695f">Default: ten model calls in flight; each hit keeps its rank, snippet and retrieval time</text>
 <text x="60" y="849" font-size="18" fill="#62695f">Synthetic illustration · Existing planned needs only · No automatic truth judgment</text>
-</g></svg><p>Arrows show data movement. The bottom row shows the stored identity links. Candidate passages require semantic review; exact offsets alone do not prove support.</p><p>Code: <code>backend/src/clear_context/services/passage_selection.py</code> and <code>backend/src/clear_context/repositories/retrieval.py</code></p></main></body></html>
+</g></svg><p>Arrows show data movement. The bottom row shows the stored identity links. The selected quote remains intact; separate context windows restore artificial sentence cuts from the same saved page without another model or source request. Incomplete bounded context is flagged. Candidate passages and added context require semantic review; exact offsets alone do not prove support.</p><p>Code: <code>backend/src/clear_context/services/passage_selection.py</code>, <code>backend/src/clear_context/services/passage_context.py</code> and <code>backend/src/clear_context/repositories/retrieval.py</code></p></main></body></html>

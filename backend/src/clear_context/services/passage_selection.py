@@ -3,7 +3,7 @@
 import asyncio
 import json
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from hashlib import sha256
 from time import perf_counter
 
@@ -17,6 +17,7 @@ from clear_context.providers.meta_passages import (
 from clear_context.repositories.retrieval import RetrievalRepository, encode, identity
 from clear_context.schemas.passage_selection import validate
 from clear_context.services.paragraphs import paragraphs
+from clear_context.services.passage_context import source_context
 
 
 @dataclass(frozen=True)
@@ -143,6 +144,19 @@ class PassageSelectionService:
                         received_at = self.clock()
                     content = body["choices"][0]["message"]["content"]
                     output = validate(content, allowed, self.profile.response_contract)
+                    page = self.repository.page(job.page_id)
+                    units_by_id = {u.id: u for u in units}
+                    contexts = [
+                        source_context(
+                            page["content"],
+                            units_by_id[pid],
+                            selection.need_id,
+                            self.limits.context_before_chars,
+                            self.limits.context_after_chars,
+                        )
+                        for selection in output.selections
+                        for pid in selection.paragraph_ids
+                    ]
                     if not row["cached"]:
                         self.repository.save_cache(
                             "selection", key, body, received_at, self.limits.cache_ttl_seconds
@@ -155,8 +169,9 @@ class PassageSelectionService:
                         sha256(self.system.encode()).hexdigest(),
                         key,
                         output,
-                        {u.id: u for u in units},
+                        units_by_id,
                         received_at,
+                        context_windows=contexts,
                     )
                     row.update(
                         status="selected"
@@ -164,6 +179,7 @@ class PassageSelectionService:
                         else "not_found",
                         selection_id=selection_id,
                         output=output.model_dump(),
+                        context_windows=[asdict(context) for context in contexts],
                         usage=body.get("usage"),
                     )
                     self.repository.log(

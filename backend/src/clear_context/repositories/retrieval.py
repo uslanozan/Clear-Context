@@ -1,6 +1,7 @@
 """A separate SQLite research workspace; never modifies the application database."""
 
 import json
+from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 
@@ -238,7 +239,18 @@ class RetrievalRepository:
         return page, plan
 
     def save_selection(
-        self, case_id, page_id, method, model, prompt_sha256, request_key, output, units, created_at
+        self,
+        case_id,
+        page_id,
+        method,
+        model,
+        prompt_sha256,
+        request_key,
+        output,
+        units,
+        created_at,
+        *,
+        context_windows=None,
     ):
         need_ids = [s.need_id for s in output.selections]
         page, _ = self.check_selection_source(case_id, page_id, need_ids)
@@ -253,7 +265,32 @@ class RetrievalRepository:
                     raise ValueError("Selected paragraph differs from its page snapshot.")
                 passage_id = identity("e_", encode([page_id, unit.start, unit.end]))
                 bindings.append((selection.need_id, passage_id, unit))
-        selection_id = identity("sel_", encode([case_id, page_id, request_key, float(created_at)]))
+        result = output.model_dump()
+        if context_windows is not None:
+            selected = {(s.need_id, pid) for s in output.selections for pid in s.paragraph_ids}
+            if (
+                len(context_windows) != len(selected)
+                or {(c.need_id, c.paragraph_id) for c in context_windows} != selected
+            ):
+                raise ValueError("Every selected passage needs exactly one context window.")
+            for context in context_windows:
+                unit = units[context.paragraph_id]
+                if not (
+                    0
+                    <= context.start
+                    <= unit.start
+                    < unit.end
+                    <= context.end
+                    <= len(page["content"])
+                    and context.selected_start == unit.start
+                    and context.selected_end == unit.end
+                    and page["content"][context.start : context.end] == context.quote
+                ):
+                    raise ValueError("Context differs from its selected source range.")
+            result["context_windows"] = [asdict(c) for c in context_windows]
+        selection_id = identity(
+            "sel_", encode([case_id, page_id, request_key, float(created_at), result])
+        )
         with self.engine.begin() as conn:
             conn.execute(
                 insert(selections)
@@ -265,7 +302,7 @@ class RetrievalRepository:
                     model=model,
                     prompt_sha256=prompt_sha256,
                     request_key=request_key,
-                    result=encode(output.model_dump()),
+                    result=encode(result),
                     created_at=created_at,
                 )
                 .on_conflict_do_nothing()

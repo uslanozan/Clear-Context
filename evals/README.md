@@ -333,3 +333,28 @@ All-at-once evaluations retain response bodies before parsing in the local outpu
 `raw-responses.json`, including error or incomplete responses. Rate-limit metadata
 uses an explicit header allowlist; request credentials are never recorded. A null
 concurrency value does not remove the total call budget, timeout or no-retry policy.
+
+
+### Selected passages and source context
+
+The selected `full_page_v1` profile retains `passage_selection_v1`. A candidate
+`passage_selection_v1_refined` in the central prompt catalog asks for descriptive
+relevance reasons without factual verdicts and rejects distance-to-adjacency
+inference. Targeted checks exposed more conservative partial-component selection,
+so this candidate has not replaced the selected prompt. Historical V1 and V2
+entries remain available for replay. Selection reasons are never factual verdicts.
+
+Each selected paragraph retains its original ID, exact quote, offsets and need link.
+A separate `context_windows` field in the result and persisted selection receipt
+restores a sentence prefix or continuation at artificial cuts inside a source line.
+`context_before_chars` and `context_after_chars` default to 500 each. Complete
+sentences are not padded, neighboring source lines are not automatically appended,
+and added context is not another model selection or an independently verified fact.
+
+Context windows use only the saved page snapshot; no additional source or model
+request is made. The sentence-boundary heuristic handles terminal punctuation but
+is not a linguistic parser. Abbreviations and malformed source text can remain
+ambiguous. A continuation exceeding either character budget is marked with
+`before_truncated` or `after_truncated`; those flags must remain visible to a later
+judge. Changing only the context policy reuses the model-response cache while
+creating a distinct selection receipt. Source trust and claim judging remain pending.

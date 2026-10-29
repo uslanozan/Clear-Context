@@ -27,7 +27,7 @@ def main():
     )
     nodes += node(800, 303, "Page P1", "Read once; reuse cache", "Keep dated snapshots")
     nodes += node(
-        1170, 303, "Passage E1", "Muse selects paragraph IDs", "Candidate, not a verdict"
+        1170, 303, "E1 + source context", "Original IDs and quote", "Separate source offsets"
     )
     arrows = """<path d="M330 266H380V369H430"/><path d="M330 471H380V369H430"/>
 <path d="M700 369H800"/><path d="M1070 369H1170"/>"""
@@ -42,7 +42,7 @@ def main():
 <g fill="none" stroke="{MUTED}" stroke-width="2" marker-end="url(#arrow)">{arrows}</g>{nodes}
 <text x="60" y="642" font-size="25" font-weight="600">The relationships are records, not guessed similarities</text>
 <text x="60" y="694" font-size="22">Q1 → n1 → C1     ·     Q2 → n2 → C1     ·     E1 → n1, n2 for review</text>
-<text x="60" y="743" font-size="22" fill="{MUTED}">Case-scoped IDs + foreign keys prevent cross-case collisions and orphan links</text>
+<text x="60" y="743" font-size="22" fill="{MUTED}">Source context restores cut sentences: up to 500 characters per side, with truncation flags</text>
 <text x="60" y="801" font-size="20" fill="{MUTED}">Default: ten model calls in flight; each hit keeps its rank, snippet and retrieval time</text>
 <text x="60" y="849" font-size="18" fill="{MUTED}">Synthetic illustration · Existing planned needs only · No automatic truth judgment</text>
 </g></svg>'''
@@ -50,7 +50,7 @@ def main():
     page = (
         """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Shared sources | Clear Context</title><style>body{margin:0;padding:24px;background:#f8f7f4;color:#252c28;font:18px/1.6 'Source Sans 3',sans-serif}main{max-width:1600px;margin:auto}svg{width:100%;height:auto}a{color:#a84315}code{font-size:15px}</style></head><body><main>"""
         + svg
-        + """<p>Arrows show data movement. The bottom row shows the stored identity links. Candidate passages require semantic review; exact offsets alone do not prove support.</p><p>Code: <code>backend/src/clear_context/services/passage_selection.py</code> and <code>backend/src/clear_context/repositories/retrieval.py</code></p></main></body></html>"""
+        + """<p>Arrows show data movement. The bottom row shows the stored identity links. The selected quote remains intact; separate context windows restore artificial sentence cuts from the same saved page without another model or source request. Incomplete bounded context is flagged. Candidate passages and added context require semantic review; exact offsets alone do not prove support.</p><p>Code: <code>backend/src/clear_context/services/passage_selection.py</code>, <code>backend/src/clear_context/services/passage_context.py</code> and <code>backend/src/clear_context/repositories/retrieval.py</code></p></main></body></html>"""
     )
     (OUT / "html/10-source-sharing.html").write_text(page, encoding="utf-8")
 
