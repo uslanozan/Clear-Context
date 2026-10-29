@@ -259,3 +259,23 @@ title or unrelated passage. This does not establish relevance, semantic coverage
 or factual support. Record empty/failed extraction separately from false claims.
 The full successful provider JSON is kept in the workspace cache; failure events
 record error codes, not complete raw failure bodies.
+
+
+## Passage selection comparison
+
+`passage_selection.py` preserves source character offsets while splitting downloaded
+text into bounded line/paragraph units. It exposes full-page candidates and a
+BM25 top-three-per-need candidate baseline with neighboring context. Unicode token
+matching has no translation or stemming. Ranking uses the neutral need description,
+not the alleged claim value. This is an evaluation helper, not application wiring.
+
+The central `experiments.passage_selection_v1` prompt asks Muse to select existing
+paragraph IDs for every need. Validators reject unknown IDs, missing or duplicate
+needs and status/list inconsistencies. These checks do not establish relevance or
+truth. Compare candidate omission separately from the model's selection mistakes;
+reranking cannot recover passages that the initial filter removed.
+
+Recorded page snapshots, prewritten case expectations, outgoing requests, provider
+responses, usage and Turkish HTML assessment stay in ignored local directories.
+Run offline checks with
+`.venv/Scripts/python.exe -m pytest evals/test_passage_selection.py -q`.
