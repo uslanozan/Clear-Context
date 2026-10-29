@@ -7,6 +7,25 @@ from pydantic import BaseModel, ConfigDict, Field
 from clear_context.schemas.retrieval import ClaimReference, ResearchNeed
 from clear_context.schemas.source_time import PublicationContext
 
+EvidenceRelation = Literal["supports", "contradicts", "insufficient"]
+EvidenceCoverage = Literal["complete", "partial", "none"]
+NeedStatus = Literal["supported", "contradicted", "mixed", "insufficient"]
+EvidenceRelevance = Literal["relevant", "irrelevant", "uncertain"]
+EvidenceBasis = Literal["direct", "inference", "none"]
+ConflictType = Literal["none", "same_component", "different_components", "unclear"]
+JudgmentExecutionStatus = Literal[
+    "assessed",
+    "invalid_judgment",
+    "invalid_model_response",
+    "model_output_truncated",
+    "transport_error",
+    "rate_limited",
+    "model_request_failed",
+    "not_run_after_failure",
+    "call_budget_exhausted",
+    "live_judging_disabled",
+]
+
 
 class EvidenceContext(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
@@ -47,8 +66,8 @@ class SourceExcerpt(BaseModel):
 class EvidenceAssessment(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     evidence_id: str
-    relation: Literal["supports", "contradicts", "insufficient"]
-    coverage: Literal["complete", "partial", "none"]
+    relation: EvidenceRelation
+    coverage: EvidenceCoverage
     explanation: str = Field(min_length=1, max_length=600)
     excerpts: list[SourceExcerpt] = Field(max_length=5)
 
@@ -68,7 +87,7 @@ class JudgmentResponse(BaseModel):
 
 class CoverageSummary(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    coverage: Literal["complete", "partial", "none"]
+    coverage: EvidenceCoverage
     evidence_ids: list[str]
     explanation: str = Field(min_length=1, max_length=600)
 
@@ -120,6 +139,25 @@ class CompactJudgmentResponse(BaseModel):
     assessments: list[CompactNeedAssessment]
 
 
+class RelevanceEvidenceAssessment(CompactEvidenceAssessment):
+    relevance: EvidenceRelevance
+    basis: EvidenceBasis
+
+
+class RelevanceNeedAssessment(ReconciledNeedAssessment):
+    evidence_assessments: list[RelevanceEvidenceAssessment]
+    coverage_summary: CompactCoverageSummary
+    time_basis: CompactTemporalBasis
+    explanation: str = Field(min_length=1, max_length=240)
+    scope_note: str = Field(min_length=1, max_length=240)
+    conflict_type: ConflictType
+
+
+class RelevanceJudgmentResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    assessments: list[RelevanceNeedAssessment]
+
+
 def evidence_aliases(packet: JudgmentPacket) -> dict[str, str]:
     """Map request-local aliases to immutable evidence identities."""
     return {f"E{i}": evidence.id for i, evidence in enumerate(packet.evidence, 1)}
@@ -132,10 +170,12 @@ def response_model(contract: str):
         return ReconciledJudgmentResponse
     if contract == "compact_v1_2":
         return CompactJudgmentResponse
+    if contract == "relevance_v1":
+        return RelevanceJudgmentResponse
     raise ValueError("Unknown judgment response contract.")
 
 
-def need_status(assessment: NeedAssessment) -> str:
+def need_status(assessment: NeedAssessment) -> NeedStatus:
     positive = [e for e in assessment.evidence_assessments if e.relation == "supports"]
     negative = [e for e in assessment.evidence_assessments if e.relation == "contradicts"]
     if positive and negative:
@@ -160,7 +200,7 @@ def need_status(assessment: NeedAssessment) -> str:
 
 def validate_judgment(content: str, packet: JudgmentPacket, contract: str = "legacy_v1"):
     result = response_model(contract).model_validate_json(content)
-    if contract == "compact_v1_2":
+    if contract in {"compact_v1_2", "relevance_v1"}:
         aliases = evidence_aliases(packet)
         value = result.model_dump()
         for assessment in value["assessments"]:
@@ -174,7 +214,10 @@ def validate_judgment(content: str, packet: JudgmentPacket, contract: str = "leg
                 assessment[field]["evidence_ids"] = [
                     aliases[alias] for alias in assessment[field]["evidence_ids"]
                 ]
-        result = ReconciledJudgmentResponse.model_validate(value)
+        result_type = (
+            RelevanceJudgmentResponse if contract == "relevance_v1" else ReconciledJudgmentResponse
+        )
+        result = result_type.model_validate(value)
     expected = {n.id for n in packet.needs}
     if (
         len(result.assessments) != len(expected)
@@ -190,6 +233,17 @@ def validate_judgment(content: str, packet: JudgmentPacket, contract: str = "leg
             raise ValueError("Missing-information items cannot be blank.")
         for item in assigned:
             source = evidence[item.evidence_id]
+            if isinstance(item, RelevanceEvidenceAssessment):
+                if item.relevance != "relevant" and (
+                    item.relation != "insufficient"
+                    or item.coverage != "none"
+                    or item.basis != "none"
+                ):
+                    raise ValueError(
+                        "Irrelevant or uncertain evidence cannot establish a relation."
+                    )
+                if item.relation != "insufficient" and item.basis == "none":
+                    raise ValueError("Directional evidence needs a direct or inferred basis.")
             if item.relation != "insufficient" and (item.coverage == "none" or not item.excerpts):
                 raise ValueError("Directional relations need material coverage and citations.")
             if item.relation == "insufficient" and item.coverage == "complete":
@@ -202,6 +256,10 @@ def validate_judgment(content: str, packet: JudgmentPacket, contract: str = "leg
                 if offset < 0 or offset != source.quote.rfind(excerpt.quote):
                     raise ValueError("Citation must literally match the supplied source context.")
         if isinstance(assessment, ReconciledNeedAssessment):
+            if isinstance(assessment, RelevanceNeedAssessment):
+                has_both = {"supports", "contradicts"} <= {x.relation for x in assigned}
+                if has_both == (assessment.conflict_type == "none"):
+                    raise ValueError("Conflict type must agree with directional evidence.")
             summary, temporal = assessment.coverage_summary, assessment.time_basis
             for ids in [summary.evidence_ids, temporal.evidence_ids]:
                 if len(ids) != len(set(ids)) or not set(ids) <= set(evidence):

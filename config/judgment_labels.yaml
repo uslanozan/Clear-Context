@@ -1,0 +1,100 @@
+schema_version: 1
+scope: provided_evidence_only
+groups:
+  evidence_relevance:
+    relevant:
+      title: Relevant
+      description: Addresses the target entity or proposition; it may still lack the requested fact.
+    irrelevant:
+      title: Irrelevant
+      description: Addresses a different subject or otherwise has no material connection to the target.
+    uncertain:
+      title: Uncertain relevance
+      description: The entity or contextual association cannot be established from the supplied material.
+  evidence_basis:
+    direct:
+      title: Direct statement
+      description: The quoted text explicitly states the assessed fact or qualification.
+    inference:
+      title: Inference
+      description: The assessment follows from stated premises rather than an explicit statement.
+    none:
+      title: No evidentiary basis
+      description: No direct or inferred basis for a material conclusion was established.
+  conflict_type:
+    none:
+      title: No opposing relations
+      description: Both supporting and contradicting relations do not occur together.
+    same_component:
+      title: Opposing evidence on the same component
+      description: Support and contradiction address the same component; independence remains unassessed.
+    different_components:
+      title: Different components
+      description: Support and contradiction concern different material parts of the target.
+    unclear:
+      title: Unclear conflict scope
+      description: Opposing relations exist but their exact component overlap is unresolved.
+  evidence_relation:
+    supports:
+      title: Supports
+      description: The supplied passage supports a material part of the research need.
+    contradicts:
+      title: Contradicts
+      description: The supplied passage conflicts with a material part of the research need.
+    insufficient:
+      title: Insufficient evidence
+      description: The passage does not establish either directional relation; it may be irrelevant or lack necessary information.
+  evidence_coverage:
+    complete:
+      title: Complete
+      description: All material components of the requested scope are addressed.
+    partial:
+      title: Partial
+      description: At least one material component is addressed and another remains unresolved.
+    none:
+      title: None
+      description: No material component is addressed by the supplied evidence.
+  need_status:
+    supported:
+      title: Supported by supplied evidence
+      description: Collective support satisfies the configured coverage and temporal rules; this is not global verification.
+    contradicted:
+      title: Contradicted by supplied evidence
+      description: Collective contradiction satisfies the configured coverage and temporal rules; source reliability remains separate.
+    mixed:
+      title: Mixed evidence relations
+      description: Supporting and contradicting relations occur, possibly for different components; independent source disagreement is not implied.
+    insufficient:
+      title: Insufficient evidence
+      description: Evidence does not satisfy the rules for a complete directional conclusion.
+  execution_status:
+    assessed:
+      title: Assessed
+      description: A valid assessment was produced, replayed, or derived without inference when no evidence was supplied.
+    invalid_judgment:
+      title: Invalid judgment
+      description: Output failed schema, citation, association, or consistency validation; no verdict is accepted.
+    invalid_model_response:
+      title: Invalid model response
+      description: The provider response could not supply usable complete structured content.
+    model_output_truncated:
+      title: Truncated model output
+      description: Generation reached its output limit; partial content is not a verdict.
+    transport_error:
+      title: Transport error
+      description: The request failed at the transport layer.
+    rate_limited:
+      title: Rate limited
+      description: The provider rejected the request because of a rate limit.
+    model_request_failed:
+      title: Model request failed
+      description: The provider returned an unsuccessful request status.
+    not_run_after_failure:
+      title: Not run after failure
+      description: The queued live request was not started after an earlier failure.
+    call_budget_exhausted:
+      title: Call budget exhausted
+      description: The live request was not started because its call budget was exhausted.
+    live_judging_disabled:
+      title: Live judging disabled
+      description: An offline evaluation provider refused a live request.

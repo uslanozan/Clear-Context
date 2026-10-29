@@ -6,14 +6,18 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
+from clear_context.core.judgment_labels import load_judgment_labels
 from clear_context.core.prompts import PromptCatalog
+from clear_context.core.settings import PROJECT_ROOT
 
 
 class JudgeProfile(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     implementation: Literal["need_evidence_v1"]
     prompt: str
-    response_contract: Literal["legacy_v1", "reconciled_v1_1", "compact_v1_2"] = "legacy_v1"
+    response_contract: Literal["legacy_v1", "reconciled_v1_1", "compact_v1_2", "relevance_v1"] = (
+        "legacy_v1"
+    )
     max_completion_tokens: int | None = Field(default=None, ge=256, le=8192)
 
 
@@ -36,7 +40,10 @@ class JudgeCatalog(BaseModel):
     limits: JudgeLimits
 
 
-def load_judge(path: Path, prompts_path: Path, method: str | None = None):
+def load_judge(
+    path: Path, prompts_path: Path, method: str | None = None, labels_path: Path | None = None
+):
+    load_judgment_labels(labels_path or PROJECT_ROOT / "config/judgment_labels.yaml")
     catalog = JudgeCatalog.model_validate(yaml.safe_load(path.read_text(encoding="utf-8-sig")))
     selected = method or catalog.selected
     if selected not in catalog.judges:

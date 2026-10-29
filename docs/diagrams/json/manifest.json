@@ -64,5 +64,11 @@
     "title": "Saved evidence to need-level assessment",
     "status": "EVALUATION SERVICE",
     "notes": "Validated need-bound quotations and persisted assessment receipts. Source reliability and global claim verification are not implemented."
+  },
+  {
+    "slug": "12-evidence-relevance",
+    "title": "Relevance and evidence relations",
+    "status": "EVALUATION CANDIDATE",
+    "notes": "Passage relevance, evidence relation and source URLs flow into a validated need-level assessment. Default remains V1.2."
   }
 ]

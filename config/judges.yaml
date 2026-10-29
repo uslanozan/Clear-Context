@@ -1,6 +1,11 @@
 schema_version: 1
 selected: need_evidence_v1_2
 judges:
+  need_evidence_relevance_v1:
+    implementation: need_evidence_v1
+    prompt: evidence_judgment_relevance_v1
+    response_contract: relevance_v1
+    max_completion_tokens: 8192
   need_evidence_v1:
     implementation: need_evidence_v1
     prompt: evidence_judgment_v1

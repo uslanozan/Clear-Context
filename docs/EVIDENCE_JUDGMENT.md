@@ -9,6 +9,31 @@ Configuration: `config/judges.yaml`. Prompt:
 `MODEL_JUDGE`, then the catalog default. Defaults: three concurrent calls, three
 total calls, low effort, and no automatic retries.
 
+Human-readable vocabulary is centralized in `config/judgment_labels.yaml`.
+It separates evidence relations, coverage, need results and execution states.
+Loading a judge validates this catalog against typed Python label sets: unknown,
+missing or renamed keys fail before inference. Titles and descriptions are editable;
+changing executable labels also requires a schema and consumer update. Status
+derivation and validation rules remain in code. The catalog is not automatically
+inserted into model prompts or exposed in the application UI.
+
+Legacy contracts use `insufficient` for both irrelevant and relevant but
+inconclusive evidence. The selectable `need_evidence_relevance_v1` candidate uses
+the versioned `relevance_v1` contract to separate `relevant`, `irrelevant` and
+`uncertain` relevance from directional relations. Its per-passage `basis` is
+`direct`, `inference` or `none`. A passage about the correct entity may be relevant
+but lack the requested attribute. Irrelevant/uncertain evidence cannot establish
+a directional relation or material coverage. Directional evidence requires a
+direct or inferred basis and exact quotations.
+
+The candidate records `scope_note` and `conflict_type` at need level. Opposing
+relations require `same_component`, `different_components` or `unclear`; otherwise
+the conflict type is `none`. This does not establish source independence or trust.
+The original status rules remain evidence-relative. The default is still V1.2;
+the candidate is not connected to the application graph or UI. Provider and
+validation errors remain execution states, never evidence relations or factual
+conclusions. No confidence percentage is defined.
+
 The `need_evidence_v1_1` profile reconciles evidence with
 `coverage_summary` and records `time_basis` separately. The original
 `need_evidence_v1` profile and response contract remain available for replay.

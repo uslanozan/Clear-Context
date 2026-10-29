@@ -91,7 +91,11 @@ class EvidenceJudgmentService:
                                 for n in packet.needs
                             ]
                         )
-                        if self.response_contract in {"reconciled_v1_1", "compact_v1_2"}:
+                        if self.response_contract in {
+                            "reconciled_v1_1",
+                            "compact_v1_2",
+                            "relevance_v1",
+                        }:
                             value = output.model_dump()
                             for assessment in value["assessments"]:
                                 assessment.update(
@@ -106,7 +110,17 @@ class EvidenceJudgmentService:
                                         "explanation": "No evidence to ground temporal context.",
                                     },
                                 )
-                            output = response_model("reconciled_v1_1").model_validate(value)
+                            if self.response_contract == "relevance_v1":
+                                for assessment in value["assessments"]:
+                                    assessment.update(
+                                        scope_note="No evidence to assess scope.",
+                                        conflict_type="none",
+                                    )
+                            output = response_model(
+                                "relevance_v1"
+                                if self.response_contract == "relevance_v1"
+                                else "reconciled_v1_1"
+                            ).model_validate(value)
                         at = self.clock()
                     else:
                         research = self.repository.research
@@ -162,7 +176,7 @@ class EvidenceJudgmentService:
                         "citations": resolved_citations(output, packet),
                         "claim_verdicts": None,
                     }
-                    if self.response_contract == "compact_v1_2":
+                    if self.response_contract in {"compact_v1_2", "relevance_v1"}:
                         result["evidence_aliases"] = evidence_aliases(packet)
                     receipt = self.repository.save(
                         packet, self.method, self.model.api_model_id, key, result, usage, at

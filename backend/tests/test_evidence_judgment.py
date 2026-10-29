@@ -423,6 +423,86 @@ def compact_response(packet):
     return value
 
 
+def relevance_response(packet):
+    value = compact_response(packet)
+    for assessment in value["assessments"]:
+        assessment.update(
+            scope_note="Only the supplied target and source context.", conflict_type="none"
+        )
+        for item in assessment["evidence_assessments"]:
+            item["relevance"] = "relevant"
+            item["basis"] = "direct" if item["relation"] != "insufficient" else "none"
+    return value
+
+
+def test_relevant_but_insufficient_is_distinct_from_irrelevant(saved):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    value = relevance_response(packet)
+    relevant = validate_judgment(json.dumps(value), packet, "relevance_v1")
+    item = relevant.assessments[1].evidence_assessments[0]
+    assert item.relevance == "relevant" and item.relation == "insufficient"
+    value["assessments"][1]["evidence_assessments"][0]["relevance"] = "irrelevant"
+    unrelated = validate_judgment(json.dumps(value), packet, "relevance_v1")
+    assert unrelated.assessments[1].evidence_assessments[0].relevance == "irrelevant"
+    assert need_status(unrelated.assessments[1]) == "insufficient"
+
+
+@pytest.mark.parametrize(
+    "fault", ["irrelevant_direction", "uncertain_direction", "no_basis", "false_conflict"]
+)
+def test_relevance_contract_rejects_inconsistent_direction_and_conflict(saved, fault):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    value = relevance_response(packet)
+    assessment = value["assessments"][0]
+    item = assessment["evidence_assessments"][0]
+    if fault == "irrelevant_direction":
+        item["relevance"] = "irrelevant"
+    elif fault == "uncertain_direction":
+        item["relevance"] = "uncertain"
+    elif fault == "no_basis":
+        item["basis"] = "none"
+    else:
+        assessment["conflict_type"] = "same_component"
+    with pytest.raises(ValueError):
+        validate_judgment(json.dumps(value), packet, "relevance_v1")
+
+
+def test_relevance_contract_persists_new_fields_with_original_source_url(saved):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    runner = service(repo, lambda _: completion(relevance_response(packet)))
+    runner.method = "need_evidence_relevance_v1"
+    runner.response_contract = "relevance_v1"
+    row = asyncio.run(runner.assess([job]))[0]
+    assert row["status"] == "assessed"
+    item = row["result"]["assessments"][0]["evidence_assessments"][0]
+    assert item["relevance"] == "relevant" and item["basis"] == "direct"
+    assert row["result"]["citations"][0]["source_url"] == packet.evidence[0].source_url
+    assert row["result"]["claim_verdicts"] is None
+    runner.limits = runner.limits.model_copy(update={"max_model_calls": 0})
+    replay = asyncio.run(runner.assess([job]))[0]
+    assert replay["cached"] and replay["result"] == row["result"]
+
+
+def test_relevance_empty_packet_and_schema_are_valid_without_inference(saved):
+    from clear_context.providers.meta_judgment import build_judgment_request
+
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    request = build_judgment_request("Rules", packet, "model", "low", 8192, "relevance_v1")
+    variants = request["response_format"]["json_schema"]["schema"]["properties"]["assessments"][
+        "items"
+    ]["anyOf"]
+    assert "relevance" in variants[0]["properties"]["evidence_assessments"]["items"]["required"]
+    runner = service(repo, lambda _: pytest.fail("No live call expected"))
+    runner.response_contract = "relevance_v1"
+    row = asyncio.run(runner.assess([JudgmentJob("case", ("n2",), ())]))[0]
+    assert row["result"]["assessments"][0]["conflict_type"] == "none"
+    assert runner.calls == 0
+
+
 def test_compact_roundtrip_preserves_canonical_ids_unicode_and_citations(saved):
     repo, job = saved
     packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)

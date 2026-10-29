@@ -33,9 +33,9 @@ def compact_input(packet: JudgmentPacket) -> dict:
     }
 
 
-def compact_schema(packet: JudgmentPacket) -> dict:
+def compact_schema(packet: JudgmentPacket, contract: str = "compact_v1_2") -> dict:
     """Constrain references and evidence counts separately for each requested need."""
-    schema = response_model("compact_v1_2").model_json_schema()
+    schema = response_model(contract).model_json_schema()
     definitions = schema["$defs"]
     aliases = evidence_aliases(packet)
     variants = []
@@ -45,10 +45,20 @@ def compact_schema(packet: JudgmentPacket) -> dict:
             for alias, identity in aliases.items()
             if any(e.id == identity and e.need_id == need.id for e in packet.evidence)
         ]
-        variant = deepcopy(definitions["CompactNeedAssessment"])
+        variant = deepcopy(
+            definitions[
+                "RelevanceNeedAssessment" if contract == "relevance_v1" else "CompactNeedAssessment"
+            ]
+        )
         properties = variant["properties"]
         properties["need_id"] = {"type": "string", "enum": [need.id]}
-        item = deepcopy(definitions["CompactEvidenceAssessment"])
+        item = deepcopy(
+            definitions[
+                "RelevanceEvidenceAssessment"
+                if contract == "relevance_v1"
+                else "CompactEvidenceAssessment"
+            ]
+        )
         if allowed:
             item["properties"]["evidence_id"] = {"type": "string", "enum": allowed}
         properties["evidence_assessments"] = {
@@ -88,7 +98,7 @@ def build_judgment_request(
     tokens: int,
     response_contract: str = "legacy_v1",
 ):
-    compact = response_contract == "compact_v1_2"
+    compact = response_contract in {"compact_v1_2", "relevance_v1"}
     return {
         "model": model,
         "messages": [
@@ -105,7 +115,7 @@ def build_judgment_request(
             "json_schema": {
                 "name": "need_evidence_assessment",
                 "strict": True,
-                "schema": compact_schema(packet)
+                "schema": compact_schema(packet, response_contract)
                 if compact
                 else response_model(response_contract).model_json_schema(),
             },
