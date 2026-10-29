@@ -1,0 +1,14 @@
+schema_version: 1
+selected: need_evidence_v1
+judges:
+  need_evidence_v1:
+    implementation: need_evidence_v1
+    prompt: evidence_judgment_v1
+limits:
+  max_concurrency: 3
+  max_model_calls: 3
+  max_input_chars: 40000
+  max_completion_tokens: 4096
+  effort: low
+  timeout_seconds: 100
+  cache_ttl_seconds: 86400

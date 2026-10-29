@@ -11,7 +11,10 @@ reads selected pages through Tavily keyless, and preserves claim/need/passage li
 with bounded calls and TTL caches. Full-page Muse paragraph selection now supports
 ten concurrent requests by default and persists source-bound selection receipts. This service
 is not connected to the application
-graph or UI and does not produce factual verdicts. See [retrieval evaluation](evals/README.md#retrieval-workspace-evaluation-runner).
+graph or UI. An experimental judge assesses how supplied evidence bears on each
+research need, with validated source quotations. It does not produce global claim
+verification or source-trust scores. See [retrieval evaluation](evals/README.md#retrieval-workspace-evaluation-runner)
+and [evidence judgment](docs/EVIDENCE_JUDGMENT.md).
 
 V2 extraction now partitions long text under bounded character budgets, carries source
 context, and saves exact quote positions separately from interpreted statements. There is

@@ -138,3 +138,23 @@ selection_passages = Table(
     Column("need_id", String, primary_key=True),
     ForeignKeyConstraint(["case_id", "need_id"], ["research_needs.case_id", "research_needs.id"]),
 )
+
+judgments = Table(
+    "research_judgments",
+    metadata,
+    Column("id", String, primary_key=True),
+    Column("case_id", String, ForeignKey("research_cases.id"), nullable=False),
+    Column("method", String, nullable=False),
+    Column("model", String, nullable=False),
+    Column("request_key", String, nullable=False),
+    Column("packet", Text, nullable=False),
+    Column("result", Text, nullable=False),
+    Column("usage", Text, nullable=False),
+    Column("created_at", Float, nullable=False),
+)
+judgment_selections = Table(
+    "research_judgment_selections",
+    metadata,
+    Column("judgment_id", String, ForeignKey("research_judgments.id"), primary_key=True),
+    Column("selection_id", String, ForeignKey("research_selections.id"), primary_key=True),
+)

@@ -654,8 +654,10 @@ if __name__ == "__main__":
         (OUT / folder).mkdir(parents=True, exist_ok=True)
     records = [sequence(), guards(), media(), longtext(), photo(), video(), chunked(), experimental_extraction("B"), experimental_extraction("D")]
     from retrieval import main as generate_retrieval
+    from judgment import main as generate_judgment
 
     records.append(generate_retrieval())
+    records.append(generate_judgment())
     (OUT / "json/manifest.json").write_text(
         json.dumps(records, indent=2) + "\n", encoding="utf-8"
     )
@@ -664,7 +666,7 @@ if __name__ == "__main__":
         for row in records
     )
     (OUT / "html/index.html").write_text(
-        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>Diagrams 01-03 and 07 describe working application code. Diagrams 04-06 describe proposals; 08-09 show experimental runners; 10 shows the separate retrieval workspace, not the application pipeline. Examples are explanatory, not measured inference results.</p><ol>{links}</ol></body></html>',
+        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>Diagrams 01-03 and 07 describe working application code. Diagrams 04-06 describe proposals; 08-09 show experimental runners; 10 shows the separate retrieval workspace; 11 shows need-level evidence assessment. Neither is connected to the application pipeline. Examples are explanatory, not measured inference results.</p><ol>{links}</ol></body></html>',
         encoding="utf-8",
     )
     print(f"Generated {len(records)} HTML diagrams and index.")

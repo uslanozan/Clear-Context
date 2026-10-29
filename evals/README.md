@@ -357,4 +357,12 @@ is not a linguistic parser. Abbreviations and malformed source text can remain
 ambiguous. A continuation exceeding either character budget is marked with
 `before_truncated` or `after_truncated`; those flags must remain visible to a later
 judge. Changing only the context policy reuses the model-response cache while
-creating a distinct selection receipt. Source trust and claim judging remain pending.
+creating a distinct selection receipt. Source trust and application claim judging remain pending.
+
+### Evidence judgment pilot
+
+`python -m evals.judge_evidence` assesses saved selection receipts with no new
+search, extraction or query generation. It is cache-only unless
+`--allow-live-judging` is explicitly provided. Inputs and raw outputs are recorded;
+literal citation validation precedes persistence. The result is need-level evidence
+assessment, not whole-claim verification. See [the assessment contract](../docs/EVIDENCE_JUDGMENT.md).

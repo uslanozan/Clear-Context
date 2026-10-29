@@ -58,5 +58,11 @@
     "title": "Shared sources and preserved research links",
     "status": "EVALUATION SERVICE",
     "notes": "Two saved queries share a source while keeping their need and claim links. Literal candidate passages are not factual verdicts. Not connected to the application graph."
+  },
+  {
+    "slug": "11-evidence-judgment",
+    "title": "Saved evidence to need-level assessment",
+    "status": "EVALUATION SERVICE",
+    "notes": "Validated need-bound quotations and persisted assessment receipts. Source reliability and global claim verification are not implemented."
   }
 ]
