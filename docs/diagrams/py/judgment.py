@@ -9,7 +9,7 @@ def main():
     nodes = ''.join([
         node(50,210,280,170,'Claims + needs',['Explicit case and IDs','Needs stay separate']),
         node(355,210,280,170,'Saved evidence',['V1 receipt + context','Same source offsets']),
-        node(660,210,280,170,'Muse assessment',['Relation per evidence','Coverage + short quotes'],focal=True),
+        node(660,210,280,170,'Muse assessment',['Relation + short quotes','Joint coverage + time'],focal=True),
         node(965,210,280,170,'Code validation',['Need IDs + exact text','Resolve source offsets']),
         node(1270,210,280,170,'Need result',['Status + source links','Saved judge receipt']),
     ])
@@ -24,9 +24,9 @@ def main():
 <g fill="none" stroke="{MUTED}" stroke-width="2" marker-end="url(#arrow)">{arrows}</g>{nodes}
 {text(50,475,'A source relation is not a global truth verdict',size=28,weight=600)}
 {text(50,530,['Synthetic example: a source gives 8 km between city centers.','That can address distance; it does not establish urban adjacency.'],size=23,line_height=38)}
-{text(50,640,'Partial support alone → insufficient · Support and contradiction → mixed',size=23,color=ACCENT)}
+{text(50,640,'Reconcile gaps across excerpts · Record the temporal basis and its assumptions',size=23,color=ACCENT)}
 {text(50,700,'No selected evidence → insufficient without a model call · Invalid output → explicit error',size=22,color=MUTED)}
-{text(50,755,'One source remains one source, even when it supplies several excerpts',size=22,color=MUTED)}
+{text(50,755,'Publication time is not an effective period · Repeated excerpts are not independent sources',size=22,color=MUTED)}
 {text(50,825,'Bounded calls · No automatic retries · Source reliability unassessed · No full-claim verdict',size=20,color=MUTED)}
 </svg>'''
     (OUT/'svg/11-evidence-judgment.svg').write_text(svg,encoding='utf-8')

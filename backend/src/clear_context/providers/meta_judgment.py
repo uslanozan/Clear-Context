@@ -2,11 +2,16 @@
 
 import json
 
-from clear_context.schemas.evidence_judgment import JudgmentPacket, JudgmentResponse
+from clear_context.schemas.evidence_judgment import JudgmentPacket, response_model
 
 
 def build_judgment_request(
-    system: str, packet: JudgmentPacket, model: str, effort: str, tokens: int
+    system: str,
+    packet: JudgmentPacket,
+    model: str,
+    effort: str,
+    tokens: int,
+    response_contract: str = "legacy_v1",
 ):
     return {
         "model": model,
@@ -19,7 +24,7 @@ def build_judgment_request(
             "json_schema": {
                 "name": "need_evidence_assessment",
                 "strict": True,
-                "schema": JudgmentResponse.model_json_schema(),
+                "schema": response_model(response_contract).model_json_schema(),
             },
         },
         "reasoning_effort": effort,

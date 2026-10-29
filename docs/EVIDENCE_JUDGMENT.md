@@ -9,6 +9,10 @@ Configuration: `config/judges.yaml`. Prompt:
 `MODEL_JUDGE`, then the catalog default. Defaults: three concurrent calls, three
 total calls, low effort, and no automatic retries.
 
+The selected `need_evidence_v1_1` profile reconciles evidence with
+`coverage_summary` and records `time_basis` separately. The original
+`need_evidence_v1` profile and response contract remain available for replay.
+
 ## Contract
 
 1. Rebuild inputs from explicit selection receipts; validate case, need, page,
@@ -24,9 +28,13 @@ total calls, low effort, and no automatic retries.
 
 Directional evidence on both sides produces `mixed`, including different
 components of one need; this does not imply independent sources disagree.
-Complete contradicting evidence produces `contradicted`. Complete supporting
-evidence without reported gaps produces `supported`. Remaining cases are
-`insufficient`. Partial support alone cannot establish support for an entire need.
+For v1.1, complete collective coverage with resolved time and no remaining gaps
+can produce `supported` or `contradicted`, depending on the evidence relation.
+Several partial excerpts may collectively answer a need; individual shortcomings
+must not be copied into need-level gaps when another excerpt resolves them.
+Remaining cases are `insufficient`. The legacy v1 contract still requires an
+individually complete directional assessment. Partial coverage that remains
+incomplete collectively cannot establish support for an entire need.
 These are evidence-relative labels; validation does not prove semantic accuracy.
 
 No selected evidence produces an insufficient result without a model call. Schema,
@@ -52,3 +60,22 @@ Unknown dates, missing reference points, truncated context and unassessed source
 reliability remain limitations. A single source may contradict an alleged value
 without proving global real-world falsity. Numeric confidence, full-claim rollups,
 source-trust scoring and automatic follow-up searches are not implemented here.
+
+## Temporal provenance
+
+Raw reported publication dates remain in the evidence packet. Code additionally
+normalizes explicit ISO/RFC dates and reports `missing`, `unambiguous`,
+`conflicting`, or `unparseable` metadata. Ambiguous numeric dates and missing years
+are not guessed; fetch time never fills publication time. Normalization does not
+verify the metadata or the fact's effective period.
+
+The model must state whether temporal grounding comes from explicit source text,
+publication context, is unnecessary, or is unresolved. Publication context must
+reference evidence in the same need with unambiguous normalized dates. A
+contemporaneous descriptive statement may be treated as what the source reported
+at publication, with that assumption disclosed. A retrospective, forecast or
+different effective period cannot inherit publication time automatically.
+
+Coverage and temporal references are structurally validated; their semantic
+adequacy still requires review. An unresolved temporal basis cannot be paired with
+complete collective coverage. These changes do not add source-trust scores.

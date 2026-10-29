@@ -36,7 +36,7 @@ def main():
     args = parser.parse_args()
     if not args.workspace.is_file() or args.output.exists():
         raise ValueError("Use an existing workspace and a new output directory.")
-    method, limits, system = load_judge(args.catalog, args.prompts)
+    method, limits, system, contract = load_judge(args.catalog, args.prompts)
     settings = Settings() if args.allow_live_judging else Settings(_env_file=None)
     model = load_model_selections(settings)["judge"]
     if args.allow_live_judging:
@@ -54,7 +54,13 @@ def main():
     repository = JudgmentRepository(research)
     try:
         service = EvidenceJudgmentService(
-            repository, provider, method, limits, system, model
+            repository,
+            provider,
+            method,
+            limits,
+            system,
+            model,
+            response_contract=contract,
         )
         prepared = [service.prepare(job) for job in jobs]
         args.output.mkdir(parents=True)
@@ -67,6 +73,7 @@ def main():
         rows = asyncio.run(service.assess(jobs))
         manifest = {
             "method": method,
+            "response_contract": contract,
             "model": model.api_model_id,
             "limits": limits.model_dump(),
             "actual_model_calls": service.calls,

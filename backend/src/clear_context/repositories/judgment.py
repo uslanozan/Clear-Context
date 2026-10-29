@@ -14,6 +14,7 @@ from clear_context.models.retrieval_cache import (
 )
 from clear_context.repositories.retrieval import RetrievalRepository, encode, identity
 from clear_context.schemas.evidence_judgment import EvidenceContext, JudgmentPacket
+from clear_context.services.source_time import publication_context
 
 
 class JudgmentRepository:
@@ -96,6 +97,7 @@ class JudgmentRepository:
                             source_url=self.research.source_url(page["source_id"]),
                             fetched_at=float(page["fetched_at"]),
                             reported_publication_dates=dates,
+                            publication_context=publication_context(dates),
                             selected_start=core_start,
                             selected_end=core_end,
                             start=start,

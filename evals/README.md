@@ -366,3 +366,8 @@ search, extraction or query generation. It is cache-only unless
 `--allow-live-judging` is explicitly provided. Inputs and raw outputs are recorded;
 literal citation validation precedes persistence. The result is need-level evidence
 assessment, not whole-claim verification. See [the assessment contract](../docs/EVIDENCE_JUDGMENT.md).
+
+Judge v1.1 reconciles need-level gaps across evidence and explicitly records the
+temporal basis. Reported publication metadata is normalized without guessing
+missing years or ambiguous dates. The original judge profile remains available;
+V1 passage selection and its concurrency settings are unchanged.

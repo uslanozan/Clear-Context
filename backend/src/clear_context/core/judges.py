@@ -13,6 +13,7 @@ class JudgeProfile(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     implementation: Literal["need_evidence_v1"]
     prompt: str
+    response_contract: Literal["legacy_v1", "reconciled_v1_1"] = "legacy_v1"
 
 
 class JudgeLimits(BaseModel):
@@ -34,14 +35,20 @@ class JudgeCatalog(BaseModel):
     limits: JudgeLimits
 
 
-def load_judge(path: Path, prompts_path: Path):
+def load_judge(path: Path, prompts_path: Path, method: str | None = None):
     catalog = JudgeCatalog.model_validate(yaml.safe_load(path.read_text(encoding="utf-8-sig")))
-    if catalog.selected not in catalog.judges:
+    selected = method or catalog.selected
+    if selected not in catalog.judges:
         raise ValueError("Unknown selected judge.")
-    profile = catalog.judges[catalog.selected]
+    profile = catalog.judges[selected]
     prompts = PromptCatalog.model_validate(
         yaml.safe_load(prompts_path.read_text(encoding="utf-8-sig"))
     )
     if profile.prompt not in prompts.experiments:
         raise ValueError("Unknown central judge prompt.")
-    return catalog.selected, catalog.limits, prompts.experiments[profile.prompt].system
+    return (
+        selected,
+        catalog.limits,
+        prompts.experiments[profile.prompt].system,
+        profile.response_contract,
+    )

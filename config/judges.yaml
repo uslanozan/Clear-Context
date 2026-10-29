@@ -1,9 +1,13 @@
 schema_version: 1
-selected: need_evidence_v1
+selected: need_evidence_v1_1
 judges:
   need_evidence_v1:
     implementation: need_evidence_v1
     prompt: evidence_judgment_v1
+  need_evidence_v1_1:
+    implementation: need_evidence_v1
+    prompt: evidence_judgment_v1_1
+    response_contract: reconciled_v1_1
 limits:
   max_concurrency: 3
   max_model_calls: 3

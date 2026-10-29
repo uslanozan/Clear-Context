@@ -14,6 +14,7 @@ from clear_context.schemas.evidence_judgment import (
     NeedAssessment,
     need_status,
     resolved_citations,
+    response_model,
     validate_judgment,
 )
 
@@ -26,10 +27,21 @@ class JudgmentJob:
 
 
 class EvidenceJudgmentService:
-    def __init__(self, repository, provider, method, limits, system, model, clock=time.time):
+    def __init__(
+        self,
+        repository,
+        provider,
+        method,
+        limits,
+        system,
+        model,
+        clock=time.time,
+        response_contract="legacy_v1",
+    ):
         self.repository, self.provider = repository, provider
         self.method, self.limits, self.system, self.model = method, limits, system, model
         self.clock = clock
+        self.response_contract = response_contract
         self.calls = self.active = self.max_active = 0
         self.halted = False
 
@@ -41,6 +53,7 @@ class EvidenceJudgmentService:
             self.model.api_model_id,
             self.limits.effort,
             self.limits.max_completion_tokens,
+            self.response_contract,
         )
         if len(request["messages"][1]["content"]) > self.limits.max_input_chars:
             raise ValueError("Judgment input exceeds its size budget; no silent truncation.")
@@ -77,6 +90,22 @@ class EvidenceJudgmentService:
                                 for n in packet.needs
                             ]
                         )
+                        if self.response_contract == "reconciled_v1_1":
+                            value = output.model_dump()
+                            for assessment in value["assessments"]:
+                                assessment.update(
+                                    coverage_summary={
+                                        "coverage": "none",
+                                        "evidence_ids": [],
+                                        "explanation": "No selected evidence.",
+                                    },
+                                    time_basis={
+                                        "mode": "unresolved",
+                                        "evidence_ids": [],
+                                        "explanation": "No evidence to ground temporal context.",
+                                    },
+                                )
+                            output = response_model(self.response_contract).model_validate(value)
                         at = self.clock()
                     else:
                         research = self.repository.research
@@ -109,7 +138,9 @@ class EvidenceJudgmentService:
                                 self.active -= 1
                             at = self.clock()
                         usage = body.get("usage") or {}
-                        output = validate_judgment(body["choices"][0]["message"]["content"], packet)
+                        output = validate_judgment(
+                            body["choices"][0]["message"]["content"], packet, self.response_contract
+                        )
                         if not row["cached"]:
                             research.save_cache(
                                 "judgment", key, body, at, self.limits.cache_ttl_seconds

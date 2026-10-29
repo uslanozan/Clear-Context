@@ -107,8 +107,10 @@ def response(packet):
 
 
 def service(repo, handler, **changes):
-    method, limits, system = load_judge(
-        PROJECT_ROOT / "config/judges.yaml", PROJECT_ROOT / "config/prompts.yaml"
+    method, limits, system, contract = load_judge(
+        PROJECT_ROOT / "config/judges.yaml",
+        PROJECT_ROOT / "config/prompts.yaml",
+        method="need_evidence_v1",
     )
     provider = MetaStructuredProvider(
         Settings(
@@ -124,6 +126,7 @@ def service(repo, handler, **changes):
         system,
         ModelSelection(alias="spark_1_3", api_model_id="muse-spark-1.3", training_use=False),
         clock=lambda: 1000,
+        response_contract=contract,
     )
 
 
@@ -237,3 +240,168 @@ def test_oversized_input_rejected_without_truncation_or_calls(saved):
     with pytest.raises(ValueError):
         runner.prepare(job)
     assert runner.calls == 0
+
+
+def reconciled_response(packet):
+    value = response(packet)
+    for assessment in value["assessments"]:
+        ids = [
+            x["evidence_id"]
+            for x in assessment["evidence_assessments"]
+            if x["relation"] != "insufficient"
+        ]
+        assessment.update(
+            coverage_summary={
+                "coverage": "complete" if ids else "none",
+                "evidence_ids": ids,
+                "explanation": "Reconciled across all supplied evidence.",
+            },
+            time_basis={
+                "mode": "explicit_source_text" if ids else "not_required",
+                "evidence_ids": ids,
+                "explanation": "Source text dates the event." if ids else "No period needed.",
+            },
+        )
+    return value
+
+
+def test_reconciled_need_cannot_keep_gaps_already_claimed_complete(saved):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    value = reconciled_response(packet)
+    validate_judgment(json.dumps(value), packet, "reconciled_v1_1")
+    value["assessments"][0]["missing_information"] = ["A weaker excerpt lacks the year"]
+    with pytest.raises(ValueError, match="Complete need coverage"):
+        validate_judgment(json.dumps(value), packet, "reconciled_v1_1")
+
+
+def test_publication_basis_requires_unambiguous_metadata_and_same_need(saved):
+    from clear_context.schemas.source_time import PublicationContext
+
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    value = reconciled_response(packet)
+    basis = value["assessments"][0]["time_basis"]
+    basis["mode"] = "publication_context"
+    with pytest.raises(ValueError, match="publication dates"):
+        validate_judgment(json.dumps(value), packet, "reconciled_v1_1")
+    packet = packet.model_copy(
+        update={
+            "evidence": [
+                e.model_copy(
+                    update={
+                        "publication_context": PublicationContext(
+                            status="unambiguous", normalized_dates=["2023-10-26"]
+                        )
+                    }
+                )
+                for e in packet.evidence
+            ]
+        }
+    )
+    validate_judgment(json.dumps(value), packet, "reconciled_v1_1")
+    basis["evidence_ids"] = [packet.evidence[-1].id]
+    with pytest.raises(ValueError, match="in this need"):
+        validate_judgment(json.dumps(value), packet, "reconciled_v1_1")
+
+
+def test_joint_partial_evidence_can_complete_a_need_without_individual_complete(saved):
+    repo, job = saved
+    packet = repo.packet(job.case_id, ("n1",), job.selection_ids)
+    first_text = "The artifact was made in 2007."
+    first = packet.evidence[0].model_copy(
+        update={
+            "quote": first_text,
+            "start": 0,
+            "end": len(first_text),
+            "selected_start": 0,
+            "selected_end": len(first_text),
+        }
+    )
+    second = first.model_copy(
+        update={"id": "ev_second", "quote": "It is ceramic.", "start": 100, "end": 114}
+    )
+    packet = packet.model_copy(
+        update={
+            "claims": [
+                packet.claims[0].model_copy(
+                    update={
+                        "statement": "The artifact is ceramic and was made in 2007.",
+                        "quote": "ceramic and made in 2007",
+                    }
+                )
+            ],
+            "needs": [
+                packet.needs[0].model_copy(update={"description": "Artifact material and year"})
+            ],
+            "evidence": [first, second],
+        }
+    )
+    items = [
+        {
+            "evidence_id": e.id,
+            "relation": "supports",
+            "coverage": "partial",
+            "explanation": "One component only.",
+            "excerpts": [{"quote": e.quote}],
+        }
+        for e in packet.evidence
+    ]
+    value = {
+        "assessments": [
+            {
+                "need_id": "n1",
+                "evidence_assessments": items,
+                "missing_information": [],
+                "explanation": "Together the components are supplied.",
+                "coverage_summary": {
+                    "coverage": "complete",
+                    "evidence_ids": [e.id for e in packet.evidence],
+                    "explanation": "Both components are available.",
+                },
+                "time_basis": {
+                    "mode": "explicit_source_text",
+                    "evidence_ids": [first.id],
+                    "explanation": "Date is in source text.",
+                },
+            }
+        ]
+    }
+    result = validate_judgment(json.dumps(value), packet, "reconciled_v1_1")
+    assert need_status(result.assessments[0]) == "supported"
+
+
+def test_new_contract_no_evidence_remains_free_and_schema_complete(saved):
+    repo, job = saved
+    runner = service(repo, lambda _: pytest.fail("No new call"))
+    runner.response_contract = "reconciled_v1_1"
+    row = asyncio.run(runner.assess([JudgmentJob("case", ("n2",), ())]))[0]
+    assert runner.calls == 0 and row["result"]["assessments"][0]["status"] == "insufficient"
+    assert row["result"]["assessments"][0]["coverage_summary"]["coverage"] == "none"
+
+
+def test_new_contract_summary_and_time_survive_cache_replay(saved):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    value = reconciled_response(packet)
+    method, limits, system, contract = load_judge(
+        PROJECT_ROOT / "config/judges.yaml",
+        PROJECT_ROOT / "config/prompts.yaml",
+        method="need_evidence_v1_1",
+    )
+
+    def handler(request):
+        payload = json.loads(request.content)
+        assert "coverage_summary" in json.dumps(payload["response_format"])
+        assert "publication_context" in payload["messages"][1]["content"]
+        return completion(value)
+
+    runner = service(repo, handler)
+    runner.method, runner.system, runner.response_contract = method, system, contract
+    first = asyncio.run(runner.assess([job]))[0]
+    runner.limits = limits.model_copy(update={"max_model_calls": 0})
+    second = asyncio.run(runner.assess([job]))[0]
+    assert second["cached"] and runner.calls == 1
+    assert first["judgment_id"] == second["judgment_id"]
+    assert first["result"]["assessments"][0]["coverage_summary"]["coverage"] == "complete"
+    assert first["result"]["assessments"][0]["time_basis"]["mode"] == "explicit_source_text"

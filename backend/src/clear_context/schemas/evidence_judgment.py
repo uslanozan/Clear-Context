@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from clear_context.schemas.retrieval import ClaimReference, ResearchNeed
+from clear_context.schemas.source_time import PublicationContext
 
 
 class EvidenceContext(BaseModel):
@@ -18,6 +19,7 @@ class EvidenceContext(BaseModel):
     source_url: str
     fetched_at: float
     reported_publication_dates: list[str]
+    publication_context: PublicationContext = Field(default_factory=PublicationContext)
     selected_start: int
     selected_end: int
     start: int
@@ -64,11 +66,54 @@ class JudgmentResponse(BaseModel):
     assessments: list[NeedAssessment]
 
 
+class CoverageSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    coverage: Literal["complete", "partial", "none"]
+    evidence_ids: list[str]
+    explanation: str = Field(min_length=1, max_length=600)
+
+
+class TemporalBasis(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    mode: Literal["not_required", "explicit_source_text", "publication_context", "unresolved"]
+    evidence_ids: list[str]
+    explanation: str = Field(min_length=1, max_length=600)
+
+
+class ReconciledNeedAssessment(NeedAssessment):
+    coverage_summary: CoverageSummary
+    time_basis: TemporalBasis
+
+
+class ReconciledJudgmentResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    assessments: list[ReconciledNeedAssessment]
+
+
+def response_model(contract: str):
+    if contract == "legacy_v1":
+        return JudgmentResponse
+    if contract == "reconciled_v1_1":
+        return ReconciledJudgmentResponse
+    raise ValueError("Unknown judgment response contract.")
+
+
 def need_status(assessment: NeedAssessment) -> str:
     positive = [e for e in assessment.evidence_assessments if e.relation == "supports"]
     negative = [e for e in assessment.evidence_assessments if e.relation == "contradicts"]
     if positive and negative:
         return "mixed"
+    if isinstance(assessment, ReconciledNeedAssessment):
+        complete = (
+            assessment.coverage_summary.coverage == "complete"
+            and not assessment.missing_information
+            and assessment.time_basis.mode != "unresolved"
+        )
+        if complete and negative:
+            return "contradicted"
+        if complete and positive:
+            return "supported"
+        return "insufficient"
     if any(e.coverage == "complete" for e in negative):
         return "contradicted"
     if any(e.coverage == "complete" for e in positive) and not assessment.missing_information:
@@ -76,8 +121,8 @@ def need_status(assessment: NeedAssessment) -> str:
     return "insufficient"
 
 
-def validate_judgment(content: str, packet: JudgmentPacket) -> JudgmentResponse:
-    result = JudgmentResponse.model_validate_json(content)
+def validate_judgment(content: str, packet: JudgmentPacket, contract: str = "legacy_v1"):
+    result = response_model(contract).model_validate_json(content)
     expected = {n.id for n in packet.needs}
     if (
         len(result.assessments) != len(expected)
@@ -104,6 +149,41 @@ def validate_judgment(content: str, packet: JudgmentPacket) -> JudgmentResponse:
                 offset = source.quote.find(excerpt.quote)
                 if offset < 0 or offset != source.quote.rfind(excerpt.quote):
                     raise ValueError("Citation must literally match the supplied source context.")
+        if isinstance(assessment, ReconciledNeedAssessment):
+            summary, temporal = assessment.coverage_summary, assessment.time_basis
+            for ids in [summary.evidence_ids, temporal.evidence_ids]:
+                if len(ids) != len(set(ids)) or not set(ids) <= set(evidence):
+                    raise ValueError(
+                        "Summary and time basis must reference unique IDs in this need."
+                    )
+            directional = {x.evidence_id for x in assigned if x.relation != "insufficient"}
+            if not set(summary.evidence_ids) <= directional:
+                raise ValueError("Coverage must cite material directional evidence.")
+            if (summary.coverage == "none") != (not summary.evidence_ids):
+                raise ValueError("Coverage summary and evidence references disagree.")
+            if summary.coverage == "complete" and (
+                assessment.missing_information or temporal.mode == "unresolved"
+            ):
+                raise ValueError("Complete need coverage cannot have unresolved gaps or time.")
+            if (
+                temporal.mode in {"explicit_source_text", "publication_context"}
+                and not temporal.evidence_ids
+            ):
+                raise ValueError("A temporal basis needs source references.")
+            if temporal.mode == "not_required" and temporal.evidence_ids:
+                raise ValueError("Unneeded temporal context cannot claim source references.")
+            if temporal.mode == "explicit_source_text" and any(
+                not next(x for x in assigned if x.evidence_id == i).excerpts
+                for i in temporal.evidence_ids
+            ):
+                raise ValueError("An explicit textual time basis needs literal excerpts.")
+            if temporal.mode == "publication_context" and any(
+                evidence[i].publication_context.status != "unambiguous"
+                for i in temporal.evidence_ids
+            ):
+                raise ValueError(
+                    "Ambiguous or missing publication dates cannot establish publication context."
+                )
         if need_status(assessment) == "insufficient" and not assessment.missing_information:
             raise ValueError("Insufficient needs must identify missing information.")
     return result
