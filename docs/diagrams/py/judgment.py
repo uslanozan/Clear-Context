@@ -8,9 +8,9 @@ from generate import ACCENT, INK, MUTED, OUT, PAPER, node, text
 def main():
     nodes = ''.join([
         node(50,210,280,170,'Claims + needs',['Explicit case and IDs','Needs stay separate']),
-        node(355,210,280,170,'Saved evidence',['V1 receipt + context','Same source offsets']),
-        node(660,210,280,170,'Muse assessment',['Relation + short quotes','Joint coverage + time'],focal=True),
-        node(965,210,280,170,'Code validation',['Need IDs + exact text','Resolve source offsets']),
+        node(355,210,280,170,'Saved evidence',['V1 receipt + context','Local aliases E1, E2']),
+        node(660,210,280,170,'Muse assessment',['Need-scoped ID choices','Short quotes + time'],focal=True),
+        node(965,210,280,170,'Code validation',['Restore canonical IDs','Validate quotes + offsets']),
         node(1270,210,280,170,'Need result',['Status + source links','Saved judge receipt']),
     ])
     arrows=''.join(f'<path d="M{x} 295H{x+25}"/>' for x in [330,635,940,1245])
@@ -23,9 +23,9 @@ def main():
 {text(50,120,'Working evaluation service · Not connected to application graph or UI',size=22,color=MUTED)}
 <g fill="none" stroke="{MUTED}" stroke-width="2" marker-end="url(#arrow)">{arrows}</g>{nodes}
 {text(50,475,'A source relation is not a global truth verdict',size=28,weight=600)}
-{text(50,530,['Synthetic example: a source gives 8 km between city centers.','That can address distance; it does not establish urban adjacency.'],size=23,line_height=38)}
+{text(50,530,['Synthetic example: E1 maps exactly to one saved evidence identity.','E1 is allowed; evidence_ids:E1 is rejected, never guessed or repaired.'],size=23,line_height=38)}
 {text(50,640,'Reconcile gaps across excerpts · Record the temporal basis and its assumptions',size=23,color=ACCENT)}
-{text(50,700,'No selected evidence → insufficient without a model call · Invalid output → explicit error',size=22,color=MUTED)}
+{text(50,700,'No evidence → insufficient without inference · Token limit → explicit truncation error',size=22,color=MUTED)}
 {text(50,755,'Publication time is not an effective period · Repeated excerpts are not independent sources',size=22,color=MUTED)}
 {text(50,825,'Bounded calls · No automatic retries · Source reliability unassessed · No full-claim verdict',size=20,color=MUTED)}
 </svg>'''

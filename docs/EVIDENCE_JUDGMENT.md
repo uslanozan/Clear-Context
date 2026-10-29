@@ -9,9 +9,28 @@ Configuration: `config/judges.yaml`. Prompt:
 `MODEL_JUDGE`, then the catalog default. Defaults: three concurrent calls, three
 total calls, low effort, and no automatic retries.
 
-The selected `need_evidence_v1_1` profile reconciles evidence with
+The `need_evidence_v1_1` profile reconciles evidence with
 `coverage_summary` and records `time_basis` separately. The original
 `need_evidence_v1` profile and response contract remain available for replay.
+
+The selected `need_evidence_v1_2` profile preserves those semantic rules with a
+compact transport contract. Request-local evidence aliases (`E1`, `E2`, etc.)
+replace long persistent IDs in the model input and output. The request schema
+enumerates allowed aliases separately for each need and fixes the number of
+evidence assessments. Code still rejects omitted, duplicated, foreign or modified
+aliases, then restores canonical IDs before citation validation and persistence.
+It never repairs a malformed ID by guessing. Results include the alias map for
+short references used in explanation text; aliases have meaning only within that
+packet. Source text, URLs and publication context remain available to the model;
+internal receipt IDs and source offsets stay in the canonical packet.
+
+V1.2 allows at most two exact excerpts per evidence item, 400 characters each,
+and 240-character explanations. Its profile-specific completion limit is 8192;
+older profiles keep the 4096 limit. This provides headroom, not a guarantee that
+every packet fits. A `length` finish reason produces `model_output_truncated`,
+preserving usage and finish reason without parsing partial JSON, caching it as a
+success, or retrying automatically. Three previously invalid saved-source cases
+completed in one bounded v1.2 trial. This is not a general reliability estimate.
 
 ## Contract
 

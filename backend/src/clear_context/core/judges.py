@@ -13,7 +13,8 @@ class JudgeProfile(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     implementation: Literal["need_evidence_v1"]
     prompt: str
-    response_contract: Literal["legacy_v1", "reconciled_v1_1"] = "legacy_v1"
+    response_contract: Literal["legacy_v1", "reconciled_v1_1", "compact_v1_2"] = "legacy_v1"
+    max_completion_tokens: int | None = Field(default=None, ge=256, le=8192)
 
 
 class JudgeLimits(BaseModel):
@@ -46,9 +47,12 @@ def load_judge(path: Path, prompts_path: Path, method: str | None = None):
     )
     if profile.prompt not in prompts.experiments:
         raise ValueError("Unknown central judge prompt.")
+    limits = catalog.limits
+    if profile.max_completion_tokens is not None:
+        limits = limits.model_copy(update={"max_completion_tokens": profile.max_completion_tokens})
     return (
         selected,
-        catalog.limits,
+        limits,
         prompts.experiments[profile.prompt].system,
         profile.response_contract,
     )

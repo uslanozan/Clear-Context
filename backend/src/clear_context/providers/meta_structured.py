@@ -9,10 +9,18 @@ from clear_context.core.settings import Settings
 
 
 class ModelResponseFailure(RuntimeError):
-    def __init__(self, code: str, status_code: int | None = None):
+    def __init__(
+        self,
+        code: str,
+        status_code: int | None = None,
+        usage: dict | None = None,
+        finish_reason: str | None = None,
+    ):
         super().__init__(code)
         self.code = code
         self.status_code = status_code
+        self.usage = usage or {}
+        self.finish_reason = finish_reason
 
 
 class MetaStructuredProvider:
@@ -77,6 +85,10 @@ class MetaStructuredProvider:
             body = response.json()
             choice = body["choices"][0]
             message = choice["message"]
+            if choice["finish_reason"] == "length":
+                raise ModelResponseFailure(
+                    "model_output_truncated", usage=body.get("usage"), finish_reason="length"
+                )
             if (
                 choice["finish_reason"] != "stop"
                 or message.get("refusal")

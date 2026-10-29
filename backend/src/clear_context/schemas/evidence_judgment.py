@@ -90,11 +90,48 @@ class ReconciledJudgmentResponse(BaseModel):
     assessments: list[ReconciledNeedAssessment]
 
 
+class CompactExcerpt(SourceExcerpt):
+    quote: str = Field(min_length=1, max_length=400)
+
+
+class CompactEvidenceAssessment(EvidenceAssessment):
+    explanation: str = Field(min_length=1, max_length=240)
+    excerpts: list[CompactExcerpt] = Field(max_length=2)
+
+
+class CompactCoverageSummary(CoverageSummary):
+    explanation: str = Field(min_length=1, max_length=240)
+
+
+class CompactTemporalBasis(TemporalBasis):
+    explanation: str = Field(min_length=1, max_length=240)
+
+
+class CompactNeedAssessment(ReconciledNeedAssessment):
+    evidence_assessments: list[CompactEvidenceAssessment]
+    coverage_summary: CompactCoverageSummary
+    time_basis: CompactTemporalBasis
+    explanation: str = Field(min_length=1, max_length=240)
+    missing_information: list[str] = Field(max_length=10)
+
+
+class CompactJudgmentResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    assessments: list[CompactNeedAssessment]
+
+
+def evidence_aliases(packet: JudgmentPacket) -> dict[str, str]:
+    """Map request-local aliases to immutable evidence identities."""
+    return {f"E{i}": evidence.id for i, evidence in enumerate(packet.evidence, 1)}
+
+
 def response_model(contract: str):
     if contract == "legacy_v1":
         return JudgmentResponse
     if contract == "reconciled_v1_1":
         return ReconciledJudgmentResponse
+    if contract == "compact_v1_2":
+        return CompactJudgmentResponse
     raise ValueError("Unknown judgment response contract.")
 
 
@@ -123,6 +160,21 @@ def need_status(assessment: NeedAssessment) -> str:
 
 def validate_judgment(content: str, packet: JudgmentPacket, contract: str = "legacy_v1"):
     result = response_model(contract).model_validate_json(content)
+    if contract == "compact_v1_2":
+        aliases = evidence_aliases(packet)
+        value = result.model_dump()
+        for assessment in value["assessments"]:
+            for item in assessment["evidence_assessments"]:
+                if item["evidence_id"] not in aliases:
+                    raise ValueError("Unknown exact evidence alias.")
+                item["evidence_id"] = aliases[item["evidence_id"]]
+            for field in ["coverage_summary", "time_basis"]:
+                if any(alias not in aliases for alias in assessment[field]["evidence_ids"]):
+                    raise ValueError("Unknown exact evidence alias.")
+                assessment[field]["evidence_ids"] = [
+                    aliases[alias] for alias in assessment[field]["evidence_ids"]
+                ]
+        result = ReconciledJudgmentResponse.model_validate(value)
     expected = {n.id for n in packet.needs}
     if (
         len(result.assessments) != len(expected)

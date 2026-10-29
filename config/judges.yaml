@@ -1,5 +1,5 @@
 schema_version: 1
-selected: need_evidence_v1_1
+selected: need_evidence_v1_2
 judges:
   need_evidence_v1:
     implementation: need_evidence_v1
@@ -8,6 +8,11 @@ judges:
     implementation: need_evidence_v1
     prompt: evidence_judgment_v1_1
     response_contract: reconciled_v1_1
+  need_evidence_v1_2:
+    implementation: need_evidence_v1
+    prompt: evidence_judgment_v1_2
+    response_contract: compact_v1_2
+    max_completion_tokens: 8192
 limits:
   max_concurrency: 3
   max_model_calls: 3

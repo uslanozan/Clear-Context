@@ -12,6 +12,7 @@ from clear_context.repositories.retrieval import encode, identity
 from clear_context.schemas.evidence_judgment import (
     JudgmentResponse,
     NeedAssessment,
+    evidence_aliases,
     need_status,
     resolved_citations,
     response_model,
@@ -90,7 +91,7 @@ class EvidenceJudgmentService:
                                 for n in packet.needs
                             ]
                         )
-                        if self.response_contract == "reconciled_v1_1":
+                        if self.response_contract in {"reconciled_v1_1", "compact_v1_2"}:
                             value = output.model_dump()
                             for assessment in value["assessments"]:
                                 assessment.update(
@@ -105,7 +106,7 @@ class EvidenceJudgmentService:
                                         "explanation": "No evidence to ground temporal context.",
                                     },
                                 )
-                            output = response_model(self.response_contract).model_validate(value)
+                            output = response_model("reconciled_v1_1").model_validate(value)
                         at = self.clock()
                     else:
                         research = self.repository.research
@@ -161,6 +162,8 @@ class EvidenceJudgmentService:
                         "citations": resolved_citations(output, packet),
                         "claim_verdicts": None,
                     }
+                    if self.response_contract == "compact_v1_2":
+                        result["evidence_aliases"] = evidence_aliases(packet)
                     receipt = self.repository.save(
                         packet, self.method, self.model.api_model_id, key, result, usage, at
                     )
@@ -173,6 +176,10 @@ class EvidenceJudgmentService:
                     )
                 except (ModelResponseFailure, ValueError, KeyError, IndexError, TypeError) as error:
                     self.halted = True
+                    if isinstance(error, ModelResponseFailure):
+                        usage = error.usage or usage
+                        if error.finish_reason:
+                            row["finish_reason"] = error.finish_reason
                     row.update(
                         status=error.code
                         if isinstance(error, ModelResponseFailure)

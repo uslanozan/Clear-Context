@@ -210,6 +210,7 @@ def test_successful_assessment_is_persisted_and_cache_replay_is_free(saved):
     second = asyncio.run(replay.assess([job]))[0]
     assert first["status"] == "assessed" and second["cached"] and replay.calls == 0
     assert first["judgment_id"] == second["judgment_id"]
+
     assert len(repo.export()["research_judgments"]) == 1
     assert "fake-secret" not in json.dumps(repo.export())
 
@@ -405,3 +406,132 @@ def test_new_contract_summary_and_time_survive_cache_replay(saved):
     assert first["judgment_id"] == second["judgment_id"]
     assert first["result"]["assessments"][0]["coverage_summary"]["coverage"] == "complete"
     assert first["result"]["assessments"][0]["time_basis"]["mode"] == "explicit_source_text"
+
+
+def compact_response(packet):
+    from clear_context.schemas.evidence_judgment import evidence_aliases
+
+    value = reconciled_response(packet)
+    aliases = {identity: alias for alias, identity in evidence_aliases(packet).items()}
+    for assessment in value["assessments"]:
+        for item in assessment["evidence_assessments"]:
+            item["evidence_id"] = aliases[item["evidence_id"]]
+        for field in ["coverage_summary", "time_basis"]:
+            assessment[field]["evidence_ids"] = [
+                aliases[identity] for identity in assessment[field]["evidence_ids"]
+            ]
+    return value
+
+
+def test_compact_roundtrip_preserves_canonical_ids_unicode_and_citations(saved):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    canonical = validate_judgment(
+        json.dumps(reconciled_response(packet)), packet, "reconciled_v1_1"
+    )
+    compact = validate_judgment(json.dumps(compact_response(packet)), packet, "compact_v1_2")
+    assert compact == canonical
+    assert resolved_citations(compact, packet) == resolved_citations(canonical, packet)
+
+
+@pytest.mark.parametrize("bad_alias", ["E999", "e1", "evidence_ids:E1", "E1 ", "placeholder"])
+def test_compact_aliases_are_exact_not_repaired(saved, bad_alias):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    value = compact_response(packet)
+    value["assessments"][0]["coverage_summary"]["evidence_ids"] = [bad_alias]
+    with pytest.raises(ValueError, match="exact evidence alias"):
+        validate_judgment(json.dumps(value), packet, "compact_v1_2")
+
+
+def test_compact_schema_scopes_ids_and_counts_to_each_need(saved):
+    from clear_context.providers.meta_judgment import build_judgment_request
+
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    request = build_judgment_request("Rules", packet, "model", "low", 8192, "compact_v1_2")
+    source = json.loads(request["messages"][1]["content"])
+    assert [e["id"] for e in source["evidence"]] == ["E1", "E2"]
+    assert all(e.id not in request["messages"][1]["content"] for e in packet.evidence)
+    schema = request["response_format"]["json_schema"]["schema"]
+    variants = schema["properties"]["assessments"]["items"]["anyOf"]
+    for variant, alias in zip(variants, ["E1", "E2"], strict=True):
+        items = variant["properties"]["evidence_assessments"]
+        assert items["minItems"] == items["maxItems"] == 1
+        assert items["items"]["properties"]["evidence_id"]["enum"] == [alias]
+        assert variant["properties"]["coverage_summary"]["properties"]["evidence_ids"]["items"][
+            "enum"
+        ] == [alias]
+    value = compact_response(packet)
+    value["assessments"][0]["evidence_assessments"][0]["evidence_id"] = "E2"
+    with pytest.raises(ValueError, match="need-bound"):
+        validate_judgment(json.dumps(value), packet, "compact_v1_2")
+
+
+def test_compact_preserves_fail_closed_quotes_and_output_bounds(saved):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    value = compact_response(packet)
+    value["assessments"][0]["evidence_assessments"][0]["excerpts"] = [{"quote": "Invented fact"}]
+    with pytest.raises(ValueError, match="literally match"):
+        validate_judgment(json.dumps(value), packet, "compact_v1_2")
+    value = compact_response(packet)
+    value["assessments"][0]["explanation"] = "x" * 241
+    with pytest.raises(ValueError):
+        validate_judgment(json.dumps(value), packet, "compact_v1_2")
+
+
+def test_compact_service_saves_only_canonical_ids_and_replays_without_calls(saved):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    runner = service(repo, lambda _: completion(compact_response(packet)))
+    runner.response_contract = "compact_v1_2"
+    runner.method = "need_evidence_v1_2"
+    first = asyncio.run(runner.assess([job]))[0]
+    runner.limits = runner.limits.model_copy(update={"max_model_calls": 0})
+    second = asyncio.run(runner.assess([job]))[0]
+    assert second["cached"] and runner.calls == 1
+    assert (
+        first["result"]["assessments"][0]["evidence_assessments"][0]["evidence_id"]
+        == packet.evidence[0].id
+    )
+    assert first["judgment_id"] == second["judgment_id"]
+
+
+def test_truncation_is_distinct_retains_usage_and_does_not_retry(saved):
+    repo, job = saved
+    runner = service(
+        repo,
+        lambda _: httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {"finish_reason": "length", "message": {"content": '{"assessments":['}}
+                ],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 4096},
+            },
+        ),
+        max_concurrency=1,
+    )
+    rows = asyncio.run(runner.assess([job, job]))
+    assert runner.calls == 1
+    assert rows[0]["status"] == "model_output_truncated"
+    assert rows[0]["finish_reason"] == "length"
+    assert rows[0]["usage"]["completion_tokens"] == 4096
+    assert "result" not in rows[0]
+    assert rows[1]["status"] == "not_run_after_failure"
+    assert not repo.export()["research_judgments"]
+
+
+def test_compact_empty_evidence_uses_no_call_and_profile_budget_is_isolated(saved):
+    repo, _ = saved
+    runner = service(repo, lambda _: pytest.fail("No request expected"))
+    runner.response_contract = "compact_v1_2"
+    row = asyncio.run(runner.assess([JudgmentJob("case", ("n2",), ())]))[0]
+    assert row["result"]["assessments"][0]["status"] == "insufficient"
+    assert runner.calls == 0
+    for method, budget in [("need_evidence_v1_1", 4096), ("need_evidence_v1_2", 8192)]:
+        _, limits, _, _ = load_judge(
+            PROJECT_ROOT / "config/judges.yaml", PROJECT_ROOT / "config/prompts.yaml", method
+        )
+        assert limits.max_completion_tokens == budget
