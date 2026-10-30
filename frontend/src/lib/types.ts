@@ -32,6 +32,15 @@ export interface CaptionCheck {
   assessment: 'consistent' | 'inconsistent' | 'cannot_tell';
   visible_basis: string[];
 }
+export interface PriorFactCheck {
+  url: string;
+  title: string | null;
+  publisher: string | null;
+  site: string | null;
+  rating: string | null;
+  review_date: string | null;
+  claim_text: string | null;
+}
 export interface MediaFinding {
   id: string;
   kind: 'image' | 'video';
@@ -47,6 +56,13 @@ export interface MediaFinding {
     context_cues: string[];
     caption_checks?: CaptionCheck[];
     note: string | null;
+  };
+  // Absent in reports saved before fact check search.
+  prior_checks?: {
+    status: 'not_checked' | 'found' | 'none' | 'failed';
+    provider: string | null;
+    reason: string | null;
+    reviews: PriorFactCheck[];
   };
   origin: {
     status: 'not_checked' | 'matches_found' | 'no_matches' | 'failed';

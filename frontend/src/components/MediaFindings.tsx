@@ -1,6 +1,6 @@
 import { Badge } from '@mantine/core';
 import { ArrowUpRight } from 'lucide-react';
-import type { CaptionCheck, MediaFinding } from '../lib/types';
+import type { CaptionCheck, MediaFinding, PriorFactCheck } from '../lib/types';
 
 const ANALYSIS: Record<MediaFinding['analysis']['status'], { label: string; color: string }> = {
   analyzed: { label: 'Read by model', color: 'teal' },
@@ -56,6 +56,60 @@ function CaptionChecks({ checks }: { checks: CaptionCheck[] }) {
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+function formatDate(value: string | null) {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function PriorChecks({ checks }: { checks: NonNullable<MediaFinding['prior_checks']> }) {
+  return (
+    <div className="prior-checks">
+      <h4>Published fact checks of this image</h4>
+      {checks.status === 'found' && (
+        <>
+          <ul>
+            {checks.reviews.map((review: PriorFactCheck) => {
+              const url = safeUrl(review.url);
+              if (!url) return null;
+              const meta = [review.publisher ?? review.site, formatDate(review.review_date)]
+                .filter(Boolean)
+                .join(' · ');
+              return (
+                <li key={url}>
+                  <a href={url} target="_blank" rel="noopener noreferrer" dir="auto">
+                    {plainTitle(review.title, url)} <ArrowUpRight size={13} aria-hidden />
+                  </a>
+                  <div className="prior-check-meta">
+                    {meta && <span className="muted small">{meta}</span>}
+                    {review.rating && (
+                      <span className="small" dir="auto">
+                        Publisher&rsquo;s rating: <strong>{review.rating}</strong>
+                      </span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="muted small">
+            Ratings are each publisher&rsquo;s own conclusion about the claim they reviewed, which
+            may differ from this post. They are read as sources below, not adopted as a verdict.
+          </p>
+        </>
+      )}
+      {checks.status === 'none' && (
+        <p className="muted">No published fact check of this image was found.</p>
+      )}
+      {(checks.status === 'not_checked' || checks.status === 'failed') && (
+        <p className="muted">{checks.reason ?? 'Not checked.'}</p>
+      )}
     </div>
   );
 }
@@ -211,6 +265,7 @@ export function MediaFindings({ media }: { media: MediaFinding[] }) {
                   </ul>
                 </div>
               )}
+              {item.prior_checks && <PriorChecks checks={item.prior_checks} />}
               <Origin origin={item.origin} />
             </div>
           </article>

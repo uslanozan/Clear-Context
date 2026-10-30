@@ -900,6 +900,24 @@ h3 {
   margin-top: 4px !important;
   color: var(--muted);
 }
+.prior-checks {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.prior-checks ul {
+  list-style: none;
+  padding: 0 !important;
+}
+.prior-checks li {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}
+.prior-check-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .earliest-match {
   margin: 4px 0 8px;
 }

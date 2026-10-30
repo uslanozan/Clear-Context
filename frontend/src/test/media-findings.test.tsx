@@ -145,3 +145,34 @@ it('shows caption checks as a model assessment and the earliest dated same-image
   expect(screen.getByText('Similar images')).toBeInTheDocument();
   expect(screen.getByText('Check · Feb 24, 2025')).toBeInTheDocument();
 });
+
+it('lists published fact checks with the publisher rating labeled as theirs', () => {
+  renderMedia([
+    {
+      ...base,
+      prior_checks: {
+        status: 'found',
+        provider: 'google_fact_check',
+        reason: null,
+        reviews: [
+          {
+            url: 'https://www.dogrulukpayi.com/a',
+            title: 'Fotoğraf Konya’yı mı gösteriyor?',
+            publisher: 'Doğruluk Payı',
+            site: 'dogrulukpayi.com',
+            rating: 'Yanlış',
+            review_date: '2025-02-24',
+            claim_text: null,
+          },
+        ],
+      },
+    },
+  ]);
+  expect(screen.getByText('Published fact checks of this image')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Konya’yı mı gösteriyor/ })).toHaveAttribute(
+    'href',
+    'https://www.dogrulukpayi.com/a',
+  );
+  expect(screen.getByText('Yanlış')).toBeInTheDocument();
+  expect(screen.getByText(/not adopted as a verdict/)).toBeInTheDocument();
+});
