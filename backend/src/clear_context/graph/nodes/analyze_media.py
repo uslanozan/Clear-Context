@@ -41,15 +41,10 @@ def check_origin(search, data: bytes, mime_type: str) -> MediaOrigin:
         )
 
 
-def check_prior_fact_checks(search, origin: MediaOrigin) -> PriorChecks:
+def check_prior_fact_checks(search, origin: MediaOrigin, text: str) -> PriorChecks:
     if search is None:
         return PriorChecks(status="not_checked", reason="Fact check search is not configured.")
-    if origin.status != "matches_found":
-        return PriorChecks(
-            status="not_checked",
-            reason="Fact checks are searched with copies found by reverse image search.",
-        )
-    return search.lookup(origin)
+    return search.lookup(origin, text)
 
 
 def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationContext]) -> dict:
@@ -71,7 +66,11 @@ def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationConte
             if record:
                 usage.append(record)
             origin = check_origin(runtime.context.reverse_image, data, item["mime_type"])
-            prior = check_prior_fact_checks(getattr(runtime.context, "fact_checks", None), origin)
+            # The caption, or statements read from the image when there is no caption.
+            query = state["text"].strip() or "\n".join(analysis.claim_text)
+            prior = check_prior_fact_checks(
+                getattr(runtime.context, "fact_checks", None), origin, query
+            )
         findings.append(
             MediaFinding(
                 id=item["id"],

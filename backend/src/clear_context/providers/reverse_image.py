@@ -70,6 +70,54 @@ def _text(item: dict, key: str) -> str | None:
     return value if isinstance(value, str) and value.strip() else None
 
 
+def public_copies(matches: list[ImageMatch], limit: int = 2) -> list[str]:
+    """Image URLs of same-image matches; Google-hosted thumbnails are preferred.
+
+    Services that only accept an image URL are queried with these copies, so the user's
+    upload is never published.
+    """
+    urls = [
+        m.image_url
+        for m in matches
+        if m.match != "similar" and m.image_url and m.image_url.startswith("https://")
+    ]
+    hosted = [u for u in urls if ".gstatic.com/" in u]
+    return list(dict.fromkeys(hosted + urls))[:limit]
+
+
+def parse_bing_pages(items) -> list[ImageMatch]:
+    """Bing "pages with this image": direct page links with the date Bing shows."""
+    matches, seen = [], set()
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        url = _text(item, "source")
+        if not url or not url.startswith(("http://", "https://")) or url in seen:
+            continue
+        seen.add(url)
+        shown = _text(item, "date")
+        published = None
+        if shown:
+            try:
+                published = datetime.fromisoformat(shown.replace("Z", "+00:00")).date()
+            except ValueError:
+                published = None
+        image = _text(item, "original")
+        matches.append(
+            ImageMatch(
+                page_url=url,
+                page_title=_text(item, "title"),
+                image_url=image if image and image.startswith("https://") else None,
+                match="full",
+                source=(urlsplit(url).hostname or "").removeprefix("www.") or None,
+                date_text=published.strftime("%b %d, %Y") if published else None,
+                published_on=published,
+                found_by="bing",
+            )
+        )
+    return matches
+
+
 def parse_lens_matches(items, match: str) -> list[ImageMatch]:
     matches, seen = [], set()
     for item in items or []:
@@ -90,6 +138,7 @@ def parse_lens_matches(items, match: str) -> list[ImageMatch]:
                 source=_text(item, "source"),
                 date_text=date_text,
                 published_on=parse_display_date(date_text),
+                found_by="google_lens",
             )
         )
     return matches
@@ -180,10 +229,13 @@ class SerpApiLensSearch:
         min_exact_matches: int = 3,
         max_similar_matches: int = 10,
         max_matches: int = 25,
+        bing: bool = True,
         transport: httpx.BaseTransport | None = None,
     ):
         if not api_key:
             raise ValueError("SerpApi Lens requires SERP_API_KEY.")
+        # Bing returns direct page links and dates; it needs a public copy found by Lens.
+        self.bing = bing
         self.api_key = api_key
         self.min_exact_matches = min_exact_matches
         self.max_similar_matches = max_similar_matches
@@ -217,6 +269,14 @@ class SerpApiLensSearch:
         if error:
             raise ReverseImageFailure("provider_error")
         return body
+
+    def _bing(self, image_url: str) -> list[ImageMatch]:
+        params = {"engine": "bing_reverse_image", "image_url": image_url, "api_key": self.api_key}
+        try:
+            response = self.client.get(self.search_endpoint, params=params)
+        except httpx.HTTPError as error:
+            raise ReverseImageFailure("transport_error") from error
+        return parse_bing_pages(self._json(response).get("pages_with_this_image"))
 
     def _lens(self, image_id: str, kind: str) -> dict:
         # SerpApi takes the key as a parameter; failures keep only a code, never the URL.
@@ -277,11 +337,23 @@ class SerpApiLensSearch:
             similar = [m for m in parse_lens_matches(visual, "similar") if m.page_url not in known]
             matches += similar[: self.max_similar_matches]
         kept = [self._resolve(m) for m in select_matches(matches, self.max_matches)]
+        reason = None
+        # Thumbnails are small; a second copy sometimes finds pages the first did not.
+        for copy in public_copies(kept, limit=2) if self.bing else []:
+            try:
+                found = self._bing(copy)
+            except ReverseImageFailure as error:
+                reason = f"Bing reverse image search did not complete ({error.code})."
+                break
+            if found:
+                kept += found
+                break
         unique = {m.page_url: m for m in reversed(kept)}
-        kept = [m for m in kept if unique[m.page_url] is m]
+        kept = order_matches([m for m in kept if unique[m.page_url] is m])
         return MediaOrigin(
             status="matches_found" if kept else "no_matches",
             provider=self.name,
+            reason=reason,
             matches=kept,
         )
 

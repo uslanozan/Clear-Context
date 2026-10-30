@@ -437,3 +437,102 @@ def test_fact_check_lookup_without_copies_or_after_errors():
     failed = search.lookup(origin)
     search.close()
     assert failed.status == "failed" and "http_error" in failed.reason
+
+
+def test_bing_adds_direct_dated_pages_using_a_public_copy_found_by_lens():
+    calls = []
+    exact = [
+        {
+            "link": "https://www.google.com/goto?url=x",
+            "title": "Old post",
+            "date": "Jul 5, 2011",
+            "image": "https://encrypted-tbn0.gstatic.com/images?q=copy",
+        }
+    ] * 1 + [
+        {"link": f"https://blog{i}.example/a", "title": f"Post {i}", "date": "Jan 1, 2020"}
+        for i in range(3)
+    ]
+
+    def handler(request):
+        if request.url.host == "www.google.com":
+            return httpx.Response(200, text="<html>Verifying your request</html>" * 200)
+        if request.url.params.get("engine") == "bing_reverse_image":
+            calls.append(request.url.params["image_url"])
+            return httpx.Response(
+                200,
+                json={
+                    "pages_with_this_image": [
+                        {
+                            "title": "Police archives in Sydney (1930s and 40s)",
+                            "source": "https://monovisions.example/sydney",
+                            "date": "2015-08-15T15:46:00Z",
+                            "original": "https://monovisions.example/a.jpg",
+                        },
+                        {"title": "No source"},
+                    ]
+                },
+            )
+        return lens_handler([], exact)(request)
+
+    search = SerpApiLensSearch("serp-key", transport=httpx.MockTransport(handler))
+    origin = search.search(PNG, "image/png")
+    search.close()
+    # The user's upload is not sent to Bing; the Google-hosted copy is.
+    assert calls == ["https://encrypted-tbn0.gstatic.com/images?q=copy"]
+    bing = [m for m in origin.matches if m.found_by == "bing"]
+    assert [(m.page_url, m.source, m.published_on.isoformat()) for m in bing] == [
+        ("https://monovisions.example/sydney", "monovisions.example", "2015-08-15")
+    ]
+    # Ordered by displayed date: the 2011 Lens match, then the 2015 Bing page.
+    assert [m.found_by for m in origin.matches[:2]] == ["google_lens", "bing"]
+    assert readable_matches(origin, 1)[0].page_url == "https://monovisions.example/sydney"
+
+
+def test_bing_failure_keeps_lens_matches_with_a_note():
+    exact = [{"link": "https://a.example/p", "image": "https://encrypted-tbn0.gstatic.com/c"}] * 3
+
+    def handler(request):
+        if request.url.params.get("engine") == "bing_reverse_image":
+            return httpx.Response(500)
+        return lens_handler([], exact)(request)
+
+    search = SerpApiLensSearch("serp-key", transport=httpx.MockTransport(handler))
+    origin = search.search(PNG, "image/png")
+    search.close()
+    assert origin.status == "matches_found" and len(origin.matches) == 1
+    assert "Bing" in origin.reason
+
+
+def test_fact_check_text_search_adds_reviews_matched_by_the_caption():
+    from clear_context.domain.investigation import MediaOrigin
+    from clear_context.providers.fact_check import GoogleFactCheckSearch
+
+    seen = []
+
+    def handler(request):
+        seen.append(request.url.path)
+        return httpx.Response(
+            200,
+            json={
+                "claims": [
+                    {
+                        "text": "Domuz eti satışına izin verildi",
+                        "claimReview": [
+                            {
+                                "url": "https://teyit.example/domuz",
+                                "textualRating": "Yanlış",
+                                "reviewDate": "2024-04-19T00:00:00Z",
+                            }
+                        ],
+                    }
+                ]
+            },
+        )
+
+    search = GoogleFactCheckSearch("key", transport=httpx.MockTransport(handler))
+    prior = search.lookup(MediaOrigin(status="no_matches"), "Domuz eti satışına izin verildi")
+    search.close()
+    # No public copy, so only the text endpoint is called.
+    assert seen == ["/v1alpha1/claims:search"]
+    assert prior.status == "found"
+    assert prior.reviews[0].matched_by == "text"

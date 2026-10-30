@@ -133,6 +133,8 @@ class ImageMatch(Record):
     source: str | None = None
     date_text: str | None = None
     published_on: date | None = None
+    # Search engine that returned the match, for example google_lens or bing.
+    found_by: str | None = None
 
 
 class MediaOrigin(Record):
@@ -181,6 +183,9 @@ class PriorFactCheck(Record):
     review_date: date | None = None
     claim_text: str | None = None
     language: str | None = None
+    # image: the same image was reviewed; text: a review matched the caption text, possibly
+    # about another picture.
+    matched_by: Literal["image", "text"] = "image"
 
 
 class PriorChecks(Record):
