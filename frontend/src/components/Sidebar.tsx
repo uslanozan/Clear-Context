@@ -81,7 +81,9 @@ export function Sidebar(props: Props) {
             onClick={props.onNavigate}
           >
             <BookOpenText size={15} strokeWidth={1.6} aria-hidden="true" />
-            <span className="history-item-title">{item.text}</span>
+            <span className="history-item-title">
+              {item.text || <em className="muted">Image without text</em>}
+            </span>
             <span className={`history-dot ${item.status}`} aria-label={item.status} />
           </NavLink>
         ))}

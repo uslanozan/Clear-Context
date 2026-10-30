@@ -353,7 +353,7 @@ function AccordionPassage({ text }: { text: string }) {
       <summary>
         <BookOpenText size={15} /> Original passage
       </summary>
-      <p>{text}</p>
+      <p>{text || 'No text was entered; this investigation started from images.'}</p>
     </details>
   );
 }
