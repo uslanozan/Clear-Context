@@ -97,9 +97,17 @@ docker compose up -d --build
 
 Open `http://127.0.0.1:8080`. The `web` container serves the built interface and proxies `/api` to the `api` container, which applies database migrations before starting. Settings come from `.env`; the container overrides only the bind address, the database path and CORS. Mock mode stays the default, and the paid-call settings described below apply unchanged.
 
-Both SQLite databases (investigations and research cache) live in the `clear-context-data` volume and survive `docker compose down` and image rebuilds. `docker compose down -v` deletes them. The volume starts empty; an existing `.local/clear-context.db` from a non-Docker setup is not imported.
+Both SQLite databases (investigations and research cache) live in the `clear-context-data` volume and survive `docker compose down` and image rebuilds. `docker compose down -v` deletes them. The volume starts empty. To bring over reports from a non-Docker setup, stop the local API, then run:
 
-The published port binds to loopback because the application has no authentication. Set `CLEAR_CONTEXT_PORT` to change the port. Changing `CLEAR_CONTEXT_BIND` exposes the app to your network without access control or HTTPS; do not do that on an untrusted network. The API documentation at `/docs` is not published through the web container.
+```powershell
+docker compose stop api
+docker compose run --rm --no-deps -v "${PWD}/.local:/import:ro" api python -m clear_context.db.import_local /import/clear-context.db
+docker compose start api
+```
+
+The command copies `clear-context.db` and the `research.sqlite` cache beside it with SQLite's backup API, refuses to overwrite a volume that already holds data unless you add `--replace`, and refuses a source with an unfinished journal. Pending migrations run when the API starts. In Git Bash, prefix the `run` command with `MSYS_NO_PATHCONV=1` so `/import` is not rewritten.
+
+The published port binds to loopback because the application has no authentication. Set `CLEAR_CONTEXT_PORT` to change the port. Changing `CLEAR_CONTEXT_BIND` exposes the app to your network without access control or HTTPS; do not do that on an untrusted network. Interactive API documentation is available at `http://127.0.0.1:8080/docs` (and `/redoc`) unless `API_DOCS_ENABLED=false`.
 
 ## Development
 
