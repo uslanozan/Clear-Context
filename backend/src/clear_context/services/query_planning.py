@@ -97,6 +97,7 @@ def build_request(
     model: str = "muse-spark-1.3",
     prompt_version: str = PROMPT_VERSION,
     response_schema: Literal["claim", "component", "mapped_component"] | None = None,
+    image_context: list[dict] | None = None,
 ) -> tuple[dict, str]:
     if not claims or len({claim.id for claim in claims}) != len(claims):
         raise ValueError("Input claims must have unique IDs and must not be empty.")
@@ -105,10 +106,14 @@ def build_request(
     catalog = yaml.safe_load(catalog_path.read_text(encoding="utf-8-sig"))
     entry = catalog["experiments"][prompt_version]
     system = entry["system"]
-    if entry.get("few_shot_examples"):
-        system += "\nSynthetic examples:\n" + json.dumps(
-            entry["few_shot_examples"], ensure_ascii=False
-        )
+    examples = entry.get("few_shot_examples")
+    if entry.get("extends"):
+        # An extending entry appends its rules to the base prompt and keeps its examples.
+        base = catalog["experiments"][entry["extends"]]
+        system = base["system"].rstrip("\n") + "\n" + system
+        examples = examples or base.get("few_shot_examples")
+    if examples:
+        system += "\nSynthetic examples:\n" + json.dumps(examples, ensure_ascii=False)
     context = {
         "source_language": source_language,
         "source_published_at": source_published_at,
@@ -116,6 +121,8 @@ def build_request(
         "maximum_queries": maximum_queries,
         "claims": [claim.model_dump() for claim in claims],
     }
+    if image_context:
+        context["image_context"] = image_context
     contract = response_schema or (
         "component" if prompt_version == "query_planning_v3" else "claim"
     )

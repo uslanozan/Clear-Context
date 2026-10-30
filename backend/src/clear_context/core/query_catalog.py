@@ -56,6 +56,7 @@ def build_planner_request(
     maximum_queries: int = 16,
     model: str = "muse-spark-1.3",
     method: str | None = None,
+    image_context: list[dict] | None = None,
 ) -> tuple[dict, PlannerProfile]:
     profile = load_planner_profile(planners_path, method)
     payload, _ = build_request(
@@ -67,6 +68,7 @@ def build_planner_request(
         model=model,
         prompt_version=profile.prompt,
         response_schema=profile.response_schema,
+        image_context=image_context,
     )
     return payload, profile
 

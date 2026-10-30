@@ -5,7 +5,7 @@ from string import Template
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from clear_context.core.extractors import ExtractorImplementation, load_extractor_profile
 from clear_context.core.settings import Settings, resolve_path
@@ -39,6 +39,8 @@ class ExperimentalPrompt(BaseModel):
     system: str = Field(min_length=1)
     few_shot_examples: list[dict[str, object]] = Field(default_factory=list)
     missing_check: str | None = None
+    # Another experiment whose system prompt this entry's rules are appended to.
+    extends: str | None = None
 
 
 class PromptCatalog(BaseModel):
@@ -47,6 +49,14 @@ class PromptCatalog(BaseModel):
     schema_version: Literal[1]
     prompts: dict[Literal["claim_extraction"], PromptVersions]
     experiments: dict[str, ExperimentalPrompt] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_extends(self):
+        for entry in self.experiments.values():
+            base = self.experiments.get(entry.extends) if entry.extends else None
+            if entry.extends and (base is None or base.extends):
+                raise ValueError("An experiment can only extend a base experiment.")
+        return self
 
 
 @dataclass(frozen=True)

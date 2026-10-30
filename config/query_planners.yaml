@@ -26,3 +26,9 @@ planners:
     prompt: query_planning_v5
     status: candidate
     response_schema: mapped_component
+  # Research selects v6 instead of the selected planner when images are attached.
+  v6:
+    implementation: structured_llm
+    prompt: query_planning_v6
+    status: candidate
+    response_schema: mapped_component

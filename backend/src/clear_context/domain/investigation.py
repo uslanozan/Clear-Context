@@ -1,3 +1,4 @@
+from datetime import date
 from enum import StrEnum
 from typing import Literal, Self
 from uuid import UUID
@@ -126,7 +127,12 @@ class ImageMatch(Record):
     page_url: str = Field(min_length=1)
     page_title: str | None = None
     image_url: str | None = None
-    match: Literal["full", "partial"]
+    # full/partial: the same image (or a crop of it); similar: a visually similar image.
+    match: Literal["full", "partial", "similar"]
+    # Site name and the page date as the provider displays them; not a first-publication date.
+    source: str | None = None
+    date_text: str | None = None
+    published_on: date | None = None
 
 
 class MediaOrigin(Record):
@@ -139,6 +145,14 @@ class MediaOrigin(Record):
     best_guess_labels: list[str] = Field(default_factory=list)
 
 
+class CaptionCheck(Record):
+    """Model visual assessment of one caption detail; not evidence and not a verdict."""
+
+    caption_detail: str = Field(min_length=1)
+    assessment: Literal["consistent", "inconsistent", "cannot_tell"]
+    visible_basis: list[str] = Field(default_factory=list)
+
+
 class MediaAnalysis(Record):
     """Model-read content of one file; transcription and observations can contain errors."""
 
@@ -147,8 +161,12 @@ class MediaAnalysis(Record):
         Literal["photo", "post_screenshot", "text_screenshot", "graphic", "video", "other"] | None
     ) = None
     visible_text: str = ""
+    # Parts of visible_text that assert something (post text, headlines); only these are
+    # sent to claim extraction. Signs, labels and date stamps stay observations.
+    claim_text: list[str] = Field(default_factory=list)
     observations: list[str] = Field(default_factory=list)
     context_cues: list[str] = Field(default_factory=list)
+    caption_checks: list[CaptionCheck] = Field(default_factory=list)
     note: str | None = None
 
 

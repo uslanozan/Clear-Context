@@ -11,18 +11,53 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from clear_context.core.settings import ModelSelection, Settings
-from clear_context.domain.investigation import MediaAnalysis, ModelUsage
+from clear_context.domain.investigation import CaptionCheck, MediaAnalysis, ModelUsage
 from clear_context.providers.meta_structured import MetaStructuredProvider, ModelResponseFailure
 
-PROMPT_VERSION = "media_analysis_v1"
+PROMPT_VERSION = "media_analysis_v2"
+
+
+class CaptionCheckOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    caption_detail: str = Field(min_length=1, max_length=300)
+    assessment: Literal["consistent", "inconsistent", "cannot_tell"]
+    visible_basis: list[str] = Field(max_length=6)
 
 
 class MediaDescription(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     content_type: Literal["photo", "post_screenshot", "text_screenshot", "graphic", "other"]
     visible_text: str = Field(max_length=20000)
+    claim_text: list[str] = Field(max_length=12)
     observations: list[str] = Field(max_length=12)
     context_cues: list[str] = Field(max_length=12)
+    caption_checks: list[CaptionCheckOutput] = Field(max_length=8)
+
+
+def to_analysis(description: MediaDescription) -> MediaAnalysis:
+    """Keep only claim text copied verbatim from the transcription; drop the rest with a note."""
+    claim_text = [
+        part for part in description.claim_text if part.strip() and part in description.visible_text
+    ]
+    dropped = len([p for p in description.claim_text if p.strip()]) - len(claim_text)
+    return MediaAnalysis(
+        status="analyzed",
+        content_type=description.content_type,
+        visible_text=description.visible_text,
+        claim_text=claim_text,
+        observations=description.observations,
+        context_cues=description.context_cues,
+        caption_checks=[
+            CaptionCheck(**check.model_dump())
+            for check in description.caption_checks
+            if check.caption_detail.strip()
+        ],
+        note=(
+            f"{dropped} statement part(s) did not match the transcription and were not used."
+            if dropped
+            else None
+        ),
+    )
 
 
 class MockMediaAnalyzer:
@@ -92,4 +127,4 @@ class MetaMediaAnalyzer:
             input_tokens=usage.get("prompt_tokens"),
             output_tokens=usage.get("completion_tokens"),
         )
-        return MediaAnalysis(status="analyzed", **description.model_dump()), record
+        return to_analysis(description), record

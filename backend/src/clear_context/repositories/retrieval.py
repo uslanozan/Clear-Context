@@ -116,6 +116,36 @@ class RetrievalRepository:
         with self.engine.begin() as conn:
             self._insert_query(conn, case_id, query_id, request.model_dump(), need_ids, "followup")
 
+    def add_image_matches(self, case_id, query_id, need_ids, results, retrieved_at):
+        """Record reverse image matches as discovered sources for planned needs.
+
+        The query row only links these pages to needs; it is never sent to a search provider.
+        """
+        plan = self.plan(case_id)
+        known = {n.id for n in plan.needs if n.status == "planned"}
+        if not need_ids or not set(need_ids) <= known:
+            raise ValueError("Image matches must reference existing planned needs.")
+        with self.engine.begin() as conn:
+            self._insert_query(
+                conn, case_id, query_id, {"kind": "reverse_image"}, need_ids, "image_match"
+            )
+            for rank, result in enumerate(results, 1):
+                url = canonical_source_url(result["url"])
+                source_id = identity("s_", url)
+                conn.execute(insert(sources).values(id=source_id, url=url).on_conflict_do_nothing())
+                conn.execute(
+                    insert(hits)
+                    .values(
+                        case_id=case_id,
+                        query_id=query_id,
+                        source_id=source_id,
+                        rank=rank,
+                        result=encode(result),
+                        retrieved_at=retrieved_at,
+                    )
+                    .on_conflict_do_nothing()
+                )
+
     def cached(self, kind, key, now):
         with self.engine.connect() as conn:
             row = (

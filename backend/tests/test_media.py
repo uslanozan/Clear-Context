@@ -10,6 +10,9 @@ from clear_context.graph.nodes.analyze_media import analyze_media, compose_analy
 from clear_context.main import create_app
 from clear_context.providers.reverse_image import (
     ReverseImageFailure,
+    SerpApiLensSearch,
+    readable_matches,
+    shrink_image,
 )
 from clear_context.services.media import MediaRejected, sniff, store, validate
 
@@ -85,7 +88,8 @@ def test_text_read_from_an_image_is_labeled_and_used_for_extraction():
             return MediaAnalysis(
                 status="analyzed",
                 content_type="post_screenshot",
-                visible_text="BREAKING: protests in France",
+                visible_text="@news\nBREAKING: protests in France\n2 min",
+                claim_text=["BREAKING: protests in France"],
                 observations=["A crowd holds flags."],
                 context_cues=["Signs are written in Hungarian."],
             ), usage
@@ -121,9 +125,11 @@ def test_text_read_from_an_image_is_labeled_and_used_for_extraction():
     assert result["model_usage"][0].task == "media_analysis"
 
 
-def test_analyzed_text_skips_images_without_text():
-    finding = SimpleNamespace(analysis=SimpleNamespace(visible_text="  "))
-    assert compose_analyzed_text("Caption.", [finding]) == "Caption."
+def test_analyzed_text_skips_images_without_statements():
+    # Scene text such as a date stamp is transcribed but is not sent to claim extraction.
+    stamp = SimpleNamespace(analysis=MediaAnalysis(status="analyzed", visible_text="1996"))
+    blank = SimpleNamespace(analysis=MediaAnalysis(status="analyzed", claim_text=["  "]))
+    assert compose_analyzed_text("Caption.", [stamp, blank]) == "Caption."
 
 
 def test_meta_media_request_sends_the_image_inline_and_reads_the_schema(settings, monkeypatch):
@@ -143,8 +149,13 @@ def test_meta_media_request_sends_the_image_inline_and_reads_the_schema(settings
             "choices": [
                 {
                     "message": {
-                        "content": '{"content_type": "photo", "visible_text": "", '
-                        '"observations": ["A street."], "context_cues": []}'
+                        "content": '{"content_type": "post_screenshot", '
+                        '"visible_text": "Trains in Konya\\nJE-779", '
+                        '"claim_text": ["Trains in Konya", "Trains in Ankara"], '
+                        '"observations": ["A street."], "context_cues": [], '
+                        '"caption_checks": [{"caption_detail": "Konya", '
+                        '"assessment": "inconsistent", '
+                        '"visible_basis": ["Signs use Chinese characters."]}]}'
                     }
                 }
             ],
@@ -163,6 +174,184 @@ def test_meta_media_request_sends_the_image_inline_and_reads_the_schema(settings
     monkeypatch.setattr(meta_media, "MetaStructuredProvider", Provider)
     analysis, usage = analyzer.analyze_image(PNG, "image/png", "")
     assert analysis.status == "analyzed" and analysis.observations == ["A street."]
+    # Statements absent from the transcription are dropped, with a note.
+    assert analysis.claim_text == ["Trains in Konya"]
+    assert "did not match" in analysis.note
+    assert analysis.caption_checks[0].assessment == "inconsistent"
     assert usage.input_tokens == 1400
+    assert usage.prompt_version == "media_analysis_v2"
     failed, usage = analyzer.analyze_image(PNG, "image/png", "")
     assert failed.status == "failed" and usage is None
+
+
+def lens_handler(calls, exact, visual=()):
+    def handler(request):
+        calls.append(request)
+        if request.url.path == "/image":
+            return httpx.Response(200, json={"image_id": "img-1"})
+        kind = request.url.params["type"]
+        if kind == "exact_matches":
+            return httpx.Response(200, json={"exact_matches": list(exact)})
+        return httpx.Response(200, json={"visual_matches": list(visual)})
+
+    return handler
+
+
+def test_serpapi_lens_orders_exact_matches_by_displayed_date():
+    calls = []
+    exact = [
+        {
+            "link": "https://check.example/a",
+            "title": "Fact check",
+            "source": "Check",
+            "date": "Feb 24, 2025",
+        },
+        {
+            "link": "https://forum.example/b",
+            "title": "Same driver",
+            "source": "Forum",
+            "date": "Feb 12, 2025",
+        },
+        {"link": "https://blog.example/c", "title": "Undated", "source": "Blog"},
+        {"link": "javascript:alert(1)"},
+    ]
+    search = SerpApiLensSearch(
+        "serp-key", transport=httpx.MockTransport(lens_handler(calls, exact))
+    )
+    origin = search.search(PNG, "image/png")
+    search.close()
+    # Three exact matches are enough; no second, visual search is spent.
+    assert [c.url.path for c in calls] == ["/image", "/search"]
+    assert calls[1].url.params["image_id"] == "img-1"
+    assert [m.source for m in origin.matches] == ["Forum", "Check", "Blog"]
+    assert origin.matches[0].published_on.isoformat() == "2025-02-12"
+    assert origin.matches[2].published_on is None
+
+
+def test_serpapi_lens_adds_similar_images_when_exact_matches_are_scarce():
+    calls = []
+    visual = [
+        {"link": "https://snopes.example/7-headed", "title": "Seven-headed snake?"},
+        {"link": "https://check.example/a", "title": "Duplicate of exact"},
+    ]
+    exact = [{"link": "https://check.example/a", "title": "Fact check"}]
+    search = SerpApiLensSearch(
+        "serp-key", transport=httpx.MockTransport(lens_handler(calls, exact, visual))
+    )
+    origin = search.search(PNG, "image/png")
+    search.close()
+    assert [c.url.params.get("type") for c in calls[1:]] == ["exact_matches", "visual_matches"]
+    assert [(m.page_url, m.match) for m in origin.matches] == [
+        ("https://check.example/a", "full"),
+        ("https://snopes.example/7-headed", "similar"),
+    ]
+
+
+def test_serpapi_lens_failures_keep_only_a_code():
+    def handler(request):
+        return httpx.Response(200, json={"error": "Invalid API key: serp-key"})
+
+    search = SerpApiLensSearch("serp-key", transport=httpx.MockTransport(handler))
+    with pytest.raises(ReverseImageFailure) as error:
+        search.search(PNG, "image/png")
+    search.close()
+    assert error.value.code == "provider_error"
+    assert "serp-key" not in str(error.value)
+
+
+def test_large_images_are_shrunk_for_upload_and_unreadable_ones_fail():
+    import io
+
+    from PIL import Image
+
+    noisy = Image.effect_noise((1800, 1800), 120).convert("RGB")
+    buffer = io.BytesIO()
+    noisy.save(buffer, format="PNG")
+    assert buffer.tell() > 500_000
+    small = shrink_image(buffer.getvalue(), 500_000)
+    assert len(small) <= 500_000 and small[:3] == b"\xff\xd8\xff"
+    assert shrink_image(PNG, 500_000) == PNG
+    with pytest.raises(ReverseImageFailure, match="image_unreadable"):
+        shrink_image(b"x" * 600_000, 500_000)
+
+
+def test_redirects_and_social_feeds_are_not_read_as_sources():
+    from clear_context.domain.investigation import ImageMatch, MediaOrigin
+
+    origin = MediaOrigin(
+        status="matches_found",
+        matches=[
+            ImageMatch(page_url=url, match="full")
+            for url in (
+                "https://www.google.com/goto?url=x",
+                "https://www.instagram.com/p/1/",
+                "https://www.reddit.com/r/a/",
+                "https://check.example/a",
+                "https://news.example/b",
+            )
+        ],
+    )
+    assert [m.page_url for m in readable_matches(origin, 2)] == [
+        "https://www.reddit.com/r/a/",
+        "https://check.example/a",
+    ]
+
+
+def test_serpapi_lens_keeps_earliest_matches_and_fact_checks_and_resolves_redirects():
+    calls = []
+    exact = [
+        {
+            "link": f"https://blog{i}.example/post",
+            "title": f"Old post {i}",
+            "date": f"Jan {i + 1}, 2012",
+        }
+        for i in range(5)
+    ]
+    exact.append(
+        {
+            "link": "https://www.google.com/goto?url=abc",
+            "title": "Fotoğraf Konya'yı mı gösteriyor?",
+            "source": "Doğruluk Payı",
+            "date": "Feb 24, 2025",
+        }
+    )
+
+    def handler(request):
+        if request.url.host == "www.google.com":
+            calls.append("redirect")
+            return httpx.Response(302, headers={"location": "https://www.dogrulukpayi.com/a"})
+        return lens_handler(calls, exact)(request)
+
+    search = SerpApiLensSearch("serp-key", max_matches=3, transport=httpx.MockTransport(handler))
+    origin = search.search(PNG, "image/png")
+    search.close()
+    # The two earliest posts plus the fact check, which is kept despite its later date.
+    assert [m.page_url for m in origin.matches] == [
+        "https://blog0.example/post",
+        "https://blog1.example/post",
+        "https://www.dogrulukpayi.com/a",
+    ]
+    assert calls.count("redirect") == 1
+    # Likely fact checks are read first.
+    assert readable_matches(origin, 1)[0].page_url == "https://www.dogrulukpayi.com/a"
+
+
+def test_serpapi_lens_empty_results_and_redirect_pages():
+    calls = []
+    exact = [{"link": "https://www.google.com/goto?url=x", "title": "Old post"}]
+
+    def handler(request):
+        if request.url.host == "www.google.com":
+            return httpx.Response(
+                200, text='<H1>302 Moved</H1><A HREF="https://blog.example/a?x=1&amp;y=2">here</A>'
+            )
+        if request.url.params.get("type") == "visual_matches":
+            return httpx.Response(
+                200, json={"error": "Google Lens hasn't returned any results for this query."}
+            )
+        return lens_handler(calls, exact)(request)
+
+    search = SerpApiLensSearch("serp-key", transport=httpx.MockTransport(handler))
+    origin = search.search(PNG, "image/png")
+    search.close()
+    assert [m.page_url for m in origin.matches] == ["https://blog.example/a?x=1&y=2"]

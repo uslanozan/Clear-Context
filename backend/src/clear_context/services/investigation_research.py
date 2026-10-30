@@ -1,6 +1,7 @@
 """Bounded text research using saved query, source and judgment receipts."""
 
 import asyncio
+import time
 from dataclasses import dataclass
 from uuid import NAMESPACE_URL, uuid5
 
@@ -19,6 +20,7 @@ from clear_context.domain.investigation import (
 )
 from clear_context.providers.meta_passages import MetaPassageProvider
 from clear_context.providers.meta_structured import MetaStructuredProvider, ModelResponseFailure
+from clear_context.providers.reverse_image import readable_matches
 from clear_context.providers.tavily import RetrievalFailure, TavilyClient
 from clear_context.repositories.judgment import JudgmentRepository
 from clear_context.repositories.retrieval import RetrievalRepository, identity
@@ -54,6 +56,9 @@ class ResearchBudget:
     followup_source_reads: int = 2
     followup_selection_calls: int = 3
     followup_judgment_calls: int = 2
+    # Pages where reverse image search found the attached image; read in addition to
+    # text-search sources.
+    image_match_reads: int = 2
 
 
 RESEARCH_MODES = {
@@ -66,6 +71,7 @@ RESEARCH_MODES = {
         followup_source_reads=0,
         followup_selection_calls=0,
         followup_judgment_calls=0,
+        image_match_reads=1,
     ),
     "balanced": ResearchBudget(),
     "deep": ResearchBudget(
@@ -77,8 +83,30 @@ RESEARCH_MODES = {
         followup_source_reads=3,
         followup_selection_calls=4,
         followup_judgment_calls=4,
+        image_match_reads=3,
     ),
 }
+
+
+def image_context(media) -> list[dict]:
+    """Planner context from analyzed images; untrusted descriptions, not claims or evidence."""
+    context = []
+    for index, finding in enumerate(media or [], 1):
+        analysis = finding.analysis
+        if analysis.status != "analyzed":
+            continue
+        context.append(
+            {
+                "image": index,
+                "content_type": analysis.content_type,
+                "observations": analysis.observations,
+                "context_cues": analysis.context_cues,
+                "matching_page_titles": [
+                    match.page_title for match in finding.origin.matches[:8] if match.page_title
+                ],
+            }
+        )
+    return context
 
 
 def stable_uuid(kind, value):
@@ -101,11 +129,11 @@ class InvestigationResearch:
         self.settings, self.models, self.workspace = settings, models, workspace
         self.budget = budget or ResearchBudget()
 
-    def run(self, investigation_id, claims, progress=None, mode=None):
+    def run(self, investigation_id, claims, progress=None, mode=None, media=None):
         budget = RESEARCH_MODES[mode] if mode else self.budget
-        return asyncio.run(self._run(investigation_id, claims, progress, budget))
+        return asyncio.run(self._run(investigation_id, claims, progress, budget, media or []))
 
-    async def _run(self, investigation_id, claims, progress, budget):
+    async def _run(self, investigation_id, claims, progress, budget, media):
         meta = MetaStructuredProvider(self.settings)
         planning_claims = [
             PlanningClaim(
@@ -123,6 +151,7 @@ class InvestigationResearch:
                 findings=[],
                 limitations=["No claims were available for research."],
             )
+        images = image_context(media)
         request, profile = build_planner_request(
             planning_claims,
             planners_path=PROJECT_ROOT / "config/query_planners.yaml",
@@ -130,6 +159,9 @@ class InvestigationResearch:
             source_language="auto",
             maximum_queries=budget.max_queries,
             model=self.models["research"].api_model_id,
+            # v6 adds rules for image context; text-only research keeps the selected planner.
+            method="v6" if images else None,
+            image_context=images or None,
         )
         body = await meta.complete(request, self.settings.meta_timeout_seconds)
         usage = [
@@ -183,12 +215,26 @@ class InvestigationResearch:
                     "max_search_calls": budget.max_queries + budget.followup_queries,
                     # Extra extract calls let a readable source replace an unreadable one.
                     "max_extract_calls": 2
-                    * (budget.max_source_reads + budget.followup_source_reads),
+                    * (
+                        budget.max_source_reads
+                        + budget.followup_source_reads
+                        + budget.image_match_reads
+                    ),
                     "max_followup_queries": budget.followup_queries,
                 }
             )
             session = RetrievalSession(research, tavily, policy)
             page_needs, hits, read_sources = {}, {}, {}
+            match_reads = self._read_image_matches(
+                session,
+                research,
+                saved,
+                media,
+                budget.image_match_reads,
+                read_sources,
+                page_needs,
+                limitations,
+            )
             search_complete = self._search(
                 session,
                 research,
@@ -197,7 +243,7 @@ class InvestigationResearch:
                 read_sources,
                 page_needs,
                 hits,
-                budget.max_source_reads,
+                budget.max_source_reads + match_reads,
                 limitations,
             )
             if progress and search_complete:
@@ -248,6 +294,7 @@ class InvestigationResearch:
                     usage,
                     progress,
                     budget,
+                    match_reads,
                 )
             report = self._report(
                 investigation_id, claims, saved, judgments, research, limitations, receipts
@@ -257,6 +304,56 @@ class InvestigationResearch:
         finally:
             tavily.close()
             research.close()
+
+    @staticmethod
+    def _read_image_matches(
+        session, research, saved, media, limit, read_sources, page_needs, limitations
+    ):
+        """Read pages where the attached image appears, for every planned need; returns reads."""
+        planned = [need.id for need in saved.needs if need.status == "planned"]
+        if not planned or limit <= 0:
+            return 0
+        matches = []
+        for finding in media:
+            if finding.origin.status == "matches_found":
+                matches.extend(readable_matches(finding.origin, limit))
+        if not matches:
+            return 0
+        results = [
+            {
+                "title": match.page_title or match.page_url,
+                "url": match.page_url,
+                "content": None,
+                # The date the provider displays; the judge treats it as page publication time.
+                "published_date": match.published_on.isoformat() if match.published_on else None,
+            }
+            for match in matches
+        ]
+        try:
+            research.add_image_matches(
+                saved.case_id, "image_matches", planned, results, time.time()
+            )
+        except ValueError:
+            limitations.append("Reverse image matches could not be recorded for research.")
+            return 0
+        reads = 0
+        for result in results:
+            if reads >= limit:
+                break
+            try:
+                source = identity("s_", canonical_source_url(result["url"]))
+                if source in read_sources:
+                    continue
+                read_sources[source] = None
+                read_sources[source] = session.read_source(source)
+                page_needs[read_sources[source]] = set(planned)
+                reads += 1
+            except (RetrievalFailure, ValueError, KeyError) as error:
+                code = getattr(error, "code", "invalid_source")
+                limitations.append(f"A page matching the image could not be read ({code}).")
+                if session.halted:
+                    break
+        return reads
 
     @staticmethod
     def _search(
@@ -356,6 +453,7 @@ class InvestigationResearch:
         usage,
         progress,
         budget,
+        match_reads=0,
     ):
         """Search once more for needs the assessment left insufficient, within the budget."""
         packets = JudgmentRepository(research)
@@ -436,7 +534,7 @@ class InvestigationResearch:
             read_sources,
             page_needs,
             hits,
-            budget.max_source_reads + budget.followup_source_reads,
+            budget.max_source_reads + budget.followup_source_reads + match_reads,
             limitations,
         )
         # Only new page/need pairs need selection; earlier pairs keep their receipts.

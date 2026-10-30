@@ -4,7 +4,7 @@ Investigate a claim. Inspect the evidence. Recover the context.
 
 Clear Context is a multimodal research agent being built for the Meta Global AI Developer Hackathon (October 26–November 4, 2026), in the solo Indie Developer track.
 
-**Status: local API and LangGraph workflow implemented, with mock mode by default. Optional Meta text research connects query planning, Tavily keyless search, source reading, passage selection and evidence assessment to saved web reports. Image upload and Muse image reading (visible text, observations, place/time cues) are implemented; reverse image search has an adapter but is off by default, and video analysis and the Chrome extension are not implemented yet.**
+**Status: local API and LangGraph workflow implemented, with mock mode by default. Optional Meta text research connects query planning, Tavily keyless search, source reading, passage selection and evidence assessment to saved web reports. Image upload and Muse image reading (visible text, observations, place/time cues and a labeled caption-versus-image assessment) are implemented. Optional reverse image search (Google Lens through SerpApi) lists pages where the image appears and feeds readable ones to research; it is off by default. Video analysis and the Chrome extension are not implemented yet.**
 
 A separate evaluation workspace now replays saved query plans, shares source URLs,
 reads selected pages through Tavily keyless, and preserves claim/need/passage links
@@ -63,7 +63,7 @@ Accounts, subscriptions, and billing management are outside the MVP. A controlle
 - **Optional experiments:** Meta open-weight inference on Baseten, Fireworks, or Modal, subject to access and evaluation.
 - **Storage:** SQLite with SQLAlchemy and Alembic migrations; no separate database server.
 
-Text research uses Tavily Search and Extract. Set `TAVILY_API_KEY` to use your own Tavily account (the free plan includes monthly credits); without it, research falls back to keyless access, which is rate-limited without a published quota and stopped repeated or `deep` runs in testing. No paid fallback runs automatically. A reverse-image lookup provider has not been selected or verified. Users must confirm their own billing/credit availability before enabling paid inference.
+Text research uses Tavily Search and Extract. Set `TAVILY_API_KEY` to use your own Tavily account (the free plan includes monthly credits); without it, research falls back to keyless access, which is rate-limited without a published quota and stopped repeated or `deep` runs in testing. No paid fallback runs automatically. Reverse image search is optional: set `REVERSE_IMAGE_PROVIDER=serpapi_lens` and `SERP_API_KEY` (SerpApi's free plan has a monthly search allowance; each image uses an upload and one or two searches). Images are then sent to SerpApi and Google. Match dates are the dates Google Lens shows for each page, not verified first-publication dates. Users must confirm their own billing/credit availability before enabling paid inference.
 
 ## Delivery order
 

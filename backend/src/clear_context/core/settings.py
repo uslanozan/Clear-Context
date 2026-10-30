@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     database_path: Path = PROJECT_ROOT / ".local" / "clear-context.db"
     media_dir: Path = PROJECT_ROOT / ".local" / "media"
     # Reverse image search adapter (providers/reverse_image.py); none disables it.
-    reverse_image_provider: Literal["none"] = "none"
+    reverse_image_provider: Literal["none", "serpapi_lens"] = "none"
     model_catalog_path: Path = PROJECT_ROOT / "config" / "models.yaml"
     prompt_catalog_path: Path = PROJECT_ROOT / "config" / "prompts.yaml"
     extractor_catalog_path: Path = PROJECT_ROOT / "config" / "extractors.yaml"
@@ -62,6 +62,7 @@ class Settings(BaseSettings):
     meta_api_key: SecretStr = Field(default=SecretStr(""), exclude=True)
     # Optional; without it research uses Tavily's rate-limited keyless mode.
     tavily_api_key: SecretStr = Field(default=SecretStr(""), exclude=True)
+    serp_api_key: SecretStr = Field(default=SecretStr(""), exclude=True)
 
     @field_validator("cors_allowed_origins")
     @classmethod

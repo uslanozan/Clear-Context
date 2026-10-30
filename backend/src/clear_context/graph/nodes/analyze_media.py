@@ -8,12 +8,16 @@ from clear_context.providers.reverse_image import ReverseImageFailure
 
 
 def compose_analyzed_text(text: str, findings: list[MediaFinding]) -> str:
-    """Join the user's text with text read from images, each block labeled by its source."""
+    """Join the user's text with statements read from images, each block labeled by its source.
+
+    Only claim text (post text, headlines) is joined; signs, labels and date stamps remain
+    observations, so they are not extracted as claims.
+    """
     parts = [text.strip()] if text.strip() else []
     for index, finding in enumerate(findings, 1):
-        visible = finding.analysis.visible_text.strip()
-        if visible:
-            parts.append(f"[Text read from image {index}]\n{visible}")
+        statements = "\n".join(part.strip() for part in finding.analysis.claim_text if part.strip())
+        if statements:
+            parts.append(f"[Text read from image {index}]\n{statements}")
     return "\n\n".join(parts)
 
 

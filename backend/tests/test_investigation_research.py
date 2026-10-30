@@ -70,6 +70,8 @@ def run_research(
     judge_profile="need_components_v2",
     claim_text="The bridge opened in 2017 and the mayor opened it.",
     first_url=None,
+    media=None,
+    planner_requests=None,
 ):
     """Run the flow with fakes; judge_response may be a list consumed per judgment call."""
     from clear_context.services import investigation_research as module
@@ -81,6 +83,8 @@ def run_research(
         async def complete(self, payload, timeout):
             request = json.loads(payload["messages"][1]["content"])
             if payload["response_format"]["json_schema"]["name"] == "query_plan":
+                if planner_requests is not None:
+                    planner_requests.append(payload)
                 claim_id = request["claims"][0]["id"]
                 return completion(
                     {
@@ -163,7 +167,7 @@ def run_research(
         tmp_path / "research.sqlite",
         budget,
     )
-    return claim, research.run(uuid4(), [claim], progress, mode)
+    return claim, research.run(uuid4(), [claim], progress, mode, media=media)
 
 
 def test_research_pipeline_binds_queries_sources_and_components(monkeypatch, tmp_path):
@@ -430,3 +434,93 @@ def test_system_explanations_follow_a_turkish_claim(monkeypatch, tmp_path):
     assert finding.components[-1].explanation == (
         "Bu araştırmanın arama bütçesi içinde araştırılmadı."
     )
+
+
+def test_pages_matching_the_image_are_read_beside_text_search(monkeypatch, tmp_path):
+    from sqlalchemy import create_engine, text
+
+    from clear_context.domain.investigation import (
+        ImageMatch,
+        MediaAnalysis,
+        MediaFinding,
+        MediaOrigin,
+    )
+
+    finding = MediaFinding(
+        id=uuid4(),
+        kind="image",
+        mime_type="image/jpeg",
+        filename="post.jpg",
+        analysis=MediaAnalysis(
+            status="analyzed",
+            content_type="photo",
+            observations=["A bridge over a river."],
+            context_cues=["Signs are in Hungarian."],
+        ),
+        origin=MediaOrigin(
+            status="matches_found",
+            provider="serpapi_lens",
+            matches=[
+                ImageMatch(
+                    page_url="https://www.instagram.com/p/1/",
+                    page_title="Reposted bridge photo",
+                    match="full",
+                ),
+                ImageMatch(
+                    page_url="https://example.org/mayor",
+                    page_title="Bridge opening, 2019",
+                    match="full",
+                    date_text="Feb 12, 2019",
+                    published_on="2019-02-12",
+                ),
+            ],
+        ),
+    )
+    requests = []
+    _, report = run_research(
+        monkeypatch,
+        tmp_path,
+        [PLANNED_NEED],
+        TWO_COMPONENTS,
+        budget=ResearchBudget(max_source_reads=1, followup_queries=0),
+        media=[finding],
+        planner_requests=requests,
+    )
+    context = json.loads(requests[0]["messages"][1]["content"])
+    assert context["image_context"][0]["matching_page_titles"] == [
+        "Reposted bridge photo",
+        "Bridge opening, 2019",
+    ]
+    # The image-aware planner extends the selected planner's rules.
+    system = requests[0]["messages"][0]["content"]
+    assert "image_context" in system and "Plan web research" in system
+    # The matching page is read in addition to the one text-search source; the social
+    # feed is skipped.
+    engine = create_engine("sqlite:///" + (tmp_path / "research.sqlite").as_posix())
+    with engine.connect() as conn:
+        read = conn.execute(
+            text("SELECT s.url FROM research_pages p JOIN research_sources s ON s.id = p.source_id")
+        )
+        urls = {row[0] for row in read}
+        hits = conn.execute(
+            text("SELECT result FROM research_hits WHERE query_id = 'image_matches'")
+        ).all()
+    engine.dispose()
+    assert urls == {"https://example.org/mayor", "https://example.org/bridge"}
+    assert len(hits) == 1
+    assert json.loads(hits[0][0])["published_date"] == "2019-02-12"
+    assert not any("could not be read" in item for item in report.limitations)
+
+
+def test_text_only_research_keeps_the_selected_planner(monkeypatch, tmp_path):
+    requests = []
+    run_research(
+        monkeypatch,
+        tmp_path,
+        [PLANNED_NEED],
+        TWO_COMPONENTS,
+        budget=ResearchBudget(followup_queries=0),
+        planner_requests=requests,
+    )
+    assert "image_context" not in requests[0]["messages"][0]["content"]
+    assert "image_context" not in json.loads(requests[0]["messages"][1]["content"])
