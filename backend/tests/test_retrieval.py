@@ -312,6 +312,14 @@ def test_markdown_pages_are_reduced_to_their_wording(repository):
     assert markdown_to_text(markdown) == (
         "Başlık\n\nYazar\n\nİddia YANLIŞ\n\nFotoğraflar Çin’de videoda görülüyor."
     )
+    # Link titles and parenthesized addresses leave no fragments behind.
+    assert (
+        markdown_to_text(
+            '* [Español](https://es.wikipedia.org/wiki/W "W (nombre) – Spanish")\n'
+            "* [Page](https://e.org/p(1)) end"
+        )
+        == "* Español\n* Page end"
+    )
     source = ingest(repository)
     sent = []
 

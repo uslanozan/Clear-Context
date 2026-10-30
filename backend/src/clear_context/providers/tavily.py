@@ -19,8 +19,11 @@ EXTRACT_ENDPOINT = "https://api.tavily.com/extract"
 
 # Plain text extraction dropped whole article bodies on some sites (for example list-styled
 # fact-check summaries), so pages are requested as Markdown and reduced to readable text.
-IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
-LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+# A link target is a URL without spaces (balanced parentheses allowed, as in Wikipedia
+# addresses), optionally followed by a quoted title.
+TARGET = r'\(\s*<?(?:[^\s()<>]|\([^\s()]*\))*>?(?:\s+"[^"]*")?\s*\)'
+IMAGE = re.compile(r"!\[[^\]]*\]" + TARGET)
+LINK = re.compile(r"\[([^\]]*)\]" + TARGET)
 HEADING = re.compile(r"^#{1,6}\s+", re.MULTILINE)
 EMPHASIS = re.compile(r"(\*\*|__)(.+?)\1")
 BLANK_LINES = re.compile(r"\n{3,}")
