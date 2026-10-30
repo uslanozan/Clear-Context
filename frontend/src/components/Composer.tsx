@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { Alert, Button, Textarea } from '@mantine/core';
+import { Alert, Button, SegmentedControl, Textarea } from '@mantine/core';
 import { ArrowUpRight, ArrowRight, ImagePlus, Paperclip, X } from 'lucide-react';
-import type { Health } from '../lib/types';
+import type { Health, ResearchMode } from '../lib/types';
+import { RESEARCH_MODES } from '../lib/modes';
 import { formatBytes, MEDIA_ACCEPT, useMediaAttachments } from '../lib/media';
 import { ProcessTimeline } from './ProcessTimeline';
 import { MediaPreview } from './MediaPreview';
@@ -21,11 +22,12 @@ interface Props {
   health?: Health;
   isPending: boolean;
   error: Error | null;
-  onSubmit: (text: string) => Promise<void>;
+  onSubmit: (text: string, researchMode?: ResearchMode) => Promise<void>;
 }
 
 export function Composer({ initialText = '', health, isPending, error, onSubmit }: Props) {
   const [text, setText] = useState(initialText);
+  const [researchMode, setResearchMode] = useState<ResearchMode>('balanced');
   const [validation, setValidation] = useState('');
   const [dragging, setDragging] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
@@ -44,7 +46,7 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
     submitting.current = true;
     setValidation('');
     try {
-      await onSubmit(text.trim());
+      await onSubmit(text.trim(), health.research_enabled ? researchMode : undefined);
     } catch {
       submitting.current = false;
     }
@@ -195,6 +197,22 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
               }}
             />
           </form>
+          {health?.research_enabled && (
+            <div className="research-mode">
+              <span className="research-mode-label" id="research-mode-label">
+                Research depth
+              </span>
+              <SegmentedControl
+                aria-labelledby="research-mode-label"
+                value={researchMode}
+                onChange={(value) => setResearchMode(value as ResearchMode)}
+                data={RESEARCH_MODES.map(({ value, label }) => ({ value, label }))}
+              />
+              <p className="research-mode-detail">
+                {RESEARCH_MODES.find((mode) => mode.value === researchMode)?.detail}
+              </p>
+            </div>
+          )}
           <p className="input-description" id="input-description">
             Paste or drop images and videos, or choose files. Up to 4 files · Images 20 MB · Videos
             100 MB · Total 100 MB.

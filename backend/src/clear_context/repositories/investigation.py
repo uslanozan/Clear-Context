@@ -32,13 +32,16 @@ class InvestigationRepository:
     def __init__(self, session_factory):
         self.sessions = session_factory
 
-    def create(self, text: str, mode: str = "mock") -> InvestigationRow:
+    def create(
+        self, text: str, mode: str = "mock", research_mode: str = "balanced"
+    ) -> InvestigationRow:
         now = utc_now()
         row = InvestigationRow(
             id=str(uuid4()),
             text=text,
             status=InvestigationStatus.QUEUED,
             mode=mode,
+            research_mode=research_mode,
             revision=1,
             created_at=now,
             updated_at=now,

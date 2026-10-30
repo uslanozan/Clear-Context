@@ -36,7 +36,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     raise RuntimeError(
                         "Database not initialized. Run Alembic upgrade head."
                     ) from None
-                if revision != "0004":
+                if revision != "0005":
                     raise RuntimeError("Database schema is unsupported. Run Alembic upgrade head.")
             repository = InvestigationRepository(create_session_factory(engine))
             repository.fail_interrupted()

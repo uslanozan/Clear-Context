@@ -16,6 +16,7 @@ import { Link } from 'react-router-dom';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ClaimSource } from './ClaimSource';
 import { EvidenceExcerpt, sourceDisplayName } from './EvidenceExcerpt';
+import { RESEARCH_MODES } from '../lib/modes';
 import type { Assessment, Investigation, Report, ResearchStep } from '../lib/types';
 
 const ASSESSMENTS: Record<Assessment, { label: string; color: string }> = {
@@ -94,6 +95,11 @@ export function ReportView({
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const evidenceMissing = report.sources.length === 0;
+  // Only label the mode when source research actually ran for this report.
+  const researchModeLabel = steps.some((step) => step.name === 'plan_queries')
+    ? RESEARCH_MODES.find((mode) => mode.value === (investigation.research_mode ?? 'balanced'))
+        ?.label
+    : undefined;
   const usageGroups = [...new Set(report.model_usage.map((usage) => usage.model_id))].map(
     (modelId) => {
       const calls = report.model_usage.filter((usage) => usage.model_id === modelId);
@@ -171,6 +177,12 @@ export function ReportView({
             })}
             <span>·</span>
             {report.claims.length} {report.claims.length === 1 ? 'claim' : 'claims'} extracted
+            {researchModeLabel && (
+              <>
+                <span>·</span>
+                {researchModeLabel} research
+              </>
+            )}
             {report.mode === 'mock' && (
               <>
                 <span>·</span>Development preview

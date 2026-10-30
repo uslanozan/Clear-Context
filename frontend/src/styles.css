@@ -384,6 +384,26 @@ h3 {
   height: 40px;
   font-size: 12px;
 }
+.research-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+}
+.research-mode-label {
+  font-size: 14px;
+  font-weight: 550;
+}
+.research-mode .mantine-SegmentedControl-root {
+  max-width: 100%;
+}
+.research-mode-detail {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
 .input-description {
   color: var(--muted);
   font-size: 12px;

@@ -11,6 +11,9 @@ class InvestigationRow(Base):
     text: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), index=True)
     mode: Mapped[str] = mapped_column(String(20))
+    research_mode: Mapped[str] = mapped_column(
+        String(20), default="balanced", server_default="balanced"
+    )
     revision: Mapped[int]
     created_at: Mapped[str] = mapped_column(String(40))
     updated_at: Mapped[str] = mapped_column(String(40))

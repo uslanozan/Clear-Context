@@ -26,11 +26,13 @@ export interface ExtractedClaim {
   context_spans?: TextSpan[];
   context_status?: 'standalone' | 'context_linked' | 'ambiguous' | null;
 }
+export type ResearchMode = 'fast' | 'balanced' | 'deep';
 export interface Investigation {
   id: string;
   text: string;
   status: Status;
   mode: 'mock' | 'meta';
+  research_mode?: ResearchMode;
   revision: number;
   created_at: string;
   updated_at: string;

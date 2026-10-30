@@ -60,6 +60,31 @@ class ResearchBudget:
     followup_judgment_calls: int = 2
 
 
+RESEARCH_MODES = {
+    "fast": ResearchBudget(
+        max_queries=3,
+        max_source_reads=2,
+        max_selection_calls=2,
+        max_judgment_calls=4,
+        followup_queries=0,
+        followup_source_reads=0,
+        followup_selection_calls=0,
+        followup_judgment_calls=0,
+    ),
+    "balanced": ResearchBudget(),
+    "deep": ResearchBudget(
+        max_queries=10,
+        max_source_reads=5,
+        max_selection_calls=5,
+        max_judgment_calls=10,
+        followup_queries=4,
+        followup_source_reads=3,
+        followup_selection_calls=4,
+        followup_judgment_calls=4,
+    ),
+}
+
+
 def stable_uuid(kind, value):
     return uuid5(NAMESPACE_URL, f"clear-context:{kind}:{value}")
 
@@ -80,10 +105,11 @@ class InvestigationResearch:
         self.settings, self.models, self.workspace = settings, models, workspace
         self.budget = budget or ResearchBudget()
 
-    def run(self, investigation_id, claims, progress=None):
-        return asyncio.run(self._run(investigation_id, claims, progress))
+    def run(self, investigation_id, claims, progress=None, mode=None):
+        budget = RESEARCH_MODES[mode] if mode else self.budget
+        return asyncio.run(self._run(investigation_id, claims, progress, budget))
 
-    async def _run(self, investigation_id, claims, progress):
+    async def _run(self, investigation_id, claims, progress, budget):
         meta = MetaStructuredProvider(self.settings)
         planning_claims = [
             PlanningClaim(
@@ -106,7 +132,7 @@ class InvestigationResearch:
             planners_path=PROJECT_ROOT / "config/query_planners.yaml",
             prompts_path=PROJECT_ROOT / "config/prompts.yaml",
             source_language="auto",
-            maximum_queries=self.budget.max_queries,
+            maximum_queries=budget.max_queries,
             model=self.models["research"].api_model_id,
         )
         body = await meta.complete(request, self.settings.meta_timeout_seconds)
@@ -116,7 +142,7 @@ class InvestigationResearch:
         plan = parse_planner_response(
             body["choices"][0]["message"]["content"],
             planning_claims,
-            self.budget.max_queries,
+            budget.max_queries,
             profile,
         )
         if progress:
@@ -153,7 +179,6 @@ class InvestigationResearch:
         research = RetrievalRepository(self.workspace)
         tavily = TavilyKeyless(timeout=30)
         limitations = ["Evidence assessments do not establish source reliability."]
-        budget = self.budget
         try:
             research.register_plan(saved)
             policy = load_retrieval_policy(PROJECT_ROOT / "config/retrieval.yaml")
@@ -224,6 +249,7 @@ class InvestigationResearch:
                     limitations,
                     usage,
                     progress,
+                    budget,
                 )
             report = self._report(
                 investigation_id, claims, saved, judgments, research, limitations, receipts
@@ -337,9 +363,9 @@ class InvestigationResearch:
         limitations,
         usage,
         progress,
+        budget,
     ):
         """Search once more for needs the assessment left insufficient, within the budget."""
-        budget = self.budget
         packets = JudgmentRepository(research)
         statements = {claim.id: claim.statement for claim in saved.claims}
         needs = {need.id: need for need in saved.needs}

@@ -4,6 +4,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+# Modes change search, reading and assessment budgets, never the methods.
+ResearchMode = Literal["fast", "balanced", "deep"]
+
 
 class InvestigationStatus(StrEnum):
     QUEUED = "queued"

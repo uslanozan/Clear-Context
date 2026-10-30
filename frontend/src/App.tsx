@@ -192,8 +192,8 @@ function Workspace() {
               health={health.isError ? undefined : health.data}
               isPending={create.isPending}
               error={create.error}
-              onSubmit={async (text) => {
-                await create.mutateAsync(text);
+              onSubmit={async (text, researchMode) => {
+                await create.mutateAsync({ text, research_mode: researchMode });
               }}
             />
           ) : investigation.isPending ? (

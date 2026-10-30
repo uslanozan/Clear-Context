@@ -17,7 +17,7 @@ and [evidence judgment](docs/EVIDENCE_JUDGMENT.md).
 V2 extraction now partitions long text under bounded character budgets, carries source
 context, and saves exact quote positions separately from interpreted statements. There is
 no document-wide eight-claim cap. Budget or validation gaps appear as partial extraction;
-processed ranges do not guarantee exhaustive claim coverage. Database migration `0004`
+processed ranges do not guarantee exhaustive claim coverage. Database migration `0005`
 is required. See [text analysis](docs/TEXT_ANALYSIS.md) and [prompt settings](docs/PROMPTS.md).
 
 ## The problem
@@ -125,7 +125,7 @@ python -m venv .venv
 
 On Linux/macOS, use `.venv/bin/python` instead of `.venv\Scripts\python.exe`. The dependency snapshot was tested on Windows/Python 3.12. See [API guide](docs/API.md) for endpoints and limitations. Open the interactive API documentation at `http://127.0.0.1:8000/docs`.
 
-Mock mode is the default. A configured API key does not enable calls by itself. To enable Meta claim extraction, set both `APP_MODE=meta` and `ALLOW_PAID_API_CALLS=true`, then restart. To also enable source research, set `RESEARCH_ENABLED=true`: the flow sends generated queries and source URLs to Tavily and selected text to Meta. It uses up to six searches, three page reads, one planning call, three selection calls and six judgment calls per investigation, in addition to extraction. Research needs left with insufficient evidence get one follow-up round: one more planning call, up to two searches, two page reads, three selection calls and two judgment calls. Claim-wide coverage and source reliability remain unresolved. Run `alembic upgrade head` for migration `0004`. See the [API guide](docs/API.md) for limits and data handling.
+Mock mode is the default. A configured API key does not enable calls by itself. To enable Meta claim extraction, set both `APP_MODE=meta` and `ALLOW_PAID_API_CALLS=true`, then restart. To also enable source research, set `RESEARCH_ENABLED=true`: the flow sends generated queries and source URLs to Tavily and selected text to Meta. Each investigation picks a research depth that changes only call budgets, never the methods. `balanced` (default) uses up to six searches, three page reads, one planning call, three selection calls and six judgment calls, in addition to extraction; research needs left with insufficient evidence then get one follow-up round of one more planning call, up to two searches, two page reads, three selection calls and two judgment calls. `fast` uses three searches, two page reads, two selection calls and four judgment calls with no follow-up. `deep` uses ten searches, five page reads, five selection calls and ten judgment calls, plus a follow-up of up to four searches, three page reads, four selection calls and four judgment calls; it costs more and is more likely to reach Tavily keyless rate limits. Needs beyond the judgment budget are reported as not assessed. Claim-wide coverage and source reliability remain unresolved. Run `alembic upgrade head` for migration `0005`. See the [API guide](docs/API.md) for limits and data handling.
 
 Start the web workspace in a second terminal (Node.js 22.12+ or a supported newer release):
 

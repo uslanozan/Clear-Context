@@ -8,13 +8,13 @@ Local development only, single process. Mock mode is the default. Meta mode supp
 | --- | --- | --- |
 | GET | `/api/health` | Mode and paid-call status; no credentials |
 | GET | `/api/models` | Validated task selections; not live provider availability |
-| POST | `/api/investigations` | Accept `{ "text": "A claim to investigate" }`; return 202 and Location |
+| POST | `/api/investigations` | Accept `{ "text": "A claim to investigate", "research_mode": "balanced" }`; return 202 and Location |
 | GET | `/api/investigations?limit=20&offset=0` | Recent history, newest first |
 | GET | `/api/investigations/{id}` | Persisted status and input |
 | GET | `/api/investigations/{id}/steps` | Recorded processing steps |
 | GET | `/api/investigations/{id}/report` | Completed report; 409 until available |
 
-Text must contain 1-20,000 characters after trimming. Unknown fields are rejected. Missing investigations return 404; malformed UUIDs and invalid input return 422. There is no URL fetching, image upload, cancellation, report revision, or authentication yet.
+Text must contain 1-20,000 characters after trimming. `research_mode` is optional: `fast`, `balanced` (default) or `deep`. It changes only research budgets (see the README) and is ignored when source research is disabled. Unknown fields are rejected. Missing investigations return 404; malformed UUIDs and invalid input return 422. There is no URL fetching, image upload, cancellation, report revision, or authentication yet.
 
 ## Try it
 

@@ -1,4 +1,4 @@
-import type { Health, Investigation, Report, ResearchStep } from './types';
+import type { Health, Investigation, Report, ResearchMode, ResearchStep } from './types';
 
 export class ApiError extends Error {
   constructor(
@@ -39,11 +39,11 @@ export const api = {
     request<ResearchStep[]>(`/investigations/${encodeURIComponent(id)}/steps`, { signal }),
   report: (id: string, signal?: AbortSignal) =>
     request<Report>(`/investigations/${encodeURIComponent(id)}/report`, { signal }),
-  create: (text: string) =>
+  create: (input: { text: string; research_mode?: ResearchMode }) =>
     request<Investigation>('/investigations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(input),
     }),
 };
 

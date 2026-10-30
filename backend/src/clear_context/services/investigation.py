@@ -41,6 +41,7 @@ class InvestigationService:
                         provider=self.provider,
                         research=self.research,
                         progress=lambda stage: self.repository.record_step(investigation_id, stage),
+                        research_mode=row.research_mode,
                     ),
                     config={"recursion_limit": self.recursion_limit},
                     stream_mode="updates",

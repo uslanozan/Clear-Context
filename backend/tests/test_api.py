@@ -40,12 +40,29 @@ def test_complete_mock_flow_and_persistence(settings):
 
 @pytest.mark.parametrize(
     "payload",
-    [{"text": " "}, {"text": "x" * 20001}, {}, {"text": "test", "api_key": "not-allowed"}],
+    [
+        {"text": " "},
+        {"text": "x" * 20001},
+        {},
+        {"text": "test", "api_key": "not-allowed"},
+        {"text": "test", "research_mode": "strict"},
+    ],
 )
 def test_invalid_input_is_rejected(settings, payload):
     with TestClient(create_app(settings)) as client:
         assert client.post("/api/investigations", json=payload).status_code == 422
         assert client.get("/api/investigations").json() == []
+
+
+def test_research_mode_is_recorded_with_balanced_default(settings):
+    with TestClient(create_app(settings)) as client:
+        default = client.post("/api/investigations", json={"text": "A claim"}).json()
+        deep = client.post(
+            "/api/investigations", json={"text": "A claim", "research_mode": "deep"}
+        ).json()
+        assert default["research_mode"] == "balanced"
+        assert deep["research_mode"] == "deep"
+        assert client.get(f"/api/investigations/{deep['id']}").json()["research_mode"] == "deep"
 
 
 def test_missing_pending_and_invalid_identifiers(settings):

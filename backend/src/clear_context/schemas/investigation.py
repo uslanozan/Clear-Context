@@ -4,12 +4,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from clear_context.domain.investigation import InvestigationStatus, ModelUsage
+from clear_context.domain.investigation import InvestigationStatus, ModelUsage, ResearchMode
 
 
 class InvestigationCreate(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     text: str = Field(min_length=1, max_length=20000)
+    research_mode: ResearchMode = "balanced"
 
 
 class InvestigationView(BaseModel):
@@ -18,6 +19,7 @@ class InvestigationView(BaseModel):
     text: str
     status: InvestigationStatus
     mode: Literal["mock", "meta"]
+    research_mode: ResearchMode
     revision: int
     created_at: datetime
     updated_at: datetime

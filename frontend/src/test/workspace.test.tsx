@@ -39,6 +39,8 @@ const report = {
   model_usage: [],
 };
 let posts: string[];
+let bodies: Record<string, unknown>[];
+let researchEnabled: boolean;
 let failPost: boolean;
 let healthOffline: boolean;
 
@@ -46,6 +48,8 @@ beforeEach(() => {
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:local-test');
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
   posts = [];
+  bodies = [];
+  researchEnabled = false;
   failPost = false;
   healthOffline = false;
   vi.stubGlobal(
@@ -54,9 +58,15 @@ beforeEach(() => {
       const url = String(input);
       if (url.endsWith('/health')) {
         if (healthOffline) throw new TypeError('offline');
-        return Response.json({ status: 'ok', mode: 'meta', paid_api_calls_enabled: true });
+        return Response.json({
+          status: 'ok',
+          mode: 'meta',
+          paid_api_calls_enabled: true,
+          research_enabled: researchEnabled,
+        });
       }
       if (options?.method === 'POST') {
+        bodies.push(JSON.parse(String(options.body)));
         posts.push(JSON.parse(String(options.body)).text);
         return failPost
           ? Response.json({ detail: 'Service unavailable' }, { status: 503 })
@@ -116,6 +126,29 @@ describe('Investigation workspace', () => {
     expect(posts).toEqual(['A synthetic claim.']);
     expect(screen.getByText('Unresolved')).toBeInTheDocument();
     expect(screen.getByText('No evidence attached')).toBeInTheDocument();
+  });
+
+  it('sends the chosen research depth only when source research is enabled', async () => {
+    researchEnabled = true;
+    mount();
+    await screen.findByText('Research depth');
+    expect(screen.getByText(/Up to 6 searches and 3 sources/)).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Deep'));
+    expect(screen.getByText(/Uses more credits/)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Passage to investigate' }), {
+      target: { value: 'A synthetic claim.' },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Start investigation' }));
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toEqual({ text: 'A synthetic claim.', research_mode: 'deep' });
+  });
+
+  it('hides research depth when source research is disabled', async () => {
+    mount();
+    await screen.findByText(
+      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
+    );
+    expect(screen.queryByText('Research depth')).not.toBeInTheDocument();
   });
 
   it('preserves the passage and never retries a failed submission automatically', async () => {

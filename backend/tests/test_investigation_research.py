@@ -64,6 +64,7 @@ def run_research(
     budget=None,
     calls=None,
     progress=None,
+    mode=None,
 ):
     """Run the flow with fakes; judge_response may be a list consumed per judgment call."""
     from clear_context.services import investigation_research as module
@@ -151,7 +152,7 @@ def run_research(
         tmp_path / "research.sqlite",
         budget,
     )
-    return claim, research.run(uuid4(), [claim], progress)
+    return claim, research.run(uuid4(), [claim], progress, mode)
 
 
 def test_research_pipeline_binds_queries_sources_and_components(monkeypatch, tmp_path):
@@ -304,6 +305,28 @@ def test_followup_round_can_be_disabled_by_budget(monkeypatch, tmp_path):
         MAYOR_FOLLOWUP,
         budget=ResearchBudget(followup_queries=0),
         calls=calls,
+    )
+    assert "followup_queries" not in calls
+    assert report.findings[0].components[0].status == "insufficient"
+
+
+def test_research_modes_change_budgets_not_methods(monkeypatch, tmp_path):
+    from clear_context.services.investigation_research import RESEARCH_MODES
+
+    fast, balanced, deep = (RESEARCH_MODES[m] for m in ("fast", "balanced", "deep"))
+    assert balanced == ResearchBudget()
+    assert fast.max_queries < balanced.max_queries < deep.max_queries
+    assert fast.followup_queries == 0 < balanced.followup_queries < deep.followup_queries
+
+    calls = []
+    _, report = run_research(
+        monkeypatch,
+        tmp_path,
+        [MAYOR_NEED],
+        [MAYOR_INSUFFICIENT],
+        MAYOR_FOLLOWUP,
+        calls=calls,
+        mode="fast",
     )
     assert "followup_queries" not in calls
     assert report.findings[0].components[0].status == "insufficient"

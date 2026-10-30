@@ -26,3 +26,4 @@ class InvestigationContext:
     provider: InvestigationProvider = field(repr=False)
     research: object | None = field(default=None, repr=False)
     progress: Callable[[str], None] | None = field(default=None, repr=False)
+    research_mode: str = "balanced"

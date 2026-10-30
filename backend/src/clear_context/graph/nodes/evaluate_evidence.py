@@ -9,6 +9,9 @@ def evaluate_evidence(state: InvestigationState, runtime: Runtime[InvestigationC
         report = runtime.context.provider.evaluate_evidence(state["investigation_id"], claims)
     else:
         report = runtime.context.research.run(
-            state["investigation_id"], claims, progress=runtime.context.progress
+            state["investigation_id"],
+            claims,
+            progress=runtime.context.progress,
+            mode=runtime.context.research_mode,
         )
     return {"report": report}
