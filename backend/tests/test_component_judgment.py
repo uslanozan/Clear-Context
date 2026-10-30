@@ -108,7 +108,8 @@ def test_anchored_components_must_quote_the_claim_exactly():
         validate_components(response(), packet(), "components_v3")
 
 
-def test_anchored_profile_sends_the_claim_and_the_need_as_focus():
+@pytest.mark.parametrize("profile", ["need_components_v3", "need_components_v4"])
+def test_anchored_profile_sends_the_claim_and_the_need_as_focus(profile):
     neutral = packet().model_copy(
         update={
             "needs": [
@@ -124,7 +125,7 @@ def test_anchored_profile_sends_the_claim_and_the_need_as_focus():
     method, limits, system, contract = load_judge(
         PROJECT_ROOT / "config/judges.yaml",
         PROJECT_ROOT / "config/prompts.yaml",
-        method="need_components_v3",
+        method=profile,
     )
     request = build_judgment_request(
         system, neutral, "muse-spark-1.3", limits.effort, limits.max_completion_tokens, contract
