@@ -78,7 +78,11 @@ function PriorChecks({ checks }: { checks: NonNullable<MediaFinding['prior_check
             {checks.reviews.map((review: PriorFactCheck) => {
               const url = safeUrl(review.url);
               if (!url) return null;
-              const meta = [review.publisher ?? review.site, formatDate(review.review_date)]
+              const meta = [
+                review.publisher ?? review.site,
+                formatDate(review.review_date),
+                review.matched_by === 'text' ? 'matched by the caption text' : null,
+              ]
                 .filter(Boolean)
                 .join(' · ');
               return (
@@ -100,7 +104,8 @@ function PriorChecks({ checks }: { checks: NonNullable<MediaFinding['prior_check
           </ul>
           <p className="muted small">
             Ratings are each publisher&rsquo;s own conclusion about the claim they reviewed, which
-            may differ from this post. They are read as sources below, not adopted as a verdict.
+            may differ from this post. A review matched by the caption text may concern another
+            picture. They are read as sources below, not adopted as a verdict.
           </p>
         </>
       )}
@@ -122,7 +127,8 @@ function MatchList({ matches }: { matches: Match[] }) {
       {matches.map((match) => {
         const url = safeUrl(match.page_url);
         if (!url) return null;
-        const meta = [match.source, match.date_text].filter(Boolean).join(' · ');
+        const engine = match.found_by === 'bing' ? 'via Bing' : null;
+        const meta = [match.source, match.date_text, engine].filter(Boolean).join(' · ');
         return (
           <li key={url}>
             <a href={url} target="_blank" rel="noopener noreferrer" dir="auto">

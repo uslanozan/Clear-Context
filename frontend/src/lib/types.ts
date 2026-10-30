@@ -40,6 +40,7 @@ export interface PriorFactCheck {
   rating: string | null;
   review_date: string | null;
   claim_text: string | null;
+  matched_by?: 'image' | 'text';
 }
 export interface MediaFinding {
   id: string;
@@ -76,6 +77,7 @@ export interface MediaFinding {
       source?: string | null;
       date_text?: string | null;
       published_on?: string | null;
+      found_by?: string | null;
     }[];
     best_guess_labels: string[];
   };
