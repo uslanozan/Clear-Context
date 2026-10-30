@@ -104,6 +104,9 @@ def image_context(media) -> list[dict]:
                 "matching_page_titles": [
                     match.page_title for match in finding.origin.matches[:8] if match.page_title
                 ],
+                "fact_check_titles": [
+                    review.title for review in finding.prior_checks.reviews[:5] if review.title
+                ],
             }
         )
     return context
@@ -309,26 +312,49 @@ class InvestigationResearch:
     def _read_image_matches(
         session, research, saved, media, limit, read_sources, page_needs, limitations
     ):
-        """Read pages where the attached image appears, for every planned need; returns reads."""
+        """Read published fact checks of the attached image, then pages where it appears.
+
+        Pages are read for every planned need; returns the number of pages read.
+        """
         planned = [need.id for need in saved.needs if need.status == "planned"]
         if not planned or limit <= 0:
             return 0
-        matches = []
+        results = []
+        for finding in media:
+            # The review date and the provider's displayed date become the page date.
+            results.extend(
+                {
+                    "title": review.title or review.url,
+                    "url": review.url,
+                    "content": None,
+                    "published_date": review.review_date.isoformat()
+                    if review.review_date
+                    else None,
+                }
+                for review in finding.prior_checks.reviews[:limit]
+            )
         for finding in media:
             if finding.origin.status == "matches_found":
-                matches.extend(readable_matches(finding.origin, limit))
-        if not matches:
+                results.extend(
+                    {
+                        "title": match.page_title or match.page_url,
+                        "url": match.page_url,
+                        "content": None,
+                        "published_date": match.published_on.isoformat()
+                        if match.published_on
+                        else None,
+                    }
+                    for match in readable_matches(finding.origin, limit)
+                )
+        unique = {}
+        for result in results:
+            try:
+                unique.setdefault(canonical_source_url(result["url"]), result)
+            except ValueError:
+                continue
+        results = list(unique.values())
+        if not results:
             return 0
-        results = [
-            {
-                "title": match.page_title or match.page_url,
-                "url": match.page_url,
-                "content": None,
-                # The date the provider displays; the judge treats it as page publication time.
-                "published_date": match.published_on.isoformat() if match.published_on else None,
-            }
-            for match in matches
-        ]
         try:
             research.add_image_matches(
                 saved.case_id, "image_matches", planned, results, time.time()

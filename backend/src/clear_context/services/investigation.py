@@ -21,6 +21,7 @@ class InvestigationService:
         media_analyzer=None,
         reverse_image=None,
         media_dir: Path | None = None,
+        fact_checks=None,
     ):
         self.repository = repository
         self.provider = provider
@@ -28,6 +29,7 @@ class InvestigationService:
         self.research = research
         self.media_analyzer = media_analyzer
         self.reverse_image = reverse_image
+        self.fact_checks = fact_checks
         self.media_dir = media_dir
         self.graph = build_investigation_graph()
 
@@ -64,6 +66,7 @@ class InvestigationService:
                         research_mode=row.research_mode,
                         media_analyzer=self.media_analyzer,
                         reverse_image=self.reverse_image,
+                        fact_checks=self.fact_checks,
                     ),
                     config={"recursion_limit": self.recursion_limit},
                     stream_mode="updates",

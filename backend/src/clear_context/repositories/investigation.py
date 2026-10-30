@@ -192,6 +192,7 @@ class InvestigationRepository:
                 stored_media[str(item.id)].finding = {
                     "analysis": item.analysis.model_dump(mode="json"),
                     "origin": item.origin.model_dump(mode="json"),
+                    "prior_checks": item.prior_checks.model_dump(mode="json"),
                 }
             for claim in report.claims:
                 for span in [claim.source_span, *claim.context_spans]:

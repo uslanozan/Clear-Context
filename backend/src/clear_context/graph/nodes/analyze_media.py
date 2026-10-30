@@ -2,7 +2,12 @@ from pathlib import Path
 
 from langgraph.runtime import Runtime
 
-from clear_context.domain.investigation import MediaAnalysis, MediaFinding, MediaOrigin
+from clear_context.domain.investigation import (
+    MediaAnalysis,
+    MediaFinding,
+    MediaOrigin,
+    PriorChecks,
+)
 from clear_context.graph.state import InvestigationContext, InvestigationState
 from clear_context.providers.reverse_image import ReverseImageFailure
 
@@ -36,6 +41,17 @@ def check_origin(search, data: bytes, mime_type: str) -> MediaOrigin:
         )
 
 
+def check_prior_fact_checks(search, origin: MediaOrigin) -> PriorChecks:
+    if search is None:
+        return PriorChecks(status="not_checked", reason="Fact check search is not configured.")
+    if origin.status != "matches_found":
+        return PriorChecks(
+            status="not_checked",
+            reason="Fact checks are searched with copies found by reverse image search.",
+        )
+    return search.lookup(origin)
+
+
 def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationContext]) -> dict:
     findings, usage = [], []
     for item in state.get("media", []):
@@ -46,6 +62,7 @@ def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationConte
                 note="Video analysis is not connected yet.",
             )
             origin = MediaOrigin(status="not_checked", reason="Video frames are not searched yet.")
+            prior = PriorChecks(status="not_checked", reason="Videos are not searched yet.")
         else:
             data = Path(item["path"]).read_bytes()
             analysis, record = runtime.context.media_analyzer.analyze_image(
@@ -54,6 +71,7 @@ def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationConte
             if record:
                 usage.append(record)
             origin = check_origin(runtime.context.reverse_image, data, item["mime_type"])
+            prior = check_prior_fact_checks(getattr(runtime.context, "fact_checks", None), origin)
         findings.append(
             MediaFinding(
                 id=item["id"],
@@ -62,6 +80,7 @@ def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationConte
                 filename=item["filename"],
                 analysis=analysis,
                 origin=origin,
+                prior_checks=prior,
             )
         )
     return {

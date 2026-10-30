@@ -8,6 +8,7 @@ from clear_context.api.router import router
 from clear_context.core.prompts import load_claim_extraction_prompt
 from clear_context.core.settings import Settings, load_model_selections, resolve_path
 from clear_context.db.session import create_database, create_session_factory
+from clear_context.providers.fact_check import build_fact_check_search
 from clear_context.providers.meta import MetaInvestigationProvider
 from clear_context.providers.meta_media import MetaMediaAnalyzer, MockMediaAnalyzer
 from clear_context.providers.mock import MockInvestigationProvider
@@ -36,6 +37,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     # Preview mode makes no external calls, including reverse image search.
     reverse_image = build_reverse_image_search(settings) if live else None
+    fact_checks = build_fact_check_search(settings) if live else None
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -68,6 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 media_analyzer=media_analyzer,
                 reverse_image=reverse_image,
                 media_dir=resolve_path(settings.media_dir),
+                fact_checks=fact_checks,
             )
             app.state.media_dir = resolve_path(settings.media_dir)
             app.state.models = selections
@@ -76,6 +79,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             engine.dispose()
             if reverse_image is not None:
                 reverse_image.close()
+            if fact_checks is not None:
+                fact_checks.close()
 
     app = FastAPI(
         title="Clear Context API",

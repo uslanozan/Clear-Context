@@ -355,3 +355,85 @@ def test_serpapi_lens_empty_results_and_redirect_pages():
     origin = search.search(PNG, "image/png")
     search.close()
     assert [m.page_url for m in origin.matches] == ["https://blog.example/a?x=1&y=2"]
+
+
+def test_fact_check_image_search_uses_public_copies_and_keeps_the_publisher_rating():
+    from clear_context.domain.investigation import ImageMatch, MediaOrigin
+    from clear_context.providers.fact_check import GoogleFactCheckSearch
+
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "results": [
+                    {
+                        "claim": {
+                            "text": "Konyalı kondüktör",
+                            "claimReview": [
+                                {
+                                    "publisher": {
+                                        "name": "Doğruluk Payı",
+                                        "site": "dogrulukpayi.com",
+                                    },
+                                    "url": "https://www.dogrulukpayi.com/a",
+                                    "title": "Fotoğraf Konya'yı mı gösteriyor?",
+                                    "reviewDate": "2025-02-24T14:41:59Z",
+                                    "textualRating": "Yanlış",
+                                    "languageCode": "tr",
+                                },
+                                {"url": "javascript:alert(1)"},
+                            ],
+                        }
+                    }
+                ]
+            },
+        )
+
+    origin = MediaOrigin(
+        status="matches_found",
+        matches=[
+            ImageMatch(page_url="https://a.example", match="similar", image_url="https://x/s.jpg"),
+            ImageMatch(page_url="https://b.example", match="full", image_url="https://b/c.jpg"),
+            ImageMatch(
+                page_url="https://c.example",
+                match="full",
+                image_url="https://encrypted-tbn0.gstatic.com/images?q=1",
+            ),
+        ],
+    )
+    search = GoogleFactCheckSearch("google-key", transport=httpx.MockTransport(handler))
+    prior = search.lookup(origin)
+    search.close()
+    # Google-hosted copies are tried first; similar images are never used.
+    assert seen[0].url.params["imageUri"] == "https://encrypted-tbn0.gstatic.com/images?q=1"
+    assert seen[0].headers["x-goog-api-key"] == "google-key"
+    assert "google-key" not in str(seen[0].url)
+    assert prior.status == "found" and len(prior.reviews) == 1
+    review = prior.reviews[0]
+    assert (review.rating, review.site, review.review_date.isoformat()) == (
+        "Yanlış",
+        "dogrulukpayi.com",
+        "2025-02-24",
+    )
+
+
+def test_fact_check_lookup_without_copies_or_after_errors():
+    from clear_context.domain.investigation import ImageMatch, MediaOrigin
+    from clear_context.providers.fact_check import GoogleFactCheckSearch
+
+    search = GoogleFactCheckSearch(
+        "key", transport=httpx.MockTransport(lambda request: httpx.Response(403))
+    )
+    assert search.lookup(MediaOrigin(status="no_matches")).status == "not_checked"
+    origin = MediaOrigin(
+        status="matches_found",
+        matches=[
+            ImageMatch(page_url="https://b.example", match="full", image_url="https://b/c.jpg")
+        ],
+    )
+    failed = search.lookup(origin)
+    search.close()
+    assert failed.status == "failed" and "http_error" in failed.reason

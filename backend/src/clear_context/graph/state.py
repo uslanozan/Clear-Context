@@ -36,3 +36,4 @@ class InvestigationContext:
     research_mode: str = "balanced"
     media_analyzer: object | None = field(default=None, repr=False)
     reverse_image: object | None = field(default=None, repr=False)
+    fact_checks: object | None = field(default=None, repr=False)

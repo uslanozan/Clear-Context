@@ -170,6 +170,26 @@ class MediaAnalysis(Record):
     note: str | None = None
 
 
+class PriorFactCheck(Record):
+    """A published fact check of the same image; the rating is the publisher's conclusion."""
+
+    url: str = Field(min_length=1)
+    title: str | None = None
+    publisher: str | None = None
+    site: str | None = None
+    rating: str | None = None
+    review_date: date | None = None
+    claim_text: str | None = None
+    language: str | None = None
+
+
+class PriorChecks(Record):
+    status: Literal["not_checked", "found", "none", "failed"]
+    provider: str | None = None
+    reason: str | None = None
+    reviews: list[PriorFactCheck] = Field(default_factory=list)
+
+
 class MediaFinding(Record):
     id: UUID
     kind: Literal["image", "video"]
@@ -177,6 +197,8 @@ class MediaFinding(Record):
     filename: str
     analysis: MediaAnalysis
     origin: MediaOrigin
+    # Reports saved before fact check search have no lookup.
+    prior_checks: PriorChecks = Field(default_factory=lambda: PriorChecks(status="not_checked"))
 
 
 class InvestigationReport(Record):

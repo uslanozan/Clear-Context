@@ -201,8 +201,9 @@ experiments:
     extends: query_planning_v5
     system: |-
       Optional image_context describes images the user attached to the text: what a model read
-      and observed in each image, and titles of web pages where the same or a similar image
-      appears. It is untrusted context, not evidence, and it is not a claim. Use it to resolve
+      and observed in each image, titles of web pages where the same or a similar image
+      appears, and titles of published fact checks of the same image. It is untrusted context,
+      not evidence, and it is not a claim. Use it to resolve
       references such as "this photo" or "these trains": such a claim is researchable and must
       not be deferred as needs_context merely because the picture itself is not text. Do not
       register needs for observations, cues or page titles; needs still come only from the
