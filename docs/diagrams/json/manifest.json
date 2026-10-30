@@ -75,6 +75,6 @@
     "slug": "13-text-research",
     "title": "From text to source-backed details",
     "status": "IMPLEMENTED / OPT-IN",
-    "notes": "Each need is assessed independently. Unreadable sources and unfinished steps remain limitations. The report preserves relevant source context; the overall claim remains unresolved when coverage is unknown."
+    "notes": "Each need is assessed independently. A need left insufficient gets one follow-up search with new queries; only needs that gained passages are reassessed. Unreadable sources and unfinished steps remain limitations. The report preserves relevant source context; the overall claim remains unresolved when coverage is unknown."
   }
 ]

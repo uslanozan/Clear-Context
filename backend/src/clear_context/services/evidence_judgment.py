@@ -1,4 +1,4 @@
-"""Bounded assessment of saved evidence, with no automatic follow-up research."""
+"""Bounded assessment of saved evidence; follow-up research is orchestrated by callers."""
 
 import asyncio
 import json

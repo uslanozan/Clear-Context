@@ -48,6 +48,12 @@ const RESEARCH_STAGES = [
   },
 ];
 
+const FOLLOWUP_STAGE = {
+  event: 'followup_research',
+  title: 'Search again',
+  detail: 'Look once more for details the first sources left unsettled.',
+};
+
 export function ProcessTimeline({
   steps = [],
   isRunning = false,
@@ -64,8 +70,12 @@ export function ProcessTimeline({
   const researchActive =
     researchEnabled ||
     steps.some((step) => RESEARCH_STAGES.some((stage) => stage.event === step.name));
+  // The follow-up round is conditional, so it appears only after it was recorded.
+  const researchStages = steps.some((step) => step.name === FOLLOWUP_STAGE.event)
+    ? [...RESEARCH_STAGES, FOLLOWUP_STAGE]
+    : RESEARCH_STAGES;
   const STAGES = researchActive
-    ? [...BASE_STAGES.slice(0, 2), ...RESEARCH_STAGES, ...BASE_STAGES.slice(2)]
+    ? [...BASE_STAGES.slice(0, 2), ...researchStages, ...BASE_STAGES.slice(2)]
     : BASE_STAGES;
   const failure = steps.find((step) => step.status === 'failed');
   const lastCompleted = STAGES.reduce(

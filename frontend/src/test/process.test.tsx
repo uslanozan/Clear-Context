@@ -34,6 +34,19 @@ describe('Recorded investigation steps', () => {
     expect(screen.queryByText('Running')).not.toBeInTheDocument();
     expect(screen.getAllByText('Pending')).toHaveLength(3);
   });
+  it('lists the follow-up search only when it was recorded', () => {
+    const step = (name: string) => ({
+      name,
+      status: 'completed' as const,
+      created_at: started.created_at,
+    });
+    const research = ['plan_queries', 'retrieve_sources', 'select_passages', 'assess_components'];
+    const { rerender } = render(<ProcessTimeline steps={research.map(step)} />);
+    expect(screen.queryByText('Search again')).not.toBeInTheDocument();
+    rerender(<ProcessTimeline steps={[...research, 'followup_research'].map(step)} />);
+    const followup = screen.getByText('Search again').closest('li')!;
+    expect(within(followup).getByText('Complete')).toBeInTheDocument();
+  });
   it('distinguishes unavailable activity from completed work', () => {
     render(<ProcessTimeline hasError />);
     expect(screen.getByRole('status')).toHaveTextContent('Activity could not be loaded');

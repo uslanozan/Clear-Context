@@ -1,6 +1,7 @@
 """Bounded text research using saved query, source and judgment receipts."""
 
 import asyncio
+from dataclasses import dataclass
 from uuid import NAMESPACE_URL, uuid5
 
 from clear_context.core.judges import load_judge
@@ -17,12 +18,23 @@ from clear_context.domain.investigation import (
     Source,
 )
 from clear_context.providers.meta_passages import MetaPassageProvider
-from clear_context.providers.meta_structured import MetaStructuredProvider
+from clear_context.providers.meta_structured import MetaStructuredProvider, ModelResponseFailure
 from clear_context.providers.tavily import RetrievalFailure, TavilyKeyless
 from clear_context.repositories.judgment import JudgmentRepository
 from clear_context.repositories.retrieval import RetrievalRepository, identity
-from clear_context.schemas.retrieval import SavedResearchPlan, canonical_source_url
+from clear_context.schemas.retrieval import (
+    ResearchQuery,
+    SavedResearchPlan,
+    SearchRequest,
+    canonical_source_url,
+)
 from clear_context.services.evidence_judgment import EvidenceJudgmentService, JudgmentJob
+from clear_context.services.followup_queries import (
+    ResearchGap,
+    build_followup_request,
+    classify_gap,
+    parse_followup_response,
+)
 from clear_context.services.passage_selection import PassageSelectionService, SelectionJob
 from clear_context.services.query_planning import PlanningClaim
 from clear_context.services.retrieval import RetrievalSession, load_retrieval_policy
@@ -31,6 +43,21 @@ DEFERRED_EXPLANATIONS = {
     "needs_context": "Not researched: the claim lacks context this detail depends on.",
     "budget_deferred": "Not researched within this investigation's search budget.",
 }
+
+
+@dataclass(frozen=True)
+class ResearchBudget:
+    """Per-investigation call limits; research modes vary these, not the methods."""
+
+    max_queries: int = 6
+    max_source_reads: int = 3
+    max_selection_calls: int = 3
+    max_judgment_calls: int = 6
+    # One follow-up round for needs left insufficient; 0 disables it.
+    followup_queries: int = 2
+    followup_source_reads: int = 2
+    followup_selection_calls: int = 3
+    followup_judgment_calls: int = 2
 
 
 def stable_uuid(kind, value):
@@ -49,8 +76,9 @@ def usage_record(task, model, usage):
 
 
 class InvestigationResearch:
-    def __init__(self, settings, models, workspace):
+    def __init__(self, settings, models, workspace, budget: ResearchBudget | None = None):
         self.settings, self.models, self.workspace = settings, models, workspace
+        self.budget = budget or ResearchBudget()
 
     def run(self, investigation_id, claims, progress=None):
         return asyncio.run(self._run(investigation_id, claims, progress))
@@ -78,7 +106,7 @@ class InvestigationResearch:
             planners_path=PROJECT_ROOT / "config/query_planners.yaml",
             prompts_path=PROJECT_ROOT / "config/prompts.yaml",
             source_language="auto",
-            maximum_queries=6,
+            maximum_queries=self.budget.max_queries,
             model=self.models["research"].api_model_id,
         )
         body = await meta.complete(request, self.settings.meta_timeout_seconds)
@@ -86,7 +114,10 @@ class InvestigationResearch:
             usage_record("query_planning", self.models["research"].api_model_id, body.get("usage"))
         ]
         plan = parse_planner_response(
-            body["choices"][0]["message"]["content"], planning_claims, 6, profile
+            body["choices"][0]["message"]["content"],
+            planning_claims,
+            self.budget.max_queries,
+            profile,
         )
         if progress:
             progress("plan_queries")
@@ -122,67 +153,34 @@ class InvestigationResearch:
         research = RetrievalRepository(self.workspace)
         tavily = TavilyKeyless(timeout=30)
         limitations = ["Evidence assessments do not establish source reliability."]
+        budget = self.budget
         try:
             research.register_plan(saved)
             policy = load_retrieval_policy(PROJECT_ROOT / "config/retrieval.yaml")
-            policy = policy.model_copy(update={"max_search_calls": 6, "max_extract_calls": 3})
+            policy = policy.model_copy(
+                update={
+                    "max_search_calls": budget.max_queries + budget.followup_queries,
+                    "max_extract_calls": budget.max_source_reads + budget.followup_source_reads,
+                    "max_followup_queries": budget.followup_queries,
+                }
+            )
             session = RetrievalSession(research, tavily, policy)
-            page_needs = {}
-            seen_sources = set()
-            search_complete = True
-            for query in saved.queries:
-                try:
-                    response = session.search(saved.case_id, query.id)
-                except RetrievalFailure as error:
-                    limitations.append(f"Search stopped: {error.code}.")
-                    search_complete = False
-                    break
-                for hit in response.get("results", []):
-                    try:
-                        source = identity("s_", canonical_source_url(hit["url"]))
-                        if source not in seen_sources:
-                            if len(seen_sources) >= 3:
-                                if "Source read budget reached." not in limitations:
-                                    limitations.append("Source read budget reached.")
-                                continue
-                            seen_sources.add(source)
-                            page = session.read_source(source)
-                            page_needs[page] = set()
-                        else:
-                            page = next(
-                                (
-                                    pid
-                                    for pid in page_needs
-                                    if research.page(pid)["source_id"] == source
-                                ),
-                                None,
-                            )
-                        if page:
-                            page_needs[page].update(query.need_ids)
-                    except (RetrievalFailure, ValueError, KeyError) as error:
-                        code = getattr(error, "code", "invalid_source")
-                        limitations.append(f"A source could not be read ({code}).")
+            page_needs, hits, seen_sources = {}, {}, set()
+            search_complete = self._search(
+                session,
+                research,
+                saved.case_id,
+                saved.queries,
+                seen_sources,
+                page_needs,
+                hits,
+                budget.max_source_reads,
+                limitations,
+            )
             if progress and search_complete:
                 progress("retrieve_sources")
-            method, selector, selector_limits, system = load_selector(
-                PROJECT_ROOT / "config/passage_selectors.yaml", PROJECT_ROOT / "config/prompts.yaml"
-            )
-            selector_limits = selector_limits.model_copy(update={"max_model_calls": 3})
-            selection_service = PassageSelectionService(
-                research,
-                MetaPassageProvider(self.settings),
-                method,
-                selector,
-                selector_limits,
-                system,
-                self.models["research"],
-            )
-            selections = await selection_service.select_pages(
-                [
-                    SelectionJob(saved.case_id, page, tuple(sorted(ids)))
-                    for page, ids in page_needs.items()
-                    if ids
-                ]
+            selections = await self._select(
+                research, saved.case_id, page_needs, budget.max_selection_calls
             )
             if progress and not any(
                 s["status"] not in {"selected", "not_found"} for s in selections
@@ -196,24 +194,14 @@ class InvestigationResearch:
             receipts = [s["selection_id"] for s in selections if s.get("selection_id")]
             if any(s["status"] not in {"selected", "not_found"} for s in selections):
                 limitations.append("Some sources could not be evaluated for relevant passages.")
-            judge_method, limits, judge_prompt, contract = load_judge(
-                PROJECT_ROOT / "config/judges.yaml",
-                PROJECT_ROOT / "config/prompts.yaml",
-                method="need_components_v2",
-            )
-            limits = limits.model_copy(update={"max_model_calls": 6})
-            judge = EvidenceJudgmentService(
-                JudgmentRepository(research),
-                meta,
-                judge_method,
-                limits,
-                judge_prompt,
-                self.models["judge"],
-                response_contract=contract,
-            )
             active = [n for n in saved.needs if n.status == "planned"]
-            judgments = await judge.assess(
-                [JudgmentJob(saved.case_id, (n.id,), tuple(receipts)) for n in active]
+            judgments = await self._judge(
+                meta,
+                research,
+                saved.case_id,
+                [n.id for n in active],
+                receipts,
+                budget.max_judgment_calls,
             )
             if progress and all(j["status"] == "assessed" for j in judgments):
                 progress("assess_components")
@@ -222,6 +210,21 @@ class InvestigationResearch:
                 for j in judgments
                 if j.get("usage") and not j.get("cached")
             )
+            if budget.followup_queries and search_complete and not session.halted:
+                judgments, receipts = await self._follow_up(
+                    meta,
+                    session,
+                    research,
+                    saved,
+                    judgments,
+                    receipts,
+                    page_needs,
+                    hits,
+                    seen_sources,
+                    limitations,
+                    usage,
+                    progress,
+                )
             report = self._report(
                 investigation_id, claims, saved, judgments, research, limitations, receipts
             )
@@ -230,6 +233,245 @@ class InvestigationResearch:
         finally:
             tavily.close()
             research.close()
+
+    @staticmethod
+    def _search(
+        session,
+        research,
+        case_id,
+        queries,
+        seen_sources,
+        page_needs,
+        hits,
+        source_limit,
+        limitations,
+    ):
+        """Run queries and read new sources up to source_limit; False if search stopped."""
+        for query in queries:
+            try:
+                response = session.search(case_id, query.id)
+            except RetrievalFailure as error:
+                limitations.append(f"Search stopped: {error.code}.")
+                return False
+            results = response.get("results", [])
+            for need_id in query.need_ids:
+                hits[need_id] = hits.get(need_id, 0) + len(results)
+            for hit in results:
+                try:
+                    source = identity("s_", canonical_source_url(hit["url"]))
+                    if source not in seen_sources:
+                        if len(seen_sources) >= source_limit:
+                            if "Source read budget reached." not in limitations:
+                                limitations.append("Source read budget reached.")
+                            continue
+                        seen_sources.add(source)
+                        page = session.read_source(source)
+                        page_needs[page] = set()
+                    else:
+                        page = next(
+                            (
+                                pid
+                                for pid in page_needs
+                                if research.page(pid)["source_id"] == source
+                            ),
+                            None,
+                        )
+                    if page:
+                        page_needs[page].update(query.need_ids)
+                except (RetrievalFailure, ValueError, KeyError) as error:
+                    code = getattr(error, "code", "invalid_source")
+                    limitations.append(f"A source could not be read ({code}).")
+        return True
+
+    async def _select(self, research, case_id, page_needs, max_calls):
+        method, selector, selector_limits, system = load_selector(
+            PROJECT_ROOT / "config/passage_selectors.yaml", PROJECT_ROOT / "config/prompts.yaml"
+        )
+        service = PassageSelectionService(
+            research,
+            MetaPassageProvider(self.settings),
+            method,
+            selector,
+            selector_limits.model_copy(update={"max_model_calls": max_calls}),
+            system,
+            self.models["research"],
+        )
+        return await service.select_pages(
+            [
+                SelectionJob(case_id, page, tuple(sorted(ids)))
+                for page, ids in page_needs.items()
+                if ids
+            ]
+        )
+
+    async def _judge(self, meta, research, case_id, need_ids, receipts, max_calls):
+        judge_method, limits, judge_prompt, contract = load_judge(
+            PROJECT_ROOT / "config/judges.yaml",
+            PROJECT_ROOT / "config/prompts.yaml",
+            method="need_components_v2",
+        )
+        judge = EvidenceJudgmentService(
+            JudgmentRepository(research),
+            meta,
+            judge_method,
+            limits.model_copy(update={"max_model_calls": max_calls}),
+            judge_prompt,
+            self.models["judge"],
+            response_contract=contract,
+        )
+        return await judge.assess(
+            [JudgmentJob(case_id, (need_id,), tuple(receipts)) for need_id in need_ids]
+        )
+
+    async def _follow_up(
+        self,
+        meta,
+        session,
+        research,
+        saved,
+        judgments,
+        receipts,
+        page_needs,
+        hits,
+        seen_sources,
+        limitations,
+        usage,
+        progress,
+    ):
+        """Search once more for needs the assessment left insufficient, within the budget."""
+        budget = self.budget
+        packets = JudgmentRepository(research)
+        statements = {claim.id: claim.statement for claim in saved.claims}
+        needs = {need.id: need for need in saved.needs}
+        previous = {}
+        for query in saved.queries:
+            for need_id in query.need_ids:
+                previous.setdefault(need_id, []).append(query.request.query)
+        gaps, passages_before = [], {}
+        for row in judgments:
+            if row["status"] != "assessed":
+                continue
+            missing = [
+                c["explanation"]
+                for c in row["result"]["components"]
+                if c["status"] == "insufficient"
+            ]
+            if not missing:
+                continue
+            need = needs[row["need_ids"][0]]
+            count = len(packets.packet(saved.case_id, (need.id,), tuple(receipts)).evidence)
+            passages_before[need.id] = count
+            gaps.append(
+                ResearchGap(
+                    need_id=need.id,
+                    claim_statement=statements[need.claim_id],
+                    need_description=need.description,
+                    gap=classify_gap(hits.get(need.id, 0), count),
+                    previous_queries=previous.get(need.id, []),
+                    missing=missing,
+                )
+            )
+        if not gaps:
+            return judgments, receipts
+
+        model = self.models["research"].api_model_id
+        try:
+            request = build_followup_request(
+                gaps,
+                prompts_path=PROJECT_ROOT / "config/prompts.yaml",
+                maximum_queries=budget.followup_queries,
+                model=model,
+            )
+            body = await meta.complete(request, self.settings.meta_timeout_seconds)
+            usage.append(usage_record("followup_planning", model, body.get("usage")))
+            planned = parse_followup_response(
+                body["choices"][0]["message"]["content"], gaps, budget.followup_queries
+            )
+        except (ModelResponseFailure, ValueError, KeyError, IndexError, TypeError):
+            limitations.append("Follow-up search planning did not complete.")
+            return judgments, receipts
+        if not planned:
+            return judgments, receipts
+
+        gap_kinds = {gap.need_id: gap.gap for gap in gaps}
+        followups = []
+        for index, item in enumerate(planned, 1):
+            search_request = SearchRequest(query=item.text, language=item.language, max_results=3)
+            query_id = f"f{index}"
+            session.add_followup(
+                saved.case_id,
+                query_id,
+                search_request,
+                [item.need_id],
+                gap_kinds[item.need_id],
+                item.reason,
+            )
+            followups.append(
+                ResearchQuery(id=query_id, request=search_request, need_ids=[item.need_id])
+            )
+        before = {page: set(ids) for page, ids in page_needs.items()}
+        self._search(
+            session,
+            research,
+            saved.case_id,
+            followups,
+            seen_sources,
+            page_needs,
+            hits,
+            budget.max_source_reads + budget.followup_source_reads,
+            limitations,
+        )
+        # Only new page/need pairs need selection; earlier pairs keep their receipts.
+        new_pairs = {
+            page: ids - before.get(page, set())
+            for page, ids in page_needs.items()
+            if ids - before.get(page, set())
+        }
+        selections = await self._select(
+            research, saved.case_id, new_pairs, budget.followup_selection_calls
+        )
+        usage.extend(
+            usage_record("passage_selection", model, s["usage"])
+            for s in selections
+            if s.get("usage") and not s.get("cached")
+        )
+        if any(s["status"] not in {"selected", "not_found"} for s in selections):
+            limitations.append("Some follow-up sources could not be evaluated for passages.")
+        new_receipts = [s["selection_id"] for s in selections if s.get("selection_id")]
+        all_receipts = list(dict.fromkeys([*receipts, *new_receipts]))
+        improved = [
+            item.need_id
+            for item in planned
+            if len(packets.packet(saved.case_id, (item.need_id,), tuple(all_receipts)).evidence)
+            > passages_before[item.need_id]
+        ]
+        limitations.append(
+            f"Searched again for {len(planned)} unsettled research need(s); "
+            f"{len(improved)} gained new passages."
+        )
+        if improved:
+            rejudged = await self._judge(
+                meta,
+                research,
+                saved.case_id,
+                improved,
+                all_receipts,
+                budget.followup_judgment_calls,
+            )
+            usage.extend(
+                usage_record("evidence_judgment", self.models["judge"].api_model_id, j["usage"])
+                for j in rejudged
+                if j.get("usage") and not j.get("cached")
+            )
+            replacements = {r["need_ids"][0]: r for r in rejudged if r["status"] == "assessed"}
+            if len(replacements) < len(rejudged):
+                limitations.append(
+                    "Some follow-up assessments did not complete; earlier results were kept."
+                )
+            judgments = [replacements.get(row["need_ids"][0], row) for row in judgments]
+        if progress:
+            progress("followup_research")
+        return judgments, all_receipts
 
     @staticmethod
     def _report(investigation_id, claims, plan, judgments, research, limitations, receipts):

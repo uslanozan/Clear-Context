@@ -116,7 +116,9 @@ inputs, results, usage and receipts, without request credentials.
 Unknown dates, missing reference points, truncated context and unassessed source
 reliability remain limitations. A single source may contradict an alleged value
 without proving global real-world falsity. Numeric confidence, full-claim rollups,
-source-trust scoring and automatic follow-up searches are not implemented here.
+and source-trust scoring are not implemented here. The standalone runner does not search;
+the application flow runs one bounded follow-up search round for needs left `insufficient`
+(`services/followup_queries.py`), then reassesses only needs that gained new passages.
 
 ## Temporal provenance
 

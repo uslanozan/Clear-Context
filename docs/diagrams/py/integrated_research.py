@@ -8,7 +8,7 @@ def main():
     labels = [
         ("Extract claims", ["Text input → source spans", "Meta extraction"]),
         ("Plan questions", ["V5 query planner", "Claim → need → query"]),
-        ("Search and read", ["Tavily keyless", "Up to 6 searches / 3 pages"]),
+        ("Search and read", ["Tavily keyless", "6 searches / 3 pages (+2 / +2)"]),
         ("Select passages", ["Muse selects per need", "Keep source text + offsets"]),
         ("Assess components", ["V2 judge, one need per call", "Supported / conflicting / unknown"]),
         ("Save and inspect", ["Report, sources and excerpts", "Highlight exact source text"]),
@@ -25,10 +25,14 @@ def main():
             body += arrow([(x1 + 350, y1 + 56), (x2, y2 + 56)])
         else:
             body += arrow([(x1, y1 + 56), (x2 + 350, y2 + 56)])
+    # Bounded loop: needs left insufficient get one follow-up search.
+    body += arrow([(700, 390), (700, 336), (900, 336), (900, 292)], "ONCE, IF INSUFFICIENT")
     body += text(40, 598, "Claim-wide coverage and source reliability remain unverified.", 18)
     return write("13-text-research", "From text to source-backed details",
         "Opt-in text research · Meta + Tavily · bounded calls", "IMPLEMENTED / OPT-IN", body,
-        "Each need is assessed independently. Unreadable sources and unfinished steps remain limitations. "
+        "Each need is assessed independently. A need left insufficient gets one follow-up search with "
+        "new queries; only needs that gained passages are reassessed. Unreadable sources and "
+        "unfinished steps remain limitations. "
         "The report preserves relevant source context; the overall claim remains unresolved when coverage is unknown.",
         "services/investigation_research.py; schemas/component_judgment.py; components/ReportView.tsx",
         "Solid arrows: implemented flow | Image and video analysis not connected")
