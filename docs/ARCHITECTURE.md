@@ -1,6 +1,6 @@
 # Architecture and evidence contract
 
-The initial text-only API uses FastAPI, LangGraph, SQLite, SQLAlchemy, and Alembic. Mock processing, opt-in Meta claim extraction, token-usage records, persisted status/steps, report storage, and model-selection validation are implemented. The remaining retrieval, evidence-based judging, capture, and revision contracts below are targets, not working capabilities. See [API guide](API.md).
+The initial text-only API uses FastAPI, LangGraph, SQLite, SQLAlchemy, and Alembic. Mock processing, opt-in Meta claim extraction, token-usage records, persisted status/steps, report storage, and model-selection validation are implemented. Opt-in bounded text research (query planning, Tavily search and page reading, passage selection, and component evidence assessment) is implemented. Image-source lookup, link intake, capture, and revision contracts below are targets, not working capabilities. See [API guide](API.md).
 
 ## Backend layout
 
@@ -19,6 +19,10 @@ backend/src/clear_context/
   domain/investigation.py          # Evidence rules and report contracts
   providers/base.py                # Model-provider boundary
   providers/mock.py                # Offline development behavior
+  providers/meta*.py, tavily.py    # Meta model calls and Tavily keyless search/extract
+  services/investigation_research.py  # Bounded text research flow used by the evaluate node
+  services/query_planning.py, passage_selection.py, evidence_judgment.py  # Research stages
+  repositories/judgment.py, retrieval.py  # Persisted assessments, sources and snapshots
   graph/state.py                   # Typed state and per-run dependencies
   graph/investigation.py           # Node/edge construction
   graph/nodes/                     # Focused workflow steps
@@ -26,7 +30,7 @@ backend/src/clear_context/
 
 The repository operates on an investigation aggregate; do not create empty repositories for every table. Graph nodes depend on domain/provider contracts, not API routes or database sessions. The service records node progress and saves the validated report in one transaction. Provider instances belong to runtime context, not persisted graph state.
 
-Implemented graph: `START -> extract_claims -> evaluate_evidence -> validate_report -> END`. Mock extraction preserves the full input as one claim. Meta extraction uses a strict JSON schema and accepts only unique, exact substrings of the input; this validates text anchoring, not semantic completeness or truth. Both modes produce only unresolved findings until sources exist; Meta evaluation currently makes no additional call. Validation checks evidence integrity, investigation ID, and claim scope. There is no retrieval node until a real retrieval tool is implemented. Usage from successful extraction nodes is saved before subsequent evaluation, including when a later step fails.
+Implemented graph: `START -> extract_claims -> evaluate_evidence -> validate_report -> END`. Mock extraction preserves the full input as one claim. Meta extraction uses a strict JSON schema and accepts only unique, exact substrings of the input; this validates text anchoring, not semantic completeness or truth. Without `RESEARCH_ENABLED`, both modes produce only unresolved findings and evaluation makes no additional call. With it, `evaluate_evidence` delegates to the bounded research service, which records sources, evidence and per-detail component assessments; the claim-wide finding stays `unresolved`. Validation checks evidence integrity, investigation ID, and claim scope. Research is not a separate graph node; its stages report progress through recorded events. Usage from successful extraction nodes is saved before subsequent evaluation, including when a later step fails.
 
 `GRAPH_RECURSION_LIMIT` bounds graph super-steps. It is not a token, time, or monetary budget; those need separate bounds when paid tools are added. Remote LangSmith tracing is disabled during local graph execution. No graph checkpointer is configured yet; SQLite stores application records and progress, not resumable graph snapshots.
 

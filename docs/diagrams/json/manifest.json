@@ -3,7 +3,7 @@
     "slug": "01-text-sequence",
     "title": "Text request: from browser to saved report",
     "status": "IMPLEMENTED",
-    "notes": "The API saves queued state before responding. Background processing starts after the response. One successful extraction makes one Meta call. Internal evaluation and report validation do not call Meta. GET results groups status, steps, and report polling; it is not a single endpoint. Message spacing is illustrative, not latency. Failure paths are detailed in diagram 02."
+    "notes": "The API saves queued state before responding. Background processing starts after the response. One successful extraction makes one Meta call. With research disabled, internal evaluation and report validation do not call Meta; with RESEARCH_ENABLED=true, evaluation runs the bounded research flow shown in diagram 13. GET results groups status, steps, and report polling; it is not a single endpoint. Message spacing is illustrative, not latency. Failure paths are detailed in diagram 02."
   },
   {
     "slug": "02-extraction-guards",

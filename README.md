@@ -63,7 +63,7 @@ Accounts, subscriptions, and billing management are outside the MVP. A controlle
 - **Optional experiments:** Meta open-weight inference on Baseten, Fireworks, or Modal, subject to access and evaluation.
 - **Storage:** SQLite with SQLAlchemy and Alembic migrations; no separate database server.
 
-Search, page extraction, and reverse-image lookup providers still need to be selected and verified. Users must confirm their own billing/credit availability before enabling paid inference.
+Text research uses Tavily keyless Search and Extract, which is rate-limited without a quota guarantee; no paid fallback runs automatically. A reverse-image lookup provider has not been selected or verified. Users must confirm their own billing/credit availability before enabling paid inference.
 
 ## Delivery order
 

@@ -23,10 +23,10 @@ First demonstration: a verifiable event paired with an image documented in a dif
 | Frontend | React + TypeScript + Vite + Mantine | Text workspace implemented |
 | Desktop capture | Thin Chrome Manifest V3 extension; preview, start, short status, open web report | In scope after the working web flow |
 | Mobile | Responsive web first; installable PWA / Android sharing only if time remains | Native apps deferred |
-| Orchestration | LangGraph with typed state, focused nodes, and bounded execution | Chosen; initial mock graph implemented |
+| Orchestration | LangGraph with typed state, focused nodes, and bounded execution | Chosen; three-node graph implemented. Opt-in text research runs inside `evaluate_evidence` |
 | Main inference service | Meta Model API | Credits confirmed; small extraction checks passed |
-| Retrieval | Per-investigation source collection first | Proposed; no vector database requirement yet |
-| Web search / extraction | Select a supported provider and measure failures | Open |
+| Retrieval | Per-investigation source collection first | Implemented for opt-in text research: per-investigation sources, snapshots and passages in SQLite; no vector database |
+| Web search / extraction | Tavily keyless Search/Extract used for text research; rate limits, quota and failures still need measuring | Partly open; no automatic paid fallback |
 | Image-source lookup | Verify a usable provider before committing to automatic origin search | Open; highest external dependency risk |
 | Open-weight inference | Small experiments on available partner services | Optional |
 | Persistence | SQLite + SQLAlchemy + Alembic | Initial API implemented |
@@ -51,7 +51,7 @@ Dates can shift; the deliverable order matters more than adding features.
 
 ## First implementation slice
 
-Current progress: the text-only API, model configuration validation, relational persistence, migrations, and API tests are implemented. The three-node LangGraph workflow supports mock processing and opt-in Meta claim extraction with token usage records. One live extraction smoke test succeeded after credits were confirmed. A responsive Mantine web workspace now supports text submission, history, progress, report inspection, and JSON export. Retrieval, evidence-based judging, graph checkpoints/resume, revisions, server-side media analysis, and extension capture remain pending. Local media paste, drop, selection, and previews are implemented. See [API guide](API.md).
+Current progress: the text-only API, model configuration validation, relational persistence, migrations, and API tests are implemented. The three-node LangGraph workflow supports mock processing and opt-in Meta claim extraction with token usage records. With `RESEARCH_ENABLED=true`, the same graph also runs bounded text research: V5 query planning, Tavily keyless search and page reading, `full_page_v1` passage selection, and component V2 evidence assessment, saved with source-highlighted excerpts. A responsive Mantine web workspace supports text submission, history, recorded progress, report inspection, and JSON export. Claim-wide verdicts stay `unresolved` by design, and one real end-to-end smoke case does not establish general quality. Link intake, graph checkpoints/resume, revisions, fast/balanced/deep research modes, source reliability, server-side media analysis, and extension capture remain pending. Local media paste, drop, selection, and previews are implemented. See [API guide](API.md).
 
 1. Define investigation, claim, source, evidence, and finding records.
 2. Implement a Meta provider adapter, with a mock for local work before billing is ready.

@@ -134,7 +134,7 @@ def sequence():
         "The background task extracts claims; opening the saved report does not call Meta.",
         "IMPLEMENTED",
         body,
-        "The API saves queued state before responding. Background processing starts after the response. One successful extraction makes one Meta call. Internal evaluation and report validation do not call Meta. GET results groups status, steps, and report polling; it is not a single endpoint. Message spacing is illustrative, not latency. Failure paths are detailed in diagram 02.",
+        "The API saves queued state before responding. Background processing starts after the response. One successful extraction makes one Meta call. With research disabled, internal evaluation and report validation do not call Meta; with RESEARCH_ENABLED=true, evaluation runs the bounded research flow shown in diagram 13. GET results groups status, steps, and report polling; it is not a single endpoint. Message spacing is illustrative, not latency. Failure paths are detailed in diagram 02.",
         "api/routes/investigations.py; services/investigation.py; graph/investigation.py; providers/meta.py",
     )
 
@@ -189,7 +189,7 @@ def guards():
         terminal=True,
     )
     body += node(
-        432, 548, 320, 72, "Unresolved report", ["No retrieved evidence"], terminal=True
+        432, 548, 320, 72, "Unresolved report", ["Research is opt-in: diagram 13"], terminal=True
     )
     body += text(
         864,
@@ -670,7 +670,7 @@ if __name__ == "__main__":
         for row in records
     )
     (OUT / "html/index.html").write_text(
-        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>Diagrams 01-03 and 07 describe working application code. Diagrams 04-06 describe proposals; 08-09 show experimental runners; 10 shows the separate retrieval workspace; 11 shows need-level evidence assessment. Neither is connected to the application pipeline. Examples are explanatory, not measured inference results.</p><ol>{links}</ol></body></html>',
+        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>Diagrams 01-03, 07 and 13 describe working application code; 13 is the opt-in text research flow. Diagrams 04-06 describe proposals; 08-09 show experimental runners; 10-12 show evaluation-workspace stages that the application flow reuses or does not select. Examples are explanatory, not measured inference results.</p><ol>{links}</ol></body></html>',
         encoding="utf-8",
     )
     print(f"Generated {len(records)} HTML diagrams and index.")

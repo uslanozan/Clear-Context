@@ -39,7 +39,7 @@ The candidate records `scope_note` and `conflict_type` at need level. Opposing
 relations require `same_component`, `different_components` or `unclear`; otherwise
 the conflict type is `none`. This does not establish source independence or trust.
 The original status rules remain evidence-relative. The default is still V1.2;
-the candidate is not connected to the application graph or UI. Provider and
+the relevance candidate is not the application's selected profile; the opt-in research flow uses the V2 component profile. Provider and
 validation errors remain execution states, never evidence relations or factual
 conclusions. No confidence percentage is defined.
 
