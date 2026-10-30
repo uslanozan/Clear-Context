@@ -91,3 +91,48 @@ def test_component_profile_builds_one_need_request():
     assert method == "need_components_v2"
     assert payload["evidence"][0]["id"] == "E1"
     assert payload["claim"] == "The bridge opened in 2017."
+
+
+def anchored(claim_quote="The bridge opened in 2017."):
+    value = json.loads(response())
+    value["components"][0]["claim_quote"] = claim_quote
+    return json.dumps(value)
+
+
+def test_anchored_components_must_quote_the_claim_exactly():
+    result, _ = validate_components(anchored(), packet(), "components_v3")
+    assert result.components[0].claim_quote == "The bridge opened in 2017."
+    with pytest.raises(ValueError, match="exact claim wording"):
+        validate_components(anchored("The bridge did not open in 2017."), packet(), "components_v3")
+    with pytest.raises(ValueError):
+        validate_components(response(), packet(), "components_v3")
+
+
+def test_anchored_profile_sends_the_claim_and_the_need_as_focus():
+    neutral = packet().model_copy(
+        update={
+            "needs": [
+                ResearchNeed(
+                    id="n1",
+                    claim_id="c1",
+                    description="Whether the bridge opened in 2017",
+                    status="planned",
+                )
+            ]
+        }
+    )
+    method, limits, system, contract = load_judge(
+        PROJECT_ROOT / "config/judges.yaml",
+        PROJECT_ROOT / "config/prompts.yaml",
+        method="need_components_v3",
+    )
+    request = build_judgment_request(
+        system, neutral, "muse-spark-1.3", limits.effort, limits.max_completion_tokens, contract
+    )
+    payload = json.loads(request["messages"][1]["content"])
+    assert contract == "components_v3"
+    assert payload["claim"] == "The bridge opened in 2017."
+    assert payload["focus"] == "Whether the bridge opened in 2017"
+    assert "Keep the claim's polarity" in system
+    schema = request["response_format"]["json_schema"]["schema"]
+    assert "claim_quote" in json.dumps(schema)

@@ -334,7 +334,7 @@ class InvestigationResearch:
         judge_method, limits, judge_prompt, contract = load_judge(
             PROJECT_ROOT / "config/judges.yaml",
             PROJECT_ROOT / "config/prompts.yaml",
-            method="need_components_v2",
+            method=self.settings.research_judge_profile,
         )
         judge = EvidenceJudgmentService(
             JudgmentRepository(research),

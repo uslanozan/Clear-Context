@@ -27,12 +27,37 @@ class ComponentResponse(BaseModel):
     components: list[ComponentAssessment] = Field(min_length=1)
 
 
+class AnchoredComponentAssessment(ComponentAssessment):
+    # Exact claim wording this component evaluates, including any negation.
+    claim_quote: str = Field(min_length=1)
+
+
+class AnchoredComponentResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    components: list[AnchoredComponentAssessment] = Field(min_length=1)
+
+
+COMPONENT_CONTRACTS = {
+    "components_v2": ComponentResponse,
+    "components_v3": AnchoredComponentResponse,
+}
+
+
+def parent_claim(packet: JudgmentPacket) -> str:
+    return next(c.statement for c in packet.claims if c.id == packet.needs[0].claim_id)
+
+
 def validate_components(
-    content: str, packet: JudgmentPacket
-) -> tuple[ComponentResponse, list[dict]]:
+    content: str, packet: JudgmentPacket, contract: str = "components_v2"
+) -> tuple[ComponentResponse | AnchoredComponentResponse, list[dict]]:
     if len(packet.needs) != 1:
         raise ValueError("Component assessment requires exactly one research need.")
-    response = ComponentResponse.model_validate_json(content)
+    response = COMPONENT_CONTRACTS[contract].model_validate_json(content)
+    if contract == "components_v3":
+        claim = parent_claim(packet)
+        for component in response.components:
+            if component.claim_quote not in claim:
+                raise ValueError("Component claim_quote must be exact claim wording.")
     aliases = evidence_aliases(packet)
     evidence = {item.id: item for item in packet.evidence}
     citations = []

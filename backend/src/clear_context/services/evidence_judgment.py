@@ -10,8 +10,12 @@ from clear_context.providers.meta_judgment import build_judgment_request
 from clear_context.providers.meta_structured import ModelResponseFailure
 from clear_context.repositories.retrieval import encode, identity
 from clear_context.schemas.component_judgment import (
+    COMPONENT_CONTRACTS,
+    AnchoredComponentAssessment,
+    AnchoredComponentResponse,
     ComponentAssessment,
     ComponentResponse,
+    parent_claim,
     validate_components,
 )
 from clear_context.schemas.evidence_judgment import (
@@ -85,7 +89,19 @@ class EvidenceJudgmentService:
                 usage = {}
                 try:
                     if not packet.evidence:
-                        if self.response_contract == "components_v2":
+                        if self.response_contract == "components_v3":
+                            output = AnchoredComponentResponse(
+                                components=[
+                                    AnchoredComponentAssessment(
+                                        description=packet.needs[0].description,
+                                        status="insufficient",
+                                        explanation="No selected evidence available.",
+                                        evidence=[],
+                                        claim_quote=parent_claim(packet),
+                                    )
+                                ]
+                            )
+                        elif self.response_contract == "components_v2":
                             output = ComponentResponse(
                                 components=[
                                     ComponentAssessment(
@@ -170,9 +186,11 @@ class EvidenceJudgmentService:
                                 self.active -= 1
                             at = self.clock()
                         usage = body.get("usage") or {}
-                        if self.response_contract == "components_v2":
+                        if self.response_contract in COMPONENT_CONTRACTS:
                             output, component_citations = validate_components(
-                                body["choices"][0]["message"]["content"], packet
+                                body["choices"][0]["message"]["content"],
+                                packet,
+                                self.response_contract,
                             )
                         else:
                             output = validate_judgment(
@@ -184,7 +202,7 @@ class EvidenceJudgmentService:
                             research.save_cache(
                                 "judgment", key, body, at, self.limits.cache_ttl_seconds
                             )
-                    if self.response_contract == "components_v2":
+                    if self.response_contract in COMPONENT_CONTRACTS:
                         result = {
                             "scope": "provided_evidence_only",
                             "source_reliability_assessed": False,

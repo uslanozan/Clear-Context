@@ -4,6 +4,11 @@ schema_version: 1
 # exactly one need per job; changing this default would break multi-need runner jobs.
 selected: need_evidence_v1_2
 judges:
+  need_components_v3:
+    implementation: need_evidence_v1
+    prompt: evidence_component_experiment_v3
+    response_contract: components_v3
+    max_completion_tokens: 8192
   need_components_v2:
     implementation: need_evidence_v1
     prompt: evidence_component_experiment_v2

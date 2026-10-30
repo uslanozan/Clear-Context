@@ -65,6 +65,7 @@ def run_research(
     calls=None,
     progress=None,
     mode=None,
+    judge_profile="need_components_v2",
 ):
     """Run the flow with fakes; judge_response may be a list consumed per judgment call."""
     from clear_context.services import investigation_research as module
@@ -147,7 +148,7 @@ def run_research(
     model = ModelSelection(alias="spark", api_model_id="muse-spark-1.3", training_use=False)
     claim = Claim(id=uuid4(), text="The bridge opened in 2017 and the mayor opened it.")
     research = InvestigationResearch(
-        Settings(_env_file=None),
+        Settings(_env_file=None, research_judge_profile=judge_profile),
         {"research": model, "judge": model},
         tmp_path / "research.sqlite",
         budget,
@@ -346,3 +347,40 @@ def test_two_investigations_citing_the_same_cached_page_both_persist(monkeypatch
             repository.get_report(investigation.id).sources[0].url == "https://example.org/bridge"
         )
     engine.dispose()
+
+
+def test_anchored_judge_profile_assesses_the_claim_as_stated(monkeypatch, tmp_path):
+    neutral = {**PLANNED_NEED, "description": "Whether the bridge opened in 2017"}
+    seen = []
+
+    def judge(request):
+        seen.append(request)
+        return {
+            "components": [
+                {
+                    "description": "The bridge opened in 2017",
+                    "status": "contradicted",
+                    "explanation": "The record says 2019.",
+                    "claim_quote": "The bridge opened in 2017",
+                    "evidence": [
+                        {
+                            "evidence_id": "E1",
+                            "relation": "contradicts",
+                            "quote": "The bridge opened in 2019.",
+                        }
+                    ],
+                }
+            ]
+        }
+
+    _, report = run_research(
+        monkeypatch,
+        tmp_path,
+        [neutral],
+        [judge],
+        budget=ResearchBudget(followup_queries=0),
+        judge_profile="need_components_v3",
+    )
+    assert seen[0]["claim"] == "The bridge opened in 2017 and the mayor opened it."
+    assert seen[0]["focus"] == "Whether the bridge opened in 2017"
+    assert report.findings[0].components[0].status == "contradicted"

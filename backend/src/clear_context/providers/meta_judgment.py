@@ -3,7 +3,7 @@
 import json
 from copy import deepcopy
 
-from clear_context.schemas.component_judgment import ComponentResponse
+from clear_context.schemas.component_judgment import COMPONENT_CONTRACTS, parent_claim
 from clear_context.schemas.evidence_judgment import (
     JudgmentPacket,
     evidence_aliases,
@@ -99,17 +99,24 @@ def build_judgment_request(
     tokens: int,
     response_contract: str = "legacy_v1",
 ):
-    if response_contract == "components_v2":
+    if response_contract in COMPONENT_CONTRACTS:
         if len(packet.needs) != 1:
             raise ValueError("Component assessment requires exactly one research need per job.")
         aliases = {identity: alias for alias, identity in evidence_aliases(packet).items()}
-        context = {
-            "claim": packet.needs[0].description,
-            "parent_claim": next(
-                c.statement for c in packet.claims if c.id == packet.needs[0].claim_id
-            ),
-            "evidence": [{"id": aliases[e.id], "text": e.quote} for e in packet.evidence],
-        }
+        evidence = [{"id": aliases[e.id], "text": e.quote} for e in packet.evidence]
+        if response_contract == "components_v3":
+            # The need may be a neutral question; statuses refer to the claim as stated.
+            context = {
+                "claim": parent_claim(packet),
+                "focus": packet.needs[0].description,
+                "evidence": evidence,
+            }
+        else:
+            context = {
+                "claim": packet.needs[0].description,
+                "parent_claim": parent_claim(packet),
+                "evidence": evidence,
+            }
         return {
             "model": model,
             "messages": [
@@ -121,7 +128,7 @@ def build_judgment_request(
                 "json_schema": {
                     "name": "component_assessment",
                     "strict": True,
-                    "schema": ComponentResponse.model_json_schema(),
+                    "schema": COMPONENT_CONTRACTS[response_contract].model_json_schema(),
                 },
             },
             "reasoning_effort": effort,
