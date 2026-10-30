@@ -109,10 +109,13 @@ class Finding(Record):
 
 class FindingComponent(Record):
     description: str = Field(min_length=1)
-    status: Literal["supported", "contradicted", "conflicting", "insufficient"]
+    # not_assessed: the detail was never evaluated (failed call or deferred need);
+    # insufficient: it was evaluated and the evidence did not settle it.
+    status: Literal["supported", "contradicted", "conflicting", "insufficient", "not_assessed"]
     explanation: str = Field(min_length=1)
     evidence_ids: list[UUID] = Field(default_factory=list)
     evidence_relations: dict[str, Literal["supports", "contradicts"]] = Field(default_factory=dict)
+    # Passages reviewed for the same research need; not judged relevant to this detail.
     context_evidence_ids: list[UUID] = Field(default_factory=list)
 
 
@@ -155,8 +158,13 @@ class InvestigationReport(Record):
             for component in finding.components:
                 if len(component.evidence_ids) != len(set(component.evidence_ids)):
                     raise ValueError("Duplicate component evidence references are not allowed.")
-                if component.status != "insufficient" and not component.evidence_ids:
+                undirected = component.status in {"insufficient", "not_assessed"}
+                if not undirected and not component.evidence_ids:
                     raise ValueError("A directional component requires evidence.")
+                if component.status == "not_assessed" and (
+                    component.evidence_ids or component.context_evidence_ids
+                ):
+                    raise ValueError("An unassessed component cannot reference evidence.")
                 if any(eid not in finding.evidence_ids for eid in component.evidence_ids):
                     raise ValueError("Component references evidence outside its finding.")
                 if len(component.context_evidence_ids) != len(set(component.context_evidence_ids)):
@@ -172,6 +180,7 @@ class InvestigationReport(Record):
                     "contradicted": {"contradicts"},
                     "conflicting": {"supports", "contradicts"},
                     "insufficient": set(),
+                    "not_assessed": set(),
                 }
                 if set(component.evidence_relations.values()) != expected[component.status]:
                     raise ValueError("Component status and evidence relations disagree.")

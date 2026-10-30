@@ -296,6 +296,7 @@ export function ReportView({
                                 contradicted: 'red',
                                 conflicting: 'orange',
                                 insufficient: 'yellow',
+                                not_assessed: 'gray',
                               }[component.status]
                             }
                             tt="none"
@@ -306,6 +307,7 @@ export function ReportView({
                                 contradicted: 'Contradicted',
                                 conflicting: 'Sources disagree',
                                 insufficient: 'Insufficient evidence',
+                                not_assessed: 'Not assessed',
                               }[component.status]
                             }
                           </Badge>
@@ -324,7 +326,9 @@ export function ReportView({
                             ids={component.context_evidence_ids ?? []}
                             evidence={evidence}
                             sources={report.sources}
-                            labelFor={() => 'Source examined; evidence is insufficient'}
+                            labelFor={() =>
+                              'Reviewed for this research question; not cited for this detail'
+                            }
                           />
                         </section>
                       ))}

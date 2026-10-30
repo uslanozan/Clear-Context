@@ -75,6 +75,23 @@ def test_invalid_evidence_is_rejected(mutation):
         InvestigationReport.model_validate(payload)
 
 
+def test_unassessed_component_cannot_cite_evidence():
+    payload = report_payload()
+    finding = payload["findings"][0]
+    finding["assessment"] = "unresolved"
+    component = {
+        "description": "Synthetic detail",
+        "status": "not_assessed",
+        "explanation": "Evidence assessment did not complete.",
+    }
+    finding["components"] = [component]
+    InvestigationReport.model_validate(payload)
+
+    component["context_evidence_ids"] = finding["evidence_ids"]
+    with pytest.raises(ValidationError, match="unassessed component"):
+        InvestigationReport.model_validate(payload)
+
+
 def test_evidence_round_trip_and_terminal_state(settings):
     engine = create_database(settings.database_path)
     try:

@@ -57,7 +57,7 @@ export interface Report {
     evidence_ids: string[];
     components?: {
       description: string;
-      status: 'supported' | 'contradicted' | 'conflicting' | 'insufficient';
+      status: 'supported' | 'contradicted' | 'conflicting' | 'insufficient' | 'not_assessed';
       explanation: string;
       evidence_ids: string[];
       evidence_relations: Record<string, 'supports' | 'contradicts'>;

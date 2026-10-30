@@ -189,3 +189,75 @@ it('omits a component heading that repeats the only claim', () => {
   expect(screen.queryByText('Input ranges processed')).not.toBeInTheDocument();
   expect(screen.getByText(/does not guarantee that every claim/)).toBeInTheDocument();
 });
+
+it('separates unassessed details from insufficient evidence and labels need-level context', () => {
+  const investigation: Investigation = {
+    id: 'i4',
+    text: 'A bridge opened in 2019 and the mayor opened it.',
+    status: 'completed',
+    mode: 'meta',
+    revision: 1,
+    created_at: '2026-10-30T12:00:00Z',
+    updated_at: '2026-10-30T12:00:01Z',
+    error_code: null,
+    model_usage: [],
+  };
+  const report: Report = {
+    investigation_id: 'i4',
+    mode: 'meta',
+    revision: 1,
+    claims: [{ id: 'c1', text: investigation.text }],
+    sources: [
+      {
+        id: 's1',
+        url: 'https://example.org/bridge',
+        title: 'Bridge record',
+        content: 'The bridge opened in 2019.',
+      },
+    ],
+    evidence: [{ id: 'e1', claim_id: 'c1', source_id: 's1', excerpt: 'opened in 2019' }],
+    findings: [
+      {
+        id: 'f1',
+        claim_id: 'c1',
+        assessment: 'unresolved',
+        explanation: 'Review each detail.',
+        evidence_ids: ['e1'],
+        components: [
+          {
+            description: 'The mayor opened it',
+            status: 'insufficient',
+            explanation: 'The source does not say who opened it.',
+            evidence_ids: [],
+            evidence_relations: {},
+            context_evidence_ids: ['e1'],
+          },
+          {
+            description: 'Visitor numbers in the opening year',
+            status: 'not_assessed',
+            explanation:
+              'Evidence assessment did not complete (failed); this detail was not evaluated.',
+            evidence_ids: [],
+            evidence_relations: {},
+            context_evidence_ids: [],
+          },
+        ],
+      },
+    ],
+    limitations: [],
+    model_usage: [],
+  };
+  render(
+    <MantineProvider>
+      <MemoryRouter>
+        <ReportView investigation={investigation} report={report} steps={[]} />
+      </MemoryRouter>
+    </MantineProvider>,
+  );
+  expect(screen.getByText('Insufficient evidence')).toBeInTheDocument();
+  expect(screen.getByText('Not assessed')).toBeInTheDocument();
+  expect(
+    screen.getByText('Reviewed for this research question; not cited for this detail'),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/evidence is insufficient/)).not.toBeInTheDocument();
+});

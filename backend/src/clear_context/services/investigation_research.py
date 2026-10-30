@@ -27,6 +27,11 @@ from clear_context.services.passage_selection import PassageSelectionService, Se
 from clear_context.services.query_planning import PlanningClaim
 from clear_context.services.retrieval import RetrievalSession, load_retrieval_policy
 
+DEFERRED_EXPLANATIONS = {
+    "needs_context": "Not researched: the claim lacks context this detail depends on.",
+    "budget_deferred": "Not researched within this investigation's search budget.",
+}
+
 
 def stable_uuid(kind, value):
     return uuid5(NAMESPACE_URL, f"clear-context:{kind}:{value}")
@@ -237,8 +242,11 @@ class InvestigationResearch:
                     by_claim[need.claim_id].append(
                         FindingComponent(
                             description=need.description,
-                            status="insufficient",
-                            explanation="Evidence assessment did not complete.",
+                            status="not_assessed",
+                            explanation=(
+                                f"Evidence assessment did not complete ({row['status']}); "
+                                "this detail was not evaluated."
+                            ),
                             evidence_ids=[],
                         )
                     )
@@ -310,8 +318,8 @@ class InvestigationResearch:
                 by_claim[need.claim_id].append(
                     FindingComponent(
                         description=need.description,
-                        status="insufficient",
-                        explanation="This research need was deferred.",
+                        status="not_assessed",
+                        explanation=DEFERRED_EXPLANATIONS[need.status],
                         evidence_ids=[],
                     )
                 )

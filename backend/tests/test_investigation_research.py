@@ -16,7 +16,37 @@ def completion(value):
     }
 
 
-def test_research_pipeline_binds_queries_sources_and_components(monkeypatch, tmp_path):
+PLANNED_NEED = {
+    "id": "n1",
+    "description": "The bridge opened in 2017 and the mayor opened it",
+    "status": "planned",
+    "reason": None,
+}
+TWO_COMPONENTS = {
+    "components": [
+        {
+            "description": "The bridge opened in 2017",
+            "status": "contradicted",
+            "explanation": "The record says 2019.",
+            "evidence": [
+                {
+                    "evidence_id": "E1",
+                    "relation": "contradicts",
+                    "quote": "The bridge opened in 2019.",
+                }
+            ],
+        },
+        {
+            "description": "The bridge was opened by the mayor",
+            "status": "insufficient",
+            "explanation": "The source does not say who opened it.",
+            "evidence": [],
+        },
+    ]
+}
+
+
+def run_research(monkeypatch, tmp_path, needs, judge_response):
     from clear_context.services import investigation_research as module
 
     class Model:
@@ -29,15 +59,7 @@ def test_research_pipeline_binds_queries_sources_and_components(monkeypatch, tmp
                 claim_id = request["claims"][0]["id"]
                 return completion(
                     {
-                        "needs": [
-                            {
-                                "id": "n1",
-                                "claim_id": claim_id,
-                                "description": "The bridge opened in 2017 and the mayor opened it",
-                                "status": "planned",
-                                "reason": None,
-                            }
-                        ],
+                        "needs": [{**need, "claim_id": claim_id} for need in needs],
                         "questions": [
                             {
                                 "need_ids": ["n1"],
@@ -53,30 +75,7 @@ def test_research_pipeline_binds_queries_sources_and_components(monkeypatch, tmp
                         ],
                     }
                 )
-            return completion(
-                {
-                    "components": [
-                        {
-                            "description": "The bridge opened in 2017",
-                            "status": "contradicted",
-                            "explanation": "The record says 2019.",
-                            "evidence": [
-                                {
-                                    "evidence_id": "E1",
-                                    "relation": "contradicts",
-                                    "quote": "The bridge opened in 2019.",
-                                }
-                            ],
-                        },
-                        {
-                            "description": "The bridge was opened by the mayor",
-                            "status": "insufficient",
-                            "explanation": "The source does not say who opened it.",
-                            "evidence": [],
-                        },
-                    ]
-                }
-            )
+            return completion(judge_response)
 
     class Selector(Model):
         async def select(self, payload, timeout):
@@ -120,10 +119,15 @@ def test_research_pipeline_binds_queries_sources_and_components(monkeypatch, tmp
     research = InvestigationResearch(
         Settings(_env_file=None), {"research": model, "judge": model}, tmp_path / "research.sqlite"
     )
-    report = research.run(uuid4(), [claim])
+    return claim, research.run(uuid4(), [claim])
+
+
+def test_research_pipeline_binds_queries_sources_and_components(monkeypatch, tmp_path):
+    claim, report = run_research(monkeypatch, tmp_path, [PLANNED_NEED], TWO_COMPONENTS)
     assert report.findings[0].assessment == "unresolved"
     assert report.findings[0].components[0].status == "contradicted"
     assert report.findings[0].components[0].evidence_relations
+    # The passage reviewed for the need stays visible under the unsettled detail.
     assert report.findings[0].components[1].context_evidence_ids
     assert report.evidence[0].excerpt == "The bridge opened in 2019."
     assert report.sources[0].url == "https://example.org/bridge"
@@ -139,3 +143,25 @@ def test_research_pipeline_binds_queries_sources_and_components(monkeypatch, tmp
     assert saved.findings[0].components == report.findings[0].components
     assert saved.evidence[0].excerpt == report.evidence[0].excerpt
     engine.dispose()
+
+
+def test_failed_assessment_is_not_reported_as_insufficient_evidence(monkeypatch, tmp_path):
+    _, report = run_research(monkeypatch, tmp_path, [PLANNED_NEED], {"components": []})
+    component = report.findings[0].components[0]
+    assert component.status == "not_assessed"
+    assert "did not complete" in component.explanation
+    assert not component.evidence_ids and not component.context_evidence_ids
+    assert any("did not complete" in item for item in report.limitations)
+
+
+def test_deferred_need_is_reported_as_not_assessed(monkeypatch, tmp_path):
+    deferred = {
+        "id": "n2",
+        "description": "Visitor numbers in the opening year",
+        "status": "budget_deferred",
+        "reason": "Lower priority than the opening date.",
+    }
+    _, report = run_research(monkeypatch, tmp_path, [PLANNED_NEED, deferred], TWO_COMPONENTS)
+    components = report.findings[0].components
+    assert [c.status for c in components] == ["contradicted", "insufficient", "not_assessed"]
+    assert "search budget" in components[2].explanation
