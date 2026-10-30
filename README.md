@@ -129,4 +129,4 @@ Public GitHub repository and a three-minute demo submitted through Cerebral Vall
 
 ## License
 
-A project license has not been selected. Public repository visibility alone does not grant an open-source license. Third-party code and assets retain their respective licenses.
+Clear Context is released under the [MIT License](LICENSE). Third-party dependencies keep their own licenses. The Meta wordmark and Muse artwork in `frontend/public/brand/` are third-party trademarks and artwork, not covered by this license; see [brand asset notes](frontend/public/brand/README.md).
