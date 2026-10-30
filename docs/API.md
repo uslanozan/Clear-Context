@@ -84,7 +84,7 @@ Apply migrations before starting: `python -m alembic -c backend/alembic.ini upgr
 
 State transitions: `queued -> running -> completed/failed`. Work runs in an in-process background task after the response, using LangGraph nodes `extract_claims -> evaluate_evidence -> validate_report`. Opt-in research records completed planning, retrieval, selection and assessment steps as they occur. On restart, unfinished jobs are marked `failed` with `interrupted`, not silently resumed. No graph checkpointer is configured yet. Provider failures expose a generic `processing_failed` code without raw error messages. Run **one worker / one server instance per database**; this is not a durable queue and has no retry/resume guarantee.
 
-Bind to loopback for this slice. Network-accessible self-hosting, HTTPS, and access protection will be addressed before public deployment. Docker packaging is planned; SQLite and uploads must use a persistent volume when added.
+Bind to loopback for this slice. Network-accessible self-hosting, HTTPS, and access protection will be addressed before public deployment. Docker Compose stores SQLite in a named volume and publishes only the web container on loopback; server-side uploads do not exist yet and will need the same volume.
 
 ## Checks
 

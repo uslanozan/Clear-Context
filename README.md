@@ -52,7 +52,7 @@ Native mobile apps, PWA installation and incoming share integration, video inves
 
 The planned release is a self-hosted application with a browser interface and an optional Chrome capture extension. Users supply their own Meta Model API key on the backend; a Muse Code subscription is not required. Research history stays in local storage, while selected inputs and evidence are sent to external services for inference and retrieval. This is not offline inference.
 
-Accounts, subscriptions, and billing management are outside the MVP. A controlled hosted hackathon demo is separate from the local product. Simple Docker Compose packaging is planned after the first working flow; installation commands are not available yet. An open-source license will be selected before public release.
+Accounts, subscriptions, and billing management are outside the MVP. A controlled hosted hackathon demo is separate from the local product. Docker Compose packaging runs the API and web interface on one local port; see [Run with Docker](#run-with-docker).
 
 ## Technology direction
 
@@ -84,6 +84,22 @@ Text research uses Tavily keyless Search and Extract, which is rate-limited with
 - [Research resources: claim extraction and verification](docs/RESEARCH_RESOURCES.md)
 - [Evaluation plan](evals/README.md)
 - [Initial case specifications](evals/case-specs.json)
+
+## Run with Docker
+
+Requires Docker with Compose v2.24 or newer. From the repository root:
+
+```powershell
+# Copy only when creating your local settings; preserve an existing .env.
+# Copy-Item .env.example .env
+docker compose up -d --build
+```
+
+Open `http://127.0.0.1:8080`. The `web` container serves the built interface and proxies `/api` to the `api` container, which applies database migrations before starting. Settings come from `.env`; the container overrides only the bind address, the database path and CORS. Mock mode stays the default, and the paid-call settings described below apply unchanged.
+
+Both SQLite databases (investigations and research cache) live in the `clear-context-data` volume and survive `docker compose down` and image rebuilds. `docker compose down -v` deletes them. The volume starts empty; an existing `.local/clear-context.db` from a non-Docker setup is not imported.
+
+The published port binds to loopback because the application has no authentication. Set `CLEAR_CONTEXT_PORT` to change the port. Changing `CLEAR_CONTEXT_BIND` exposes the app to your network without access control or HTTPS; do not do that on an untrusted network. The API documentation at `/docs` is not published through the web container.
 
 ## Development
 

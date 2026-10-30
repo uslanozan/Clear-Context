@@ -1,0 +1,36 @@
+name: clear-context
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Container-specific values override .env.
+      API_HOST: 0.0.0.0
+      API_PORT: "8000"
+      DATABASE_PATH: /data/clear-context.db
+      # The web service proxies /api on the same origin.
+      CORS_ALLOWED_ORIGINS: "[]"
+    volumes:
+      # SQLite application and research databases persist here.
+      - clear-context-data:/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # Loopback by default: the app has no authentication.
+      - "${CLEAR_CONTEXT_BIND:-127.0.0.1}:${CLEAR_CONTEXT_PORT:-8080}:8080"
+    restart: unless-stopped
+
+volumes:
+  clear-context-data:

@@ -30,7 +30,7 @@ First demonstration: a verifiable event paired with an image documented in a dif
 | Image-source lookup | Verify a usable provider before committing to automatic origin search | Open; highest external dependency risk |
 | Open-weight inference | Small experiments on available partner services | Optional |
 | Persistence | SQLite + SQLAlchemy + Alembic | Initial API implemented |
-| Packaging / hosting | Docker Compose after the working flow; hosted demo separate | Planned |
+| Packaging / hosting | Docker Compose after the working flow; hosted demo separate | Local Docker Compose implemented; hosted demo not started |
 
 ## Milestones
 

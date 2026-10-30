@@ -42,7 +42,7 @@ npm run format:check
 
 Behavior tests mock HTTP responses and cover example loading without POST, double-click submission protection, report rendering, input preservation with no automatic retry, saved-report reads, and disconnected submission. They do not spend Meta credits. Browser checks use the actual local API and saved reports.
 
-For production, build output is `frontend/dist/`. Serve it with SPA fallback to `index.html` for `/investigations/:id` and reverse-proxy `/api` to FastAPI before that fallback. Vite preview alone does not proxy the API. Docker/reverse-proxy packaging is pending.
+For production, build output is `frontend/dist/`. Serve it with SPA fallback to `index.html` for `/investigations/:id` and reverse-proxy `/api` to FastAPI before that fallback. Vite preview alone does not proxy the API. The Docker image does this with nginx; see [frontend/nginx.conf](../frontend/nginx.conf) and the README's Docker section.
 
 ## Dependencies and assets
 
