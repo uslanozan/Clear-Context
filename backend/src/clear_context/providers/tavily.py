@@ -4,6 +4,7 @@ Uses an API key when one is configured, otherwise the rate-limited keyless mode.
 """
 
 import json
+import re
 
 import httpx
 
@@ -15,6 +16,27 @@ from clear_context.schemas.retrieval import (
 )
 
 EXTRACT_ENDPOINT = "https://api.tavily.com/extract"
+
+# Plain text extraction dropped whole article bodies on some sites (for example list-styled
+# fact-check summaries), so pages are requested as Markdown and reduced to readable text.
+IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+HEADING = re.compile(r"^#{1,6}\s+", re.MULTILINE)
+EMPHASIS = re.compile(r"(\*\*|__)(.+?)\1")
+BLANK_LINES = re.compile(r"\n{3,}")
+
+
+def markdown_to_text(markdown: str) -> str:
+    """Drop images and link targets, heading marks and bold markers; keep the wording."""
+    text = IMAGE.sub("", markdown)
+    # Links can nest images; repeat until no link syntax is left.
+    previous = None
+    while previous != text:
+        previous, text = text, LINK.sub(r"\1", text)
+    text = HEADING.sub("", text)
+    text = EMPHASIS.sub(r"\2", text)
+    lines = [line.rstrip() for line in text.split("\n")]
+    return BLANK_LINES.sub("\n\n", "\n".join(lines)).strip()
 
 
 class RetrievalFailure(RuntimeError):
@@ -77,7 +99,7 @@ class TavilyClient:
         return {
             "urls": [url],
             "extract_depth": "basic",
-            "format": "text",
+            "format": "markdown",
             "include_images": False,
             "include_usage": True,
         }
@@ -99,4 +121,7 @@ class TavilyClient:
             or not item["raw_content"].strip()
         ):
             raise RetrievalFailure("invalid_response")
+        item["raw_content"] = markdown_to_text(item["raw_content"])
+        if not item["raw_content"]:
+            raise RetrievalFailure("extract_failed")
         return value

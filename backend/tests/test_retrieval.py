@@ -298,3 +298,32 @@ def test_client_uses_api_key_when_configured_and_keyless_otherwise(api_key, expe
         assert seen[0][name] == value
     other = "authorization" if not api_key else "x-tavily-access-mode"
     assert other not in seen[0]
+
+
+def test_markdown_pages_are_reduced_to_their_wording(repository):
+    from clear_context.providers.tavily import markdown_to_text
+
+    # Plain-text extraction lost this kind of list-styled fact-check summary entirely.
+    markdown = (
+        "![](data:image/svg+xml,x)\n\n# Başlık\n\n"
+        "[![](data:x)\n\nYazar](/ekibimiz/a)\n\n"
+        "**İddia YANLIŞ**\n\n\n\nFotoğraflar Çin’de [videoda](https://v.example/1) görülüyor."
+    )
+    assert markdown_to_text(markdown) == (
+        "Başlık\n\nYazar\n\nİddia YANLIŞ\n\nFotoğraflar Çin’de videoda görülüyor."
+    )
+    source = ingest(repository)
+    sent = []
+
+    def handler(request):
+        sent.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={"results": [{"url": "https://example.org/history", "raw_content": markdown}]},
+        )
+
+    service = session(repository, handler)
+    page = service.read_source(source)
+    assert sent[0]["format"] == "markdown"
+    assert repository.page(page)["content"].endswith("Fotoğraflar Çin’de videoda görülüyor.")
+    service.provider.close()
