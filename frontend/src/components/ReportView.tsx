@@ -15,7 +15,7 @@ import {
 import { Link } from 'react-router-dom';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ClaimSource } from './ClaimSource';
-import { EvidenceExcerpt } from './EvidenceExcerpt';
+import { EvidenceExcerpt, sourceDisplayName } from './EvidenceExcerpt';
 import type { Assessment, Investigation, Report, ResearchStep } from '../lib/types';
 
 const ASSESSMENTS: Record<Assessment, { label: string; color: string }> = {
@@ -24,6 +24,47 @@ const ASSESSMENTS: Record<Assessment, { label: string; color: string }> = {
   mixed: { label: 'Mixed evidence', color: 'orange' },
   unresolved: { label: 'Unresolved', color: 'yellow' },
 };
+
+/** Lists excerpts under one label per source, so repeated excerpts do not repeat the source. */
+function EvidenceGroups({
+  ids,
+  evidence,
+  sources,
+  labelFor,
+}: {
+  ids: string[];
+  evidence: Report['evidence'];
+  sources: Report['sources'];
+  labelFor: (id: string) => string;
+}) {
+  const groups: { key: string; label: string; items: Report['evidence'] }[] = [];
+  for (const id of ids) {
+    const item = evidence.find((entry) => entry.id === id);
+    if (!item) continue;
+    const label = labelFor(id);
+    const key = `${label}|${item.source_id}`;
+    const group = groups.find((entry) => entry.key === key);
+    if (group) group.items.push(item);
+    else groups.push({ key, label, items: [item] });
+  }
+  return (
+    <>
+      {groups.map((group) => (
+        <div key={group.key}>
+          <span className="muted">{group.label}</span>
+          {group.items.map((item, index) => (
+            <EvidenceExcerpt
+              key={item.id}
+              evidence={item}
+              source={sources.find((source) => source.id === item.source_id)}
+              showSource={index === 0}
+            />
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
 
 function normalizeText(text: string): string {
   return text.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -269,40 +310,22 @@ export function ReportView({
                             }
                           </Badge>
                           <p dir="auto">{component.explanation}</p>
-                          {component.evidence_ids.map((id) => {
-                            const item = evidence.find((entry) => entry.id === id);
-                            return item ? (
-                              <div key={id}>
-                                <span className="muted">
-                                  {component.evidence_relations?.[id] === 'contradicts'
-                                    ? 'Contradicting source'
-                                    : 'Supporting source'}
-                                </span>
-                                <EvidenceExcerpt
-                                  evidence={item}
-                                  source={report.sources.find(
-                                    (source) => source.id === item.source_id,
-                                  )}
-                                />
-                              </div>
-                            ) : null;
-                          })}
-                          {component.context_evidence_ids?.map((id) => {
-                            const item = evidence.find((entry) => entry.id === id);
-                            return item ? (
-                              <div key={id}>
-                                <span className="muted">
-                                  Source examined; evidence is insufficient
-                                </span>
-                                <EvidenceExcerpt
-                                  evidence={item}
-                                  source={report.sources.find(
-                                    (source) => source.id === item.source_id,
-                                  )}
-                                />
-                              </div>
-                            ) : null;
-                          })}
+                          <EvidenceGroups
+                            ids={component.evidence_ids}
+                            evidence={evidence}
+                            sources={report.sources}
+                            labelFor={(id) =>
+                              component.evidence_relations?.[id] === 'contradicts'
+                                ? 'Contradicting source'
+                                : 'Supporting source'
+                            }
+                          />
+                          <EvidenceGroups
+                            ids={component.context_evidence_ids ?? []}
+                            evidence={evidence}
+                            sources={report.sources}
+                            labelFor={() => 'Source examined; evidence is insufficient'}
+                          />
                         </section>
                       ))}
                     </div>
@@ -384,11 +407,11 @@ export function ReportView({
                     <li key={source.id}>
                       {safe ? (
                         <a href={source.url} target="_blank" rel="noopener noreferrer">
-                          {source.title || source.url}
+                          {sourceDisplayName(source)}
                           <ArrowUpRight size={13} />
                         </a>
                       ) : (
-                        <span>{source.title}</span>
+                        <span>{sourceDisplayName(source)}</span>
                       )}
                     </li>
                   );

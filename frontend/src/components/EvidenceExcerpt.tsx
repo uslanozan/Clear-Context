@@ -20,19 +20,26 @@ function trimContext(raw: string, side: 'before' | 'after'): string {
   return (side === 'before' ? raw.replace(/^\S*\s/, '') : raw.replace(/\s\S*$/, '')).trim();
 }
 
-function sourceLabel(source: SourceItem | undefined, url: URL): string {
+/** Readable source name: its title, or the domain when the title is missing or just a URL. */
+export function sourceDisplayName(source: { title?: string; url: string } | undefined): string {
   const title = source?.title?.trim();
-  // Some sources store their URL as the title; show the domain instead.
-  if (!title || /^https?:\/\//i.test(title)) return url.hostname.replace(/^www\./, '');
-  return title;
+  if (title && !/^https?:\/\//i.test(title)) return title;
+  try {
+    return new URL(title || source?.url || '').hostname.replace(/^www\./, '');
+  } catch {
+    return title || source?.url || 'Source';
+  }
 }
 
 export function EvidenceExcerpt({
   evidence,
   source,
+  showSource = true,
 }: {
   evidence: EvidenceItem;
   source?: SourceItem;
+  /** Set to false when a neighbouring excerpt from the same source already names it. */
+  showSource?: boolean;
 }) {
   const start = source?.content.indexOf(evidence.excerpt) ?? -1;
   const unique = start >= 0 && source?.content.indexOf(evidence.excerpt, start + 1) === -1;
@@ -60,9 +67,9 @@ export function EvidenceExcerpt({
 
   return (
     <div className="evidence-excerpt">
-      {url && (
+      {url && showSource && (
         <a className="evidence-source" href={url.href} target="_blank" rel="noopener noreferrer">
-          {sourceLabel(source, url)} <ArrowUpRight size={13} aria-hidden="true" />
+          {sourceDisplayName(source)} <ArrowUpRight size={13} aria-hidden="true" />
         </a>
       )}
       <blockquote dir="auto">

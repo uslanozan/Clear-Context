@@ -67,6 +67,72 @@ it('shows component status, directional source and highlighted source text', () 
   expect(screen.getByText('1 claim')).toBeInTheDocument();
 });
 
+it('names a source once for several excerpts and shows readable source names', () => {
+  const investigation: Investigation = {
+    id: 'i3',
+    text: 'A bridge opened in 2019.',
+    status: 'completed',
+    mode: 'meta',
+    revision: 1,
+    created_at: '2026-10-30T12:00:00Z',
+    updated_at: '2026-10-30T12:00:01Z',
+    error_code: null,
+    model_usage: [],
+  };
+  const report: Report = {
+    investigation_id: 'i3',
+    mode: 'meta',
+    revision: 1,
+    claims: [{ id: 'c1', text: investigation.text }],
+    sources: [
+      {
+        id: 's1',
+        url: 'https://www.example.org/bridge',
+        title: 'https://www.example.org/bridge',
+        content: 'The bridge opened in 2019. It carries two lanes.',
+      },
+    ],
+    evidence: [
+      { id: 'e1', claim_id: 'c1', source_id: 's1', excerpt: 'opened in 2019' },
+      { id: 'e2', claim_id: 'c1', source_id: 's1', excerpt: 'carries two lanes' },
+    ],
+    findings: [
+      {
+        id: 'f1',
+        claim_id: 'c1',
+        assessment: 'unresolved',
+        explanation: 'Review each detail.',
+        evidence_ids: ['e1', 'e2'],
+        components: [
+          {
+            description: 'Opened in 2019',
+            status: 'supported',
+            explanation: 'Stated by the source.',
+            evidence_ids: ['e1', 'e2'],
+            evidence_relations: { e1: 'supports', e2: 'supports' },
+            context_evidence_ids: [],
+          },
+        ],
+      },
+    ],
+    limitations: [],
+    model_usage: [],
+  };
+  render(
+    <MantineProvider>
+      <MemoryRouter>
+        <ReportView investigation={investigation} report={report} steps={[]} />
+      </MemoryRouter>
+    </MantineProvider>,
+  );
+  expect(screen.getAllByText('Supporting source')).toHaveLength(1);
+  expect(screen.getByText('opened in 2019').tagName).toBe('MARK');
+  expect(screen.getByText('carries two lanes').tagName).toBe('MARK');
+  // One link in the excerpt group and one in the sidebar list, both by domain.
+  expect(screen.getAllByRole('link', { name: /^example\.org/ })).toHaveLength(2);
+  expect(screen.queryByRole('link', { name: /https:\/\// })).not.toBeInTheDocument();
+});
+
 it('omits a component heading that repeats the only claim', () => {
   const investigation: Investigation = {
     id: 'i2',
