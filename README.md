@@ -63,7 +63,7 @@ Accounts, subscriptions, and billing management are outside the MVP. A controlle
 - **Optional experiments:** Meta open-weight inference on Baseten, Fireworks, or Modal, subject to access and evaluation.
 - **Storage:** SQLite with SQLAlchemy and Alembic migrations; no separate database server.
 
-Text research uses Tavily keyless Search and Extract, which is rate-limited without a quota guarantee; no paid fallback runs automatically. A reverse-image lookup provider has not been selected or verified. Users must confirm their own billing/credit availability before enabling paid inference.
+Text research uses Tavily Search and Extract. Set `TAVILY_API_KEY` to use your own Tavily account (the free plan includes monthly credits); without it, research falls back to keyless access, which is rate-limited without a published quota and stopped repeated or `deep` runs in testing. No paid fallback runs automatically. A reverse-image lookup provider has not been selected or verified. Users must confirm their own billing/credit availability before enabling paid inference.
 
 ## Delivery order
 

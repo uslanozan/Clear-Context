@@ -7,7 +7,7 @@ from typing import Literal
 
 import yaml
 
-from clear_context.providers.tavily import EXTRACT_ENDPOINT, RetrievalFailure, TavilyKeyless
+from clear_context.providers.tavily import EXTRACT_ENDPOINT, RetrievalFailure, TavilyClient
 from clear_context.repositories.retrieval import RetrievalRepository, encode, identity
 from clear_context.schemas.retrieval import RetrievalPolicy, SearchRequest
 
@@ -20,7 +20,7 @@ class RetrievalSession:
     def __init__(
         self,
         repository: RetrievalRepository,
-        provider: TavilyKeyless,
+        provider: TavilyClient,
         policy: RetrievalPolicy,
         clock=time.time,
     ):

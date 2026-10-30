@@ -121,7 +121,7 @@ def run_research(
             )
 
     class Search:
-        def __init__(self, timeout):
+        def __init__(self, timeout, api_key=""):
             pass
 
         def search(self, request):
@@ -143,7 +143,7 @@ def run_research(
 
     monkeypatch.setattr(module, "MetaStructuredProvider", Model)
     monkeypatch.setattr(module, "MetaPassageProvider", Selector)
-    monkeypatch.setattr(module, "TavilyKeyless", Search)
+    monkeypatch.setattr(module, "TavilyClient", Search)
     model = ModelSelection(alias="spark", api_model_id="muse-spark-1.3", training_use=False)
     claim = Claim(id=uuid4(), text="The bridge opened in 2017 and the mayor opened it.")
     research = InvestigationResearch(

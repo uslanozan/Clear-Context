@@ -1,4 +1,7 @@
-"""Explicit keyless transport; no retries, redirects or credential discovery."""
+"""Tavily Search/Extract transport; no retries, redirects or credential discovery.
+
+Uses an API key when one is configured, otherwise the rate-limited keyless mode.
+"""
 
 import json
 
@@ -21,8 +24,19 @@ class RetrievalFailure(RuntimeError):
         self.status_code = status_code
 
 
-class TavilyKeyless:
-    def __init__(self, timeout: float = 45, transport: httpx.BaseTransport | None = None):
+class TavilyClient:
+    def __init__(
+        self,
+        timeout: float = 45,
+        transport: httpx.BaseTransport | None = None,
+        api_key: str = "",
+    ):
+        # The key is only ever sent as a request header; never logged or cached.
+        self.headers = (
+            {"Authorization": f"Bearer {api_key}"}
+            if api_key
+            else {"X-Tavily-Access-Mode": "keyless"}
+        )
         self.client = httpx.Client(
             timeout=timeout,
             transport=transport or httpx.HTTPTransport(retries=0),
@@ -35,9 +49,7 @@ class TavilyKeyless:
 
     def _post(self, endpoint: str, payload: dict) -> dict:
         try:
-            response = self.client.post(
-                endpoint, json=payload, headers={"X-Tavily-Access-Mode": "keyless"}
-            )
+            response = self.client.post(endpoint, json=payload, headers=self.headers)
         except httpx.HTTPError as error:
             raise RetrievalFailure("transport_error") from error
         if response.status_code != 200:

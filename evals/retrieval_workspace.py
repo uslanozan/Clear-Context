@@ -6,7 +6,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from clear_context.providers.tavily import RetrievalFailure, TavilyKeyless
+from clear_context.providers.tavily import RetrievalFailure, TavilyClient
 from clear_context.repositories.retrieval import RetrievalRepository, identity
 from clear_context.schemas.retrieval import SavedResearchPlan, canonical_source_url
 from clear_context.services.retrieval import RetrievalSession, load_retrieval_policy
@@ -99,7 +99,7 @@ def main():
         }
     )
     repository = RetrievalRepository(args.workspace)
-    provider = TavilyKeyless(timeout=policy.timeout_seconds)
+    provider = TavilyClient(timeout=policy.timeout_seconds)
     service = RetrievalSession(repository, provider, policy)
     observed = []
     try:

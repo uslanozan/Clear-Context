@@ -19,7 +19,7 @@ from clear_context.domain.investigation import (
 )
 from clear_context.providers.meta_passages import MetaPassageProvider
 from clear_context.providers.meta_structured import MetaStructuredProvider, ModelResponseFailure
-from clear_context.providers.tavily import RetrievalFailure, TavilyKeyless
+from clear_context.providers.tavily import RetrievalFailure, TavilyClient
 from clear_context.repositories.judgment import JudgmentRepository
 from clear_context.repositories.retrieval import RetrievalRepository, identity
 from clear_context.schemas.retrieval import (
@@ -177,7 +177,7 @@ class InvestigationResearch:
             }
         )
         research = RetrievalRepository(self.workspace)
-        tavily = TavilyKeyless(timeout=30)
+        tavily = TavilyClient(timeout=30, api_key=self.settings.tavily_api_key.get_secret_value())
         limitations = ["Evidence assessments do not establish source reliability."]
         try:
             research.register_plan(saved)

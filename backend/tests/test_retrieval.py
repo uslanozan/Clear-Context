@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy import insert
 from sqlalchemy.exc import IntegrityError
 
-from clear_context.providers.tavily import RetrievalFailure, TavilyKeyless
+from clear_context.providers.tavily import RetrievalFailure, TavilyClient
 from clear_context.repositories.retrieval import RetrievalRepository, identity, query_needs
 from clear_context.schemas.retrieval import RetrievalPolicy, SavedResearchPlan, SearchRequest
 from clear_context.services.retrieval import RetrievalSession
@@ -68,7 +68,7 @@ def repository(tmp_path):
 
 
 def session(repository, handler, policy=None, now=None):
-    provider = TavilyKeyless(transport=httpx.MockTransport(handler))
+    provider = TavilyClient(transport=httpx.MockTransport(handler))
     service = RetrievalSession(
         repository, provider, policy or RetrievalPolicy(), clock=lambda: (now or [1000])[0]
     )
@@ -275,3 +275,26 @@ def test_recorded_query_reuses_cache_across_cases(repository):
     assert len(sent) == 1
     assert len(repository.export()["research_hits"]) == 2
     service.provider.close()
+
+
+@pytest.mark.parametrize(
+    ("api_key", "expected"),
+    [
+        ("", {"x-tavily-access-mode": "keyless"}),
+        ("tvly-test", {"authorization": "Bearer tvly-test"}),
+    ],
+)
+def test_client_uses_api_key_when_configured_and_keyless_otherwise(api_key, expected):
+    seen = []
+
+    def handler(request):
+        seen.append(request.headers)
+        return httpx.Response(200, json=search_response("q"))
+
+    client = TavilyClient(transport=httpx.MockTransport(handler), api_key=api_key)
+    client.search(SearchRequest(query="q", language="en"))
+    client.close()
+    for name, value in expected.items():
+        assert seen[0][name] == value
+    other = "authorization" if not api_key else "x-tavily-access-mode"
+    assert other not in seen[0]

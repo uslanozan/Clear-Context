@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     model_report: str = ""
     model_allow_training_use: bool = False
     meta_api_key: SecretStr = Field(default=SecretStr(""), exclude=True)
+    # Optional; without it research uses Tavily's rate-limited keyless mode.
+    tavily_api_key: SecretStr = Field(default=SecretStr(""), exclude=True)
 
     @field_validator("cors_allowed_origins")
     @classmethod
