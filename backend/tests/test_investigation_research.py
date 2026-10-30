@@ -330,3 +330,19 @@ def test_research_modes_change_budgets_not_methods(monkeypatch, tmp_path):
     )
     assert "followup_queries" not in calls
     assert report.findings[0].components[0].status == "insufficient"
+
+
+def test_two_investigations_citing_the_same_cached_page_both_persist(monkeypatch, tmp_path):
+    engine = create_database(tmp_path / "application.sqlite")
+    Base.metadata.create_all(engine)
+    repository = InvestigationRepository(create_session_factory(engine))
+    for _ in range(2):
+        claim, report = run_research(monkeypatch, tmp_path, [PLANNED_NEED], TWO_COMPONENTS)
+        investigation = repository.create(claim.text, mode="meta")
+        repository.transition(investigation.id, InvestigationStatus.RUNNING, "graph_started")
+        report.investigation_id = UUID(investigation.id)
+        repository.complete(report)
+        assert (
+            repository.get_report(investigation.id).sources[0].url == "https://example.org/bridge"
+        )
+    engine.dispose()

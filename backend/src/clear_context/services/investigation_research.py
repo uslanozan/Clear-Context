@@ -531,7 +531,8 @@ class InvestigationResearch:
                     if citation["component_index"] != index:
                         continue
                     page = research.page(citation["page_id"])
-                    source_id = stable_uuid("source", citation["page_id"])
+                    # Scope source rows to the investigation; cached pages are shared.
+                    source_id = stable_uuid("source", f"{investigation_id}:{citation['page_id']}")
                     evidence_id = stable_uuid(
                         "evidence",
                         f"{result['claim_id']}:{citation['page_id']}:{citation['start']}:{citation['end']}",
@@ -553,7 +554,7 @@ class InvestigationResearch:
                 if component["status"] == "insufficient":
                     for item in packet.evidence:
                         page = research.page(item.page_id)
-                        source_id = stable_uuid("source", item.page_id)
+                        source_id = stable_uuid("source", f"{investigation_id}:{item.page_id}")
                         evidence_id = stable_uuid(
                             "evidence",
                             f"{result['claim_id']}:{item.page_id}:{item.start}:{item.end}",
