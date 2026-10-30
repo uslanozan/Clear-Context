@@ -25,6 +25,10 @@ const ASSESSMENTS: Record<Assessment, { label: string; color: string }> = {
   unresolved: { label: 'Unresolved', color: 'yellow' },
 };
 
+function normalizeText(text: string): string {
+  return text.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 export function Activity({
   steps,
   isRunning = false,
@@ -63,6 +67,29 @@ export function ReportView({
           : null,
       };
     },
+  );
+
+  const coverage = report.extraction_coverage;
+  const coverageDetails = coverage && (
+    <details className="claim-provenance">
+      <summary>Review processing coverage</summary>
+      <ul>
+        {(coverage.notes ?? []).map((note, index) => (
+          <li key={index}>{note}</li>
+        ))}
+      </ul>
+      <p>{coverage.model_calls} model calls recorded</p>
+      <ul>
+        {coverage.chunks
+          .filter((chunk) => chunk.status !== 'split')
+          .map((chunk) => (
+            <li key={`${chunk.start}-${chunk.end}`}>
+              Characters {chunk.start + 1}–{chunk.end}:{' '}
+              {chunk.status === 'processed' ? 'processed' : 'needs further extraction'}
+            </li>
+          ))}
+      </ul>
+    </details>
   );
 
   async function copyLink() {
@@ -123,38 +150,10 @@ export function ReportView({
           The link couldn’t be copied. You can copy it from your address bar.
         </Alert>
       )}
-      {report.extraction_coverage && (
-        <Alert
-          color={report.extraction_coverage.status === 'partial' ? 'orange' : 'gray'}
-          title={
-            report.extraction_coverage.status === 'partial'
-              ? 'Claim extraction is partial'
-              : 'Input ranges processed'
-          }
-          mb="md"
-        >
-          {report.extraction_coverage.status === 'partial'
-            ? 'Some parts need another extraction pass. This report may omit claims.'
-            : 'Processing all input ranges does not guarantee that every claim was identified.'}
-          <details className="claim-provenance">
-            <summary>Review processing coverage</summary>
-            <ul>
-              {(report.extraction_coverage.notes ?? []).map((note, index) => (
-                <li key={index}>{note}</li>
-              ))}
-            </ul>
-            <p>{report.extraction_coverage.model_calls} model calls recorded</p>
-            <ul>
-              {report.extraction_coverage.chunks
-                .filter((chunk) => chunk.status !== 'split')
-                .map((chunk) => (
-                  <li key={`${chunk.start}-${chunk.end}`}>
-                    Characters {chunk.start + 1}–{chunk.end}:{' '}
-                    {chunk.status === 'processed' ? 'processed' : 'needs further extraction'}
-                  </li>
-                ))}
-            </ul>
-          </details>
+      {coverage && coverage.status === 'partial' && (
+        <Alert color="orange" title="Claim extraction is partial" mb="md">
+          Some parts need another extraction pass. This report may omit claims.
+          {coverageDetails}
         </Alert>
       )}
       {evidenceMissing && (
@@ -191,12 +190,26 @@ export function ReportView({
           </Accordion>
           <div className="section-heading">
             <h2>Claim by claim</h2>
-            <span>{String(report.claims.length).padStart(2, '0')} statements</span>
+            <span>
+              {report.claims.length} {report.claims.length === 1 ? 'claim' : 'claims'}
+            </span>
           </div>
           <div className="claim-list">
             {report.claims.map((claim, index) => {
               const finding = report.findings.find((item) => item.claim_id === claim.id);
+              const hasComponents = !!finding?.components?.length;
+              const claimStatement = claim.statement || claim.text;
               const assessment = finding ? ASSESSMENTS[finding.assessment] : null;
+              // With per-detail results, an unresolved claim means "no overall verdict",
+              // not "nothing was found".
+              const assessmentLabel =
+                hasComponents && finding?.assessment === 'unresolved'
+                  ? 'No overall verdict'
+                  : assessment?.label;
+              // A single component that repeats the claim needs no second heading.
+              const singleRedundantComponent =
+                finding?.components?.length === 1 &&
+                normalizeText(finding.components[0].description) === normalizeText(claimStatement);
               const evidence = report.evidence.filter((item) =>
                 finding?.evidence_ids.includes(item.id),
               );
@@ -212,7 +225,7 @@ export function ReportView({
                         tt="none"
                         fw={550}
                       >
-                        {assessment.label}
+                        {assessmentLabel}
                       </Badge>
                     )}
                   </div>
@@ -221,15 +234,19 @@ export function ReportView({
                     <p className="claim-explanation">The source context is ambiguous.</p>
                   )}
                   <ClaimSource claim={claim} input={investigation.text} />
-                  <p className="claim-explanation">
+                  <p className={hasComponents ? 'claim-verdict-note' : 'claim-explanation'}>
                     {finding?.explanation || 'A finding is not available for this claim.'}
                   </p>
                   {finding?.components?.length ? (
                     <div className="component-assessments">
-                      <h4>Evidence by detail</h4>
+                      <h4>{singleRedundantComponent ? 'Evidence' : 'Evidence by detail'}</h4>
                       {finding.components.map((component, componentIndex) => (
                         <section key={`${component.description}-${componentIndex}`}>
-                          <strong dir="auto">{component.description}</strong>{' '}
+                          {!singleRedundantComponent && (
+                            <>
+                              <strong dir="auto">{component.description}</strong>{' '}
+                            </>
+                          )}
                           <Badge
                             variant="light"
                             color={
@@ -310,6 +327,12 @@ export function ReportView({
               );
             })}
           </div>
+          {coverage && coverage.status !== 'partial' && (
+            <div className="coverage-note">
+              <p>Processing all input ranges does not guarantee that every claim was identified.</p>
+              {coverageDetails}
+            </div>
+          )}
           <div className="report-endnote">
             <ShieldCheck size={17} />
             <p>

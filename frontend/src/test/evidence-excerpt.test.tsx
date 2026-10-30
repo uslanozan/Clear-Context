@@ -15,6 +15,31 @@ it('highlights an exact unique excerpt and links the source', () => {
   expect(screen.getByRole('link', { name: /Opening record/ })).toHaveAttribute('href', source.url);
 });
 
+it('drops page chrome and partial words around the excerpt and marks cut context', () => {
+  const content = `| 29 | 30 | 31 | By: Site Editors Tower opens ${'x'.repeat(10)} the quoted claim sentence. ${'filler '.repeat(40)}end`;
+  const { container } = render(
+    <EvidenceExcerpt
+      evidence={{ ...evidence, excerpt: 'the quoted claim sentence.' }}
+      source={{ ...source, content }}
+    />,
+  );
+  const quote = container.querySelector('blockquote')!;
+  expect(quote.textContent).not.toMatch(/\|/);
+  expect(quote.textContent).toMatch(/^… By: Site Editors/);
+  expect(quote.textContent).toMatch(/ …$/);
+  expect(screen.getByText('the quoted claim sentence.').tagName).toBe('MARK');
+});
+
+it('shows the domain when the stored title is only a URL', () => {
+  render(
+    <EvidenceExcerpt
+      evidence={evidence}
+      source={{ ...source, title: 'https://www.example.org/bridge' }}
+    />,
+  );
+  expect(screen.getByRole('link', { name: /^example\.org/ })).toHaveAttribute('href', source.url);
+});
+
 it('does not highlight an ambiguous match or link an unsafe URL', () => {
   render(
     <EvidenceExcerpt

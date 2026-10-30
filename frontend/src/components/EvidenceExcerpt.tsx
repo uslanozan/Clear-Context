@@ -4,6 +4,29 @@ import { ArrowUpRight } from 'lucide-react';
 type EvidenceItem = Report['evidence'][number];
 type SourceItem = Report['sources'][number];
 
+const CONTEXT_CHARS = 180;
+
+/**
+ * Trims surrounding source text to whole words and drops table-like page chrome
+ * (for example calendar widgets joined by pipes). The excerpt itself is never changed.
+ */
+function trimContext(raw: string, side: 'before' | 'after'): string {
+  const pipe = side === 'before' ? raw.lastIndexOf('|') : raw.indexOf('|');
+  if (pipe >= 0) {
+    return (side === 'before' ? raw.slice(pipe + 1) : raw.slice(0, pipe)).trim();
+  }
+  // A full-length slice may end mid-word; shorter ones reached the document edge.
+  if (raw.length < CONTEXT_CHARS) return raw.trim();
+  return (side === 'before' ? raw.replace(/^\S*\s/, '') : raw.replace(/\s\S*$/, '')).trim();
+}
+
+function sourceLabel(source: SourceItem | undefined, url: URL): string {
+  const title = source?.title?.trim();
+  // Some sources store their URL as the title; show the domain instead.
+  if (!title || /^https?:\/\//i.test(title)) return url.hostname.replace(/^www\./, '');
+  return title;
+}
+
 export function EvidenceExcerpt({
   evidence,
   source,
@@ -13,11 +36,20 @@ export function EvidenceExcerpt({
 }) {
   const start = source?.content.indexOf(evidence.excerpt) ?? -1;
   const unique = start >= 0 && source?.content.indexOf(evidence.excerpt, start + 1) === -1;
-  const before = unique && source ? source.content.slice(Math.max(0, start - 180), start) : '';
-  const after =
+  const rawBefore =
+    unique && source ? source.content.slice(Math.max(0, start - CONTEXT_CHARS), start) : '';
+  const rawAfter =
     unique && source
-      ? source.content.slice(start + evidence.excerpt.length, start + evidence.excerpt.length + 180)
+      ? source.content.slice(
+          start + evidence.excerpt.length,
+          start + evidence.excerpt.length + CONTEXT_CHARS,
+        )
       : '';
+  const before = trimContext(rawBefore, 'before');
+  const after = trimContext(rawAfter, 'after');
+  const hasMoreBefore = unique && start > 0 && before !== '';
+  const hasMoreAfter =
+    unique && !!source && start + evidence.excerpt.length < source.content.length;
   let url: URL | null = null;
   try {
     const candidate = new URL(source?.url ?? '');
@@ -28,24 +60,26 @@ export function EvidenceExcerpt({
 
   return (
     <div className="evidence-excerpt">
+      {url && (
+        <a className="evidence-source" href={url.href} target="_blank" rel="noopener noreferrer">
+          {sourceLabel(source, url)} <ArrowUpRight size={13} aria-hidden="true" />
+        </a>
+      )}
       <blockquote dir="auto">
         {unique ? (
           <>
+            {hasMoreBefore && '… '}
             {before}
             {before && ' '}
             <mark>{evidence.excerpt}</mark>
             {after && ' '}
             {after}
+            {hasMoreAfter && after && ' …'}
           </>
         ) : (
           evidence.excerpt
         )}
       </blockquote>
-      {url && (
-        <a href={url.href} target="_blank" rel="noopener noreferrer">
-          {source?.title || url.hostname} <ArrowUpRight size={13} aria-hidden="true" />
-        </a>
-      )}
       {!unique && <p className="muted">Source context could not be located uniquely.</p>}
     </div>
   );

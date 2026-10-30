@@ -806,6 +806,48 @@ h3 {
   line-height: 1.8;
   margin-bottom: 20px;
 }
+.claim-verdict-note {
+  margin: 0 0 20px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--line);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.coverage-note {
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.coverage-note p {
+  margin: 0;
+}
+.coverage-note .claim-provenance {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+.evidence-excerpt {
+  margin: 6px 0 14px;
+}
+.evidence-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.evidence-excerpt blockquote {
+  margin: 0;
+}
+.evidence-excerpt mark {
+  background: #f4dcc8;
+  color: var(--ink);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
 .claim-source-line {
   display: flex;
   align-items: center;

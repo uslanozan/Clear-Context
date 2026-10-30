@@ -63,4 +63,63 @@ it('shows component status, directional source and highlighted source text', () 
   expect(screen.getByText('Contradicting source')).toBeInTheDocument();
   expect(screen.getByText('opened in 2019').tagName).toBe('MARK');
   expect(screen.getAllByRole('link', { name: /Bridge record/ }).length).toBeGreaterThan(0);
+  expect(screen.getByText('No overall verdict')).toBeInTheDocument();
+  expect(screen.getByText('1 claim')).toBeInTheDocument();
+});
+
+it('omits a component heading that repeats the only claim', () => {
+  const investigation: Investigation = {
+    id: 'i2',
+    text: 'A bridge opened in 2019.',
+    status: 'completed',
+    mode: 'meta',
+    revision: 1,
+    created_at: '2026-10-30T12:00:00Z',
+    updated_at: '2026-10-30T12:00:01Z',
+    error_code: null,
+    model_usage: [],
+  };
+  const report: Report = {
+    investigation_id: 'i2',
+    mode: 'meta',
+    revision: 1,
+    claims: [{ id: 'c1', text: investigation.text }],
+    sources: [],
+    evidence: [],
+    findings: [
+      {
+        id: 'f1',
+        claim_id: 'c1',
+        assessment: 'unresolved',
+        explanation: 'Review each detail.',
+        evidence_ids: [],
+        components: [
+          {
+            description: 'A bridge  opened in 2019.',
+            status: 'insufficient',
+            explanation: 'No source states the year.',
+            evidence_ids: [],
+            evidence_relations: {},
+            context_evidence_ids: [],
+          },
+        ],
+      },
+    ],
+    limitations: [],
+    model_usage: [],
+    extraction_coverage: { status: 'processed', model_calls: 1, chunks: [], notes: [] },
+  };
+  render(
+    <MantineProvider>
+      <MemoryRouter>
+        <ReportView investigation={investigation} report={report} steps={[]} />
+      </MemoryRouter>
+    </MantineProvider>,
+  );
+  expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument();
+  expect(screen.queryByText('A bridge  opened in 2019.')).not.toBeInTheDocument();
+  expect(screen.getByText('No source states the year.')).toBeInTheDocument();
+  // Non-partial coverage is a quiet note, not an alert box.
+  expect(screen.queryByText('Input ranges processed')).not.toBeInTheDocument();
+  expect(screen.getByText(/does not guarantee that every claim/)).toBeInTheDocument();
 });
