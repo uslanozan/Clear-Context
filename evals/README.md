@@ -367,8 +367,8 @@ search, extraction or query generation. It is cache-only unless
 literal citation validation precedes persistence. The result is need-level evidence
 assessment, not whole-claim verification. See [the assessment contract](../docs/EVIDENCE_JUDGMENT.md).
 Without `--method`, the runner uses the `selected` profile in `config/judges.yaml`
-(`need_evidence_v1_2`). The application research flow selects `need_components_v2`
-explicitly; pass `--method need_components_v2` to reproduce it, one need per job.
+(`need_evidence_v1_2`). Application research uses `RESEARCH_JUDGE_PROFILE`, default `need_components_v4`;
+pass `--method need_components_v4` to reproduce it, one need per job.
 Source trust and application claim-wide verdicts remain pending.
 
 Judge v1.1 reconciles need-level gaps across evidence and explicitly records the
