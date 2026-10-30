@@ -27,6 +27,7 @@ from clear_context.schemas.evidence_judgment import (
     response_model,
     validate_judgment,
 )
+from clear_context.services.report_text import report_text
 
 
 @dataclass(frozen=True)
@@ -95,7 +96,9 @@ class EvidenceJudgmentService:
                                     AnchoredComponentAssessment(
                                         description=packet.needs[0].description,
                                         status="insufficient",
-                                        explanation="No selected evidence available.",
+                                        explanation=report_text(
+                                            "no_evidence", parent_claim(packet)
+                                        ),
                                         evidence=[],
                                         claim_quote=parent_claim(packet),
                                     )
@@ -107,7 +110,9 @@ class EvidenceJudgmentService:
                                     ComponentAssessment(
                                         description=packet.needs[0].description,
                                         status="insufficient",
-                                        explanation="No selected evidence available.",
+                                        explanation=report_text(
+                                            "no_evidence", parent_claim(packet)
+                                        ),
                                         evidence=[],
                                     )
                                 ]

@@ -5,6 +5,7 @@ from clear_context.core.settings import ModelSelection, Settings
 from clear_context.db.base import Base
 from clear_context.db.session import create_database, create_session_factory
 from clear_context.domain.investigation import Claim, InvestigationStatus
+from clear_context.providers.tavily import RetrievalFailure
 from clear_context.repositories.investigation import InvestigationRepository
 from clear_context.services.investigation_research import (
     InvestigationResearch,
@@ -52,6 +53,7 @@ TWO_COMPONENTS = {
 PAGES = {
     "https://example.org/bridge": "The bridge opened in 2019.",
     "https://example.org/mayor": "The mayor opened the bridge in 2019.",
+    "https://example.org/blocked": None,
 }
 
 
@@ -66,6 +68,8 @@ def run_research(
     progress=None,
     mode=None,
     judge_profile="need_components_v2",
+    claim_text="The bridge opened in 2017 and the mayor opened it.",
+    first_url=None,
 ):
     """Run the flow with fakes; judge_response may be a list consumed per judgment call."""
     from clear_context.services import investigation_research as module
@@ -131,12 +135,18 @@ def run_research(
                 if "mayor" in request.query
                 else ("https://example.org/bridge")
             )
-            return {"query": request.query, "results": [{"title": "Record", "url": url}]}
+            urls = [first_url, url] if first_url else [url]
+            return {
+                "query": request.query,
+                "results": [{"title": "Record", "url": u} for u in urls],
+            }
 
         def extract_payload(self, url):
             return {"urls": [url]}
 
         def extract(self, url):
+            if PAGES[url] is None:
+                raise RetrievalFailure("extract_failed")
             return {"results": [{"url": url, "raw_content": PAGES[url]}]}
 
         def close(self):
@@ -146,7 +156,7 @@ def run_research(
     monkeypatch.setattr(module, "MetaPassageProvider", Selector)
     monkeypatch.setattr(module, "TavilyClient", Search)
     model = ModelSelection(alias="spark", api_model_id="muse-spark-1.3", training_use=False)
-    claim = Claim(id=uuid4(), text="The bridge opened in 2017 and the mayor opened it.")
+    claim = Claim(id=uuid4(), text=claim_text)
     research = InvestigationResearch(
         Settings(_env_file=None, research_judge_profile=judge_profile),
         {"research": model, "judge": model},
@@ -384,3 +394,39 @@ def test_anchored_judge_profile_assesses_the_claim_as_stated(monkeypatch, tmp_pa
     assert seen[0]["claim"] == "The bridge opened in 2017 and the mayor opened it."
     assert seen[0]["focus"] == "Whether the bridge opened in 2017"
     assert report.findings[0].components[0].status == "contradicted"
+
+
+def test_unreadable_source_does_not_use_the_read_budget(monkeypatch, tmp_path):
+    _, report = run_research(
+        monkeypatch,
+        tmp_path,
+        [PLANNED_NEED],
+        TWO_COMPONENTS,
+        budget=ResearchBudget(max_source_reads=1, followup_queries=0),
+        first_url="https://example.org/blocked",
+    )
+    assert any("extract_failed" in item for item in report.limitations)
+    assert report.sources[0].url == "https://example.org/bridge"
+    assert report.findings[0].components[0].status == "contradicted"
+
+
+def test_system_explanations_follow_a_turkish_claim(monkeypatch, tmp_path):
+    deferred = {
+        "id": "n2",
+        "description": "Açılış yılındaki ziyaretçi sayısı",
+        "status": "budget_deferred",
+        "reason": "Öncelik açılış yılında.",
+    }
+    _, report = run_research(
+        monkeypatch,
+        tmp_path,
+        [PLANNED_NEED, deferred],
+        TWO_COMPONENTS,
+        budget=ResearchBudget(followup_queries=0),
+        claim_text="Köprü 2017'de açıldı ve açılışı belediye başkanı yaptı.",
+    )
+    finding = report.findings[0]
+    assert finding.explanation.startswith("İddianın tamamı için kapsam doğrulanmadı")
+    assert finding.components[-1].explanation == (
+        "Bu araştırmanın arama bütçesi içinde araştırılmadı."
+    )

@@ -37,12 +37,8 @@ from clear_context.services.followup_queries import (
 )
 from clear_context.services.passage_selection import PassageSelectionService, SelectionJob
 from clear_context.services.query_planning import PlanningClaim
+from clear_context.services.report_text import report_text
 from clear_context.services.retrieval import RetrievalSession, load_retrieval_policy
-
-DEFERRED_EXPLANATIONS = {
-    "needs_context": "Not researched: the claim lacks context this detail depends on.",
-    "budget_deferred": "Not researched within this investigation's search budget.",
-}
 
 
 @dataclass(frozen=True)
@@ -185,18 +181,20 @@ class InvestigationResearch:
             policy = policy.model_copy(
                 update={
                     "max_search_calls": budget.max_queries + budget.followup_queries,
-                    "max_extract_calls": budget.max_source_reads + budget.followup_source_reads,
+                    # Extra extract calls let a readable source replace an unreadable one.
+                    "max_extract_calls": 2
+                    * (budget.max_source_reads + budget.followup_source_reads),
                     "max_followup_queries": budget.followup_queries,
                 }
             )
             session = RetrievalSession(research, tavily, policy)
-            page_needs, hits, seen_sources = {}, {}, set()
+            page_needs, hits, read_sources = {}, {}, {}
             search_complete = self._search(
                 session,
                 research,
                 saved.case_id,
                 saved.queries,
-                seen_sources,
+                read_sources,
                 page_needs,
                 hits,
                 budget.max_source_reads,
@@ -245,7 +243,7 @@ class InvestigationResearch:
                     receipts,
                     page_needs,
                     hits,
-                    seen_sources,
+                    read_sources,
                     limitations,
                     usage,
                     progress,
@@ -266,7 +264,7 @@ class InvestigationResearch:
         research,
         case_id,
         queries,
-        seen_sources,
+        read_sources,
         page_needs,
         hits,
         source_limit,
@@ -285,23 +283,17 @@ class InvestigationResearch:
             for hit in results:
                 try:
                     source = identity("s_", canonical_source_url(hit["url"]))
-                    if source not in seen_sources:
-                        if len(seen_sources) >= source_limit:
+                    if source not in read_sources:
+                        if sum(1 for page in read_sources.values() if page) >= source_limit:
                             if "Source read budget reached." not in limitations:
                                 limitations.append("Source read budget reached.")
                             continue
-                        seen_sources.add(source)
-                        page = session.read_source(source)
-                        page_needs[page] = set()
-                    else:
-                        page = next(
-                            (
-                                pid
-                                for pid in page_needs
-                                if research.page(pid)["source_id"] == source
-                            ),
-                            None,
-                        )
+                        # Mark before reading so an unreadable source is not retried; only
+                        # pages that were read count toward the source budget.
+                        read_sources[source] = None
+                        read_sources[source] = session.read_source(source)
+                        page_needs[read_sources[source]] = set()
+                    page = read_sources[source]
                     if page:
                         page_needs[page].update(query.need_ids)
                 except (RetrievalFailure, ValueError, KeyError) as error:
@@ -359,7 +351,7 @@ class InvestigationResearch:
         receipts,
         page_needs,
         hits,
-        seen_sources,
+        read_sources,
         limitations,
         usage,
         progress,
@@ -441,7 +433,7 @@ class InvestigationResearch:
             research,
             saved.case_id,
             followups,
-            seen_sources,
+            read_sources,
             page_needs,
             hits,
             budget.max_source_reads + budget.followup_source_reads,
@@ -502,6 +494,7 @@ class InvestigationResearch:
     @staticmethod
     def _report(investigation_id, claims, plan, judgments, research, limitations, receipts):
         sources, evidence, by_claim = {}, {}, {str(c.id): [] for c in claims}
+        statements = {str(c.id): c.statement or c.text for c in claims}
         for row in judgments:
             if row["status"] != "assessed":
                 limitations.append(f"Evidence assessment did not complete ({row['status']}).")
@@ -511,9 +504,8 @@ class InvestigationResearch:
                         FindingComponent(
                             description=need.description,
                             status="not_assessed",
-                            explanation=(
-                                f"Evidence assessment did not complete ({row['status']}); "
-                                "this detail was not evaluated."
+                            explanation=report_text(
+                                "assessment_failed", statements[need.claim_id], status=row["status"]
                             ),
                             evidence_ids=[],
                         )
@@ -588,7 +580,7 @@ class InvestigationResearch:
                     FindingComponent(
                         description=need.description,
                         status="not_assessed",
-                        explanation=DEFERRED_EXPLANATIONS[need.status],
+                        explanation=report_text(need.status, statements[need.claim_id]),
                         evidence_ids=[],
                     )
                 )
@@ -605,7 +597,7 @@ class InvestigationResearch:
                     id=stable_uuid("finding", str(claim.id)),
                     claim_id=claim.id,
                     assessment=Assessment.UNRESOLVED,
-                    explanation="Claim-wide coverage is not established; review each detail below.",
+                    explanation=report_text("claim_wide_unresolved", claim.statement or claim.text),
                     evidence_ids=ids,
                     components=components,
                 )
