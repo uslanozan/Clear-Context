@@ -6,8 +6,8 @@ export const MEDIA_LIMITS = {
   videoBytes: 100 * 1024 * 1024,
   totalBytes: 100 * 1024 * 1024,
 };
-export const MEDIA_ACCEPT =
-  'image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime';
+// The backend checks file signatures and accepts these formats only.
+export const MEDIA_ACCEPT = 'image/png,image/jpeg,image/webp,image/gif,video/mp4';
 export interface Attachment {
   id: string;
   file: File;

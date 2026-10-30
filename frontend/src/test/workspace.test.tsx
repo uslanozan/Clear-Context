@@ -40,6 +40,7 @@ const report = {
 };
 let posts: string[];
 let bodies: Record<string, unknown>[];
+let uploads: { url: string; form: FormData }[];
 let researchEnabled: boolean;
 let failPost: boolean;
 let healthOffline: boolean;
@@ -49,6 +50,7 @@ beforeEach(() => {
   vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
   posts = [];
   bodies = [];
+  uploads = [];
   researchEnabled = false;
   failPost = false;
   healthOffline = false;
@@ -66,6 +68,10 @@ beforeEach(() => {
         });
       }
       if (options?.method === 'POST') {
+        if (options.body instanceof FormData) {
+          uploads.push({ url, form: options.body });
+          return Response.json({ ...row, status: 'queued' }, { status: 202 });
+        }
         bodies.push(JSON.parse(String(options.body)));
         posts.push(JSON.parse(String(options.body)).text);
         return failPost
@@ -103,7 +109,7 @@ describe('Investigation workspace', () => {
   it('loads history and examples without submitting a paid request', async () => {
     mount();
     await screen.findByText(
-      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
+      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
     );
     await userEvent.click(screen.getByRole('button', { name: /a date. a number. two claims/i }));
     expect(
@@ -116,7 +122,7 @@ describe('Investigation workspace', () => {
   it('submits once, opens a report, and labels missing evidence honestly', async () => {
     mount();
     await screen.findByText(
-      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
+      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
     );
     fireEvent.change(screen.getByRole('textbox', { name: 'Passage to investigate' }), {
       target: { value: ' A synthetic claim. ' },
@@ -146,7 +152,7 @@ describe('Investigation workspace', () => {
   it('hides research depth when source research is disabled', async () => {
     mount();
     await screen.findByText(
-      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
+      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
     );
     expect(screen.queryByText('Research depth')).not.toBeInTheDocument();
   });
@@ -155,7 +161,7 @@ describe('Investigation workspace', () => {
     failPost = true;
     mount();
     await screen.findByText(
-      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
+      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
     );
     const input = screen.getByRole('textbox', { name: 'Passage to investigate' });
     fireEvent.change(input, { target: { value: 'Keep this passage.' } });
@@ -189,28 +195,40 @@ describe('Investigation workspace', () => {
 
 describe('Media intake', () => {
   const image = () => new File(['synthetic image bytes'], 'screenshot.png', { type: 'image/png' });
-  it('accepts pasted image and caption, then blocks silent text-only submission', async () => {
+  it('sends a pasted image with its caption to the upload endpoint', async () => {
     mount();
     await screen.findByText(
-      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
+      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
     );
     const input = screen.getByRole('textbox', { name: 'Passage to investigate' });
     fireEvent.paste(input, { clipboardData: { files: [image()], getData: () => 'A caption.' } });
     expect(screen.getByAltText('Preview of screenshot.png')).toBeInTheDocument();
     expect(input).toHaveValue('A caption.');
-    expect(screen.getByText('Media preview only')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Start investigation' })).toBeDisabled();
-    fireEvent.keyDown(input, { key: 'Enter', ctrlKey: true });
+    expect(screen.getByText('Files are sent with your text')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Start investigation' }));
+    await waitFor(() => expect(uploads).toHaveLength(1));
+    expect(uploads[0].url).toContain('/investigations/upload');
+    expect(uploads[0].form.get('text')).toBe('A caption.');
+    expect((uploads[0].form.get('files') as File).name).toBe('screenshot.png');
     expect(posts).toHaveLength(0);
+  });
+  it('allows an image without text but not an empty submission', async () => {
+    mount();
+    const button = await screen.findByRole('button', { name: 'Start investigation' });
+    await waitFor(() => expect(button).toBeDisabled());
+    fireEvent.change(screen.getByLabelText('Attach images or videos'), {
+      target: { files: [image()] },
+    });
+    await waitFor(() => expect(button).toBeEnabled());
     await userEvent.click(screen.getByRole('button', { name: 'Remove screenshot.png' }));
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:local-test');
-    expect(screen.getByRole('button', { name: 'Start investigation' })).toBeEnabled();
+    expect(button).toBeDisabled();
   });
   it('previews a selected video with playback controls without uploading it', async () => {
     mount();
-    const video = new File(['synthetic video bytes'], 'clip.webm', { type: 'video/webm' });
+    const video = new File(['synthetic video bytes'], 'clip.mp4', { type: 'video/mp4' });
     await userEvent.upload(screen.getByLabelText('Attach images or videos'), video);
-    expect(screen.getByLabelText('Preview of clip.webm')).toHaveAttribute('controls');
+    expect(screen.getByLabelText('Preview of clip.mp4')).toHaveAttribute('controls');
     expect(posts).toHaveLength(0);
   });
   it('accepts drag/drop and ignores duplicate files', () => {

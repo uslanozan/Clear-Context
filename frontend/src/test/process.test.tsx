@@ -47,6 +47,19 @@ describe('Recorded investigation steps', () => {
     const followup = screen.getByText('Search again').closest('li')!;
     expect(within(followup).getByText('Complete')).toBeInTheDocument();
   });
+  it('shows image reading only for investigations with attached files', () => {
+    const step = (name: string) => ({
+      name,
+      status: 'completed' as const,
+      created_at: started.created_at,
+    });
+    render(
+      <ProcessTimeline steps={['graph_started', 'analyze_media', 'extract_claims'].map(step)} />,
+    );
+    const stages = screen.getAllByRole('listitem');
+    expect(within(stages[1]).getByText('Read images')).toBeInTheDocument();
+    expect(within(stages[2]).getByText('Separate claims')).toBeInTheDocument();
+  });
   it('distinguishes unavailable activity from completed work', () => {
     render(<ProcessTimeline hasError />);
     expect(screen.getByRole('status')).toHaveTextContent('Activity could not be loaded');

@@ -18,7 +18,7 @@ import { Composer } from './components/Composer';
 import { Activity, ReportView } from './components/ReportView';
 import { Sidebar } from './components/Sidebar';
 import { api, ApiError, failureMessage } from './lib/api';
-import type { Investigation } from './lib/types';
+import type { Investigation, ResearchMode } from './lib/types';
 
 export function App() {
   return (
@@ -82,7 +82,11 @@ function Workspace() {
     enabled: investigation.data?.status === 'completed',
   });
   const create = useMutation({
-    mutationFn: api.create,
+    mutationFn: (input: { text: string; research_mode?: ResearchMode; files: File[] }) =>
+      input.files.length
+        ? api.upload(input)
+        : // The JSON endpoint rejects unknown fields, so send only text and mode.
+          api.create({ text: input.text, research_mode: input.research_mode }),
     retry: false,
     onSuccess: (created: Investigation) => {
       queryClient.setQueryData(['investigation', created.id], created);
@@ -192,8 +196,8 @@ function Workspace() {
               health={health.isError ? undefined : health.data}
               isPending={create.isPending}
               error={create.error}
-              onSubmit={async (text, researchMode) => {
-                await create.mutateAsync({ text, research_mode: researchMode });
+              onSubmit={async (text, researchMode, files) => {
+                await create.mutateAsync({ text, research_mode: researchMode, files });
               }}
             />
           ) : investigation.isPending ? (

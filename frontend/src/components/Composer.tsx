@@ -22,7 +22,7 @@ interface Props {
   health?: Health;
   isPending: boolean;
   error: Error | null;
-  onSubmit: (text: string, researchMode?: ResearchMode) => Promise<void>;
+  onSubmit: (text: string, researchMode: ResearchMode | undefined, files: File[]) => Promise<void>;
 }
 
 export function Composer({ initialText = '', health, isPending, error, onSubmit }: Props) {
@@ -35,10 +35,12 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
   const submitting = useRef(false);
   const media = useMediaAttachments();
   const count = text.trim().length;
+  const hasImage = media.attachments.some((item) => item.kind === 'image');
+  const hasVideo = media.attachments.some((item) => item.kind === 'video');
   async function submit() {
-    if (isPending || submitting.current || media.attachments.length) return;
-    if (!count || count > 20000) {
-      setValidation('Enter between 1 and 20,000 characters.');
+    if (isPending || submitting.current) return;
+    if ((!count && !hasImage) || count > 20000) {
+      setValidation('Enter up to 20,000 characters or attach an image.');
       textarea.current?.focus();
       return;
     }
@@ -46,7 +48,11 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
     submitting.current = true;
     setValidation('');
     try {
-      await onSubmit(text.trim(), health.research_enabled ? researchMode : undefined);
+      await onSubmit(
+        text.trim(),
+        health.research_enabled ? researchMode : undefined,
+        media.attachments.map((item) => item.file),
+      );
     } catch {
       submitting.current = false;
     }
@@ -178,7 +184,7 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
               <Button
                 type="submit"
                 loading={isPending}
-                disabled={!health || !count || !!media.attachments.length}
+                disabled={!health || (!count && !hasImage)}
                 rightSection={<ArrowRight size={16} />}
               >
                 Start investigation
@@ -214,8 +220,8 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
             </div>
           )}
           <p className="input-description" id="input-description">
-            Paste or drop images and videos, or choose files. Up to 4 files · Images 20 MB · Videos
-            100 MB · Total 100 MB.
+            Paste or drop images or MP4 videos, or choose files. Up to 4 files · Images 20 MB ·
+            Videos 100 MB · Total 100 MB.
           </p>
           {media.error && (
             <Alert color="red" title="Some files weren't added" role="alert">
@@ -224,13 +230,15 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
           )}
           {!!media.attachments.length && (
             <div className="media-notice" role="status">
-              <strong>Media preview only</strong>
+              <strong>Files are sent with your text</strong>
               <p>
-                These files stay in this tab. Image and video analysis is not connected yet, so they
-                won't be submitted.
+                {health?.mode === 'mock'
+                  ? 'Preview mode stores the files but does not analyze them.'
+                  : 'A Muse model reads visible text in images and describes them. It does not decide where or when a photo was taken.'}
+                {hasVideo && ' Videos are stored, but video analysis is not connected yet.'}
               </p>
               <Button type="button" size="xs" variant="default" onClick={() => media.remove()}>
-                Remove media{count ? ' and use text' : ''}
+                Remove media{count ? ' and use text only' : ''}
               </Button>
             </div>
           )}
@@ -242,8 +250,8 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
           <p className="privacy-note">
             {health?.mode === 'meta'
               ? health.research_enabled
-                ? 'Text is sent to Meta; generated search queries and source URLs are sent to Tavily. Saved reports stay on your server.'
-                : 'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.'
+                ? 'Text and attached images are sent to Meta; generated search queries and source URLs are sent to Tavily. Saved reports stay on your server.'
+                : 'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.'
               : health?.mode === 'mock'
                 ? 'Preview mode. No model calls or credits used.'
                 : 'Waiting for your investigation service.'}

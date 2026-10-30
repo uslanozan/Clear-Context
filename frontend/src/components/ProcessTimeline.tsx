@@ -48,6 +48,12 @@ const RESEARCH_STAGES = [
   },
 ];
 
+const MEDIA_STAGE = {
+  event: 'analyze_media',
+  title: 'Read images',
+  detail: 'Read visible text and describe attached images.',
+};
+
 const FOLLOWUP_STAGE = {
   event: 'followup_research',
   title: 'Search again',
@@ -74,9 +80,14 @@ export function ProcessTimeline({
   const researchStages = steps.some((step) => step.name === FOLLOWUP_STAGE.event)
     ? [...RESEARCH_STAGES, FOLLOWUP_STAGE]
     : RESEARCH_STAGES;
-  const STAGES = researchActive
-    ? [...BASE_STAGES.slice(0, 2), ...researchStages, ...BASE_STAGES.slice(2)]
+  // Media reading only runs when files were attached.
+  const baseStages = steps.some((step) => step.name === MEDIA_STAGE.event)
+    ? [BASE_STAGES[0], MEDIA_STAGE, ...BASE_STAGES.slice(1)]
     : BASE_STAGES;
+  const extract = baseStages.findIndex((stage) => stage.event === 'extract_claims') + 1;
+  const STAGES = researchActive
+    ? [...baseStages.slice(0, extract), ...researchStages, ...baseStages.slice(extract)]
+    : baseStages;
   const failure = steps.find((step) => step.status === 'failed');
   const lastCompleted = STAGES.reduce(
     (last, stage, index) => (steps.some((step) => step.name === stage.event) ? index : last),

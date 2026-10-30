@@ -27,6 +27,32 @@ export interface ExtractedClaim {
   context_status?: 'standalone' | 'context_linked' | 'ambiguous' | null;
 }
 export type ResearchMode = 'fast' | 'balanced' | 'deep';
+export interface MediaFinding {
+  id: string;
+  kind: 'image' | 'video';
+  mime_type: string;
+  filename: string;
+  analysis: {
+    status: 'analyzed' | 'not_analyzed' | 'failed';
+    content_type: string | null;
+    visible_text: string;
+    observations: string[];
+    context_cues: string[];
+    note: string | null;
+  };
+  origin: {
+    status: 'not_checked' | 'matches_found' | 'no_matches' | 'failed';
+    provider: string | null;
+    reason: string | null;
+    matches: {
+      page_url: string;
+      page_title: string | null;
+      image_url: string | null;
+      match: 'full' | 'partial';
+    }[];
+    best_guess_labels: string[];
+  };
+}
 export interface Investigation {
   id: string;
   text: string;
@@ -68,6 +94,8 @@ export interface Report {
   }[];
   limitations: string[];
   model_usage: ModelUsage[];
+  analyzed_text?: string | null;
+  media?: MediaFinding[];
   extraction_coverage?: {
     status: 'processed' | 'partial';
     model_calls: number;

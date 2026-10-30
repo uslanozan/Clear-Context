@@ -15,6 +15,7 @@ import {
 import { Link } from 'react-router-dom';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ClaimSource } from './ClaimSource';
+import { MediaFindings } from './MediaFindings';
 import { EvidenceExcerpt, sourceDisplayName } from './EvidenceExcerpt';
 import { RESEARCH_MODES } from '../lib/modes';
 import type { Assessment, Investigation, Report, ResearchStep } from '../lib/types';
@@ -237,10 +238,14 @@ export function ReportView({
                 Original passage<span className="original-label">Your starting point</span>
               </Accordion.Control>
               <Accordion.Panel>
-                <p className="original-text">{investigation.text}</p>
+                <p className="original-text">
+                  {investigation.text ||
+                    'No text was entered. Claims come from text read from the images.'}
+                </p>
               </Accordion.Panel>
             </Accordion.Item>
           </Accordion>
+          {!!report.media?.length && <MediaFindings media={report.media} />}
           <div className="section-heading">
             <h2>Claim by claim</h2>
             <span>
@@ -286,7 +291,7 @@ export function ReportView({
                   {claim.context_status === 'ambiguous' && (
                     <p className="claim-explanation">The source context is ambiguous.</p>
                   )}
-                  <ClaimSource claim={claim} input={investigation.text} />
+                  <ClaimSource claim={claim} input={report.analyzed_text ?? investigation.text} />
                   <p className={hasComponents ? 'claim-verdict-note' : 'claim-explanation'}>
                     {finding?.explanation || 'A finding is not available for this claim.'}
                   </p>

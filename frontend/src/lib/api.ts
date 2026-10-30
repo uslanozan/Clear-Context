@@ -45,6 +45,14 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     }),
+  // Multipart: the browser sets the boundary, so no Content-Type header here.
+  upload: (input: { text: string; research_mode?: ResearchMode; files: File[] }) => {
+    const form = new FormData();
+    form.append('text', input.text);
+    if (input.research_mode) form.append('research_mode', input.research_mode);
+    input.files.forEach((file) => form.append('files', file, file.name));
+    return request<Investigation>('/investigations/upload', { method: 'POST', body: form });
+  },
 };
 
 export function failureMessage(code: string | null) {
