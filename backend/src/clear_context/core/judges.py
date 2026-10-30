@@ -15,9 +15,9 @@ class JudgeProfile(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     implementation: Literal["need_evidence_v1"]
     prompt: str
-    response_contract: Literal["legacy_v1", "reconciled_v1_1", "compact_v1_2", "relevance_v1"] = (
-        "legacy_v1"
-    )
+    response_contract: Literal[
+        "legacy_v1", "reconciled_v1_1", "compact_v1_2", "relevance_v1", "components_v2"
+    ] = "legacy_v1"
     max_completion_tokens: int | None = Field(default=None, ge=256, le=8192)
 
 

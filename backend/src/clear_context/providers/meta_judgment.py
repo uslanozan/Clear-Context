@@ -3,6 +3,7 @@
 import json
 from copy import deepcopy
 
+from clear_context.schemas.component_judgment import ComponentResponse
 from clear_context.schemas.evidence_judgment import (
     JudgmentPacket,
     evidence_aliases,
@@ -98,6 +99,36 @@ def build_judgment_request(
     tokens: int,
     response_contract: str = "legacy_v1",
 ):
+    if response_contract == "components_v2":
+        if len(packet.needs) != 1:
+            raise ValueError("Component assessment requires exactly one research need per job.")
+        aliases = {identity: alias for alias, identity in evidence_aliases(packet).items()}
+        context = {
+            "claim": packet.needs[0].description,
+            "parent_claim": next(
+                c.statement for c in packet.claims if c.id == packet.needs[0].claim_id
+            ),
+            "evidence": [{"id": aliases[e.id], "text": e.quote} for e in packet.evidence],
+        }
+        return {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": json.dumps(context, ensure_ascii=False)},
+            ],
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "component_assessment",
+                    "strict": True,
+                    "schema": ComponentResponse.model_json_schema(),
+                },
+            },
+            "reasoning_effort": effort,
+            "max_completion_tokens": tokens,
+            "store": False,
+            "stream": False,
+        }
     compact = response_contract in {"compact_v1_2", "relevance_v1"}
     return {
         "model": model,

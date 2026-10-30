@@ -9,6 +9,11 @@ from time import perf_counter
 from clear_context.providers.meta_judgment import build_judgment_request
 from clear_context.providers.meta_structured import ModelResponseFailure
 from clear_context.repositories.retrieval import encode, identity
+from clear_context.schemas.component_judgment import (
+    ComponentAssessment,
+    ComponentResponse,
+    validate_components,
+)
 from clear_context.schemas.evidence_judgment import (
     JudgmentResponse,
     NeedAssessment,
@@ -80,17 +85,29 @@ class EvidenceJudgmentService:
                 usage = {}
                 try:
                     if not packet.evidence:
-                        output = JudgmentResponse(
-                            assessments=[
-                                NeedAssessment(
-                                    need_id=n.id,
-                                    evidence_assessments=[],
-                                    missing_information=[n.description],
-                                    explanation="No selected evidence is available for this need.",
-                                )
-                                for n in packet.needs
-                            ]
-                        )
+                        if self.response_contract == "components_v2":
+                            output = ComponentResponse(
+                                components=[
+                                    ComponentAssessment(
+                                        description=packet.needs[0].description,
+                                        status="insufficient",
+                                        explanation="No selected evidence available.",
+                                        evidence=[],
+                                    )
+                                ]
+                            )
+                        else:
+                            output = JudgmentResponse(
+                                assessments=[
+                                    NeedAssessment(
+                                        need_id=n.id,
+                                        evidence_assessments=[],
+                                        missing_information=[n.description],
+                                        explanation="No selected evidence available.",
+                                    )
+                                    for n in packet.needs
+                                ]
+                            )
                         if self.response_contract in {
                             "reconciled_v1_1",
                             "compact_v1_2",
@@ -153,29 +170,52 @@ class EvidenceJudgmentService:
                                 self.active -= 1
                             at = self.clock()
                         usage = body.get("usage") or {}
-                        output = validate_judgment(
-                            body["choices"][0]["message"]["content"], packet, self.response_contract
-                        )
+                        if self.response_contract == "components_v2":
+                            output, component_citations = validate_components(
+                                body["choices"][0]["message"]["content"], packet
+                            )
+                        else:
+                            output = validate_judgment(
+                                body["choices"][0]["message"]["content"],
+                                packet,
+                                self.response_contract,
+                            )
                         if not row["cached"]:
                             research.save_cache(
                                 "judgment", key, body, at, self.limits.cache_ttl_seconds
                             )
-                    result = {
-                        "scope": "provided_evidence_only",
-                        "source_reliability_assessed": False,
-                        "assessments": [
-                            a.model_dump()
-                            | {
-                                "status": need_status(a),
-                                "source_count": len(
-                                    {e.source_id for e in packet.evidence if e.need_id == a.need_id}
-                                ),
-                            }
-                            for a in output.assessments
-                        ],
-                        "citations": resolved_citations(output, packet),
-                        "claim_verdicts": None,
-                    }
+                    if self.response_contract == "components_v2":
+                        result = {
+                            "scope": "provided_evidence_only",
+                            "source_reliability_assessed": False,
+                            "need_id": packet.needs[0].id,
+                            "claim_id": packet.needs[0].claim_id,
+                            "components": output.model_dump()["components"],
+                            "citations": component_citations if packet.evidence else [],
+                            "evidence_aliases": evidence_aliases(packet),
+                            "claim_verdicts": None,
+                        }
+                    else:
+                        result = {
+                            "scope": "provided_evidence_only",
+                            "source_reliability_assessed": False,
+                            "assessments": [
+                                a.model_dump()
+                                | {
+                                    "status": need_status(a),
+                                    "source_count": len(
+                                        {
+                                            e.source_id
+                                            for e in packet.evidence
+                                            if e.need_id == a.need_id
+                                        }
+                                    ),
+                                }
+                                for a in output.assessments
+                            ],
+                            "citations": resolved_citations(output, packet),
+                            "claim_verdicts": None,
+                        }
                     if self.response_contract in {"compact_v1_2", "relevance_v1"}:
                         result["evidence_aliases"] = evidence_aliases(packet)
                     receipt = self.repository.save(

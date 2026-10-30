@@ -31,12 +31,17 @@ def main():
     parser.add_argument("--jobs", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--catalog", type=Path, default=Path("config/judges.yaml"))
+    parser.add_argument(
+        "--method", help="Override the selected judge profile for this run"
+    )
     parser.add_argument("--prompts", type=Path, default=Path("config/prompts.yaml"))
     parser.add_argument("--allow-live-judging", action="store_true")
     args = parser.parse_args()
     if not args.workspace.is_file() or args.output.exists():
         raise ValueError("Use an existing workspace and a new output directory.")
-    method, limits, system, contract = load_judge(args.catalog, args.prompts)
+    method, limits, system, contract = load_judge(
+        args.catalog, args.prompts, method=args.method
+    )
     settings = Settings() if args.allow_live_judging else Settings(_env_file=None)
     model = load_model_selections(settings)["judge"]
     if args.allow_live_judging:

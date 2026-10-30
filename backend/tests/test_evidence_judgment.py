@@ -151,6 +151,62 @@ def test_valid_citations_resolve_absolute_unicode_offsets(saved):
     assert packet.source_reliability_assessed is False
 
 
+def test_component_profile_saves_and_replays_canonical_source_citations(saved):
+    repo, job = saved
+    job = JudgmentJob(job.case_id, ("n1",), job.selection_ids)
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return completion(
+            {
+                "components": [
+                    {
+                        "description": "The university was founded in 2002",
+                        "status": "contradicted",
+                        "explanation": "The source gives 2007.",
+                        "evidence": [
+                            {
+                                "evidence_id": "E1",
+                                "relation": "contradicts",
+                                "quote": "The university was founded in 2007.",
+                            }
+                        ],
+                    }
+                ]
+            }
+        )
+
+    runner = service(repo, handler)
+    runner.method, runner.limits, runner.system, runner.response_contract = load_judge(
+        PROJECT_ROOT / "config/judges.yaml",
+        PROJECT_ROOT / "config/prompts.yaml",
+        method="need_components_v2",
+    )
+    first = asyncio.run(runner.assess([job]))[0]
+    second = asyncio.run(runner.assess([job]))[0]
+    assert first["status"] == "assessed" and second["cached"]
+    assert len(calls) == 1
+    citation = first["result"]["citations"][0]
+    page = repo.research.page(citation["page_id"])
+    assert page["content"][citation["start"] : citation["end"]] == citation["quote"]
+    assert citation["source_url"] == "https://example.org/a"
+
+
+def test_component_profile_empty_evidence_is_unresolved_without_calls(saved):
+    repo, job = saved
+    runner = service(repo, lambda request: pytest.fail("Unexpected model call"))
+    runner.method, runner.limits, runner.system, runner.response_contract = load_judge(
+        PROJECT_ROOT / "config/judges.yaml",
+        PROJECT_ROOT / "config/prompts.yaml",
+        method="need_components_v2",
+    )
+    result = asyncio.run(runner.assess([JudgmentJob(job.case_id, ("n1",), ())]))[0]
+    assert result["status"] == "assessed"
+    assert result["result"]["components"][0]["status"] == "insufficient"
+    assert result["result"]["citations"] == []
+
+
 @pytest.mark.parametrize("fault", ["wrong_quote", "cross_need", "missing_need", "missing_evidence"])
 def test_invalid_citations_and_bindings_are_rejected(saved, fault):
     repo, job = saved

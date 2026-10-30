@@ -15,6 +15,7 @@ import {
 import { Link } from 'react-router-dom';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ClaimSource } from './ClaimSource';
+import { EvidenceExcerpt } from './EvidenceExcerpt';
 import type { Assessment, Investigation, Report, ResearchStep } from '../lib/types';
 
 const ASSESSMENTS: Record<Assessment, { label: string; color: string }> = {
@@ -224,7 +225,11 @@ export function ReportView({
                     {finding?.explanation || 'A finding is not available for this claim.'}
                   </p>
                   {evidence.map((item) => (
-                    <blockquote key={item.id}>{item.excerpt}</blockquote>
+                    <EvidenceExcerpt
+                      key={item.id}
+                      evidence={item}
+                      source={report.sources.find((source) => source.id === item.source_id)}
+                    />
                   ))}
                   <div className="claim-source-line">
                     <Link2 size={13} />
