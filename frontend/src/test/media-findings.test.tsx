@@ -82,3 +82,66 @@ it('states an unchecked origin and an unanalyzed file plainly', () => {
   expect(screen.getByText(/original source and date remain unresolved/)).toBeInTheDocument();
   expect(screen.queryByText('Text read from the image')).not.toBeInTheDocument();
 });
+
+it('shows caption checks as a model assessment and the earliest dated same-image page', () => {
+  renderMedia([
+    {
+      ...base,
+      analysis: {
+        ...base.analysis,
+        visible_text: 'JE-779\n1996',
+        claim_text: [],
+        caption_checks: [
+          {
+            caption_detail: 'A conductor from Konya',
+            assessment: 'inconsistent',
+            visible_basis: ['Signs on the train use Chinese characters.'],
+          },
+        ],
+      },
+      origin: {
+        status: 'matches_found',
+        provider: 'serpapi_lens',
+        reason: null,
+        matches: [
+          {
+            page_url: 'https://forum.example/same-driver',
+            page_title: 'Same driver, 26 years apart',
+            image_url: null,
+            match: 'full',
+            source: 'Forum',
+            date_text: 'Feb 12, 2025',
+            published_on: '2025-02-12',
+          },
+          {
+            page_url: 'https://check.example/train',
+            page_title: 'Fact check: trains',
+            image_url: null,
+            match: 'full',
+            source: 'Check',
+            date_text: 'Feb 24, 2025',
+            published_on: '2025-02-24',
+          },
+          {
+            page_url: 'https://other.example/train',
+            page_title: 'A similar train',
+            image_url: null,
+            match: 'similar',
+          },
+        ],
+        best_guess_labels: [],
+      },
+    },
+  ]);
+  expect(screen.getByText('Caption compared with the image')).toBeInTheDocument();
+  expect(screen.getByText(/It is not evidence/)).toBeInTheDocument();
+  expect(screen.getByText('Does not fit the image')).toBeInTheDocument();
+  expect(screen.getByText('Signs on the train use Chinese characters.')).toBeInTheDocument();
+  expect(screen.getByText(/No statements to check/)).toBeInTheDocument();
+  expect(screen.getByText(/Earliest dated page found/)).toHaveTextContent(
+    'Earliest dated page found: Forum, Feb 12, 2025',
+  );
+  expect(screen.getByText('Same image (2)')).toBeInTheDocument();
+  expect(screen.getByText('Similar images')).toBeInTheDocument();
+  expect(screen.getByText('Check · Feb 24, 2025')).toBeInTheDocument();
+});

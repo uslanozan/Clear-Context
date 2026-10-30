@@ -1,6 +1,6 @@
 import { Badge } from '@mantine/core';
 import { ArrowUpRight } from 'lucide-react';
-import type { MediaFinding } from '../lib/types';
+import type { CaptionCheck, MediaFinding } from '../lib/types';
 
 const ANALYSIS: Record<MediaFinding['analysis']['status'], { label: string; color: string }> = {
   analyzed: { label: 'Read by model', color: 'teal' },
@@ -18,7 +18,75 @@ function plainTitle(title: string | null, url: string) {
   return text || new URL(url).hostname.replace(/^www\./, '');
 }
 
+const CHECK: Record<CaptionCheck['assessment'], { label: string; color: string }> = {
+  inconsistent: { label: 'Does not fit the image', color: 'orange' },
+  consistent: { label: 'Fits the image', color: 'teal' },
+  cannot_tell: { label: "Can't tell from the image", color: 'gray' },
+};
+
+function CaptionChecks({ checks }: { checks: CaptionCheck[] }) {
+  return (
+    <div className="caption-checks">
+      <h4>Caption compared with the image</h4>
+      <p className="muted small">
+        Model visual assessment from visible details. It is not evidence and does not settle the
+        claim.
+      </p>
+      <ul>
+        {checks.map((check) => {
+          const status = CHECK[check.assessment];
+          return (
+            <li key={check.caption_detail}>
+              <div className="caption-check-head">
+                <span dir="auto">{check.caption_detail}</span>
+                <Badge variant="light" color={status.color} tt="none" size="sm">
+                  {status.label}
+                </Badge>
+              </div>
+              {!!check.visible_basis.length && (
+                <ul className="caption-check-basis">
+                  {check.visible_basis.map((text) => (
+                    <li key={text} dir="auto">
+                      {text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+type Match = MediaFinding['origin']['matches'][number];
+
+function MatchList({ matches }: { matches: Match[] }) {
+  return (
+    <ul className="media-matches">
+      {matches.map((match) => {
+        const url = safeUrl(match.page_url);
+        if (!url) return null;
+        const meta = [match.source, match.date_text].filter(Boolean).join(' · ');
+        return (
+          <li key={url}>
+            <a href={url} target="_blank" rel="noopener noreferrer" dir="auto">
+              {plainTitle(match.page_title, url)} <ArrowUpRight size={13} aria-hidden />
+            </a>
+            {meta && <span className="muted small">{meta}</span>}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function Origin({ origin }: { origin: MediaFinding['origin'] }) {
+  const same = origin.matches.filter((match) => match.match !== 'similar');
+  const similar = origin.matches.filter((match) => match.match === 'similar').slice(0, 5);
+  // The adapter lists dated same-image matches earliest first.
+  const earliest = same.find((match) => match.published_on && safeUrl(match.page_url));
   return (
     <div className="media-origin">
       <h4>Where else this image appears</h4>
@@ -34,24 +102,27 @@ function Origin({ origin }: { origin: MediaFinding['origin'] }) {
       )}
       {origin.status === 'matches_found' && (
         <>
-          <ul className="media-matches">
-            {origin.matches.map((match) => {
-              const url = safeUrl(match.page_url);
-              return url ? (
-                <li key={url}>
-                  <a href={url} target="_blank" rel="noopener noreferrer">
-                    {plainTitle(match.page_title, url)} <ArrowUpRight size={13} aria-hidden />
-                  </a>
-                  <Badge variant="light" color="gray" tt="none" size="sm">
-                    {match.match === 'full' ? 'Same image' : 'Similar image'}
-                  </Badge>
-                </li>
-              ) : null;
-            })}
-          </ul>
+          {earliest && (
+            <p className="earliest-match">
+              Earliest dated page found: <strong>{earliest.source ?? 'Unknown site'}</strong>,{' '}
+              {earliest.date_text}
+            </p>
+          )}
+          {!!same.length && (
+            <>
+              <p className="match-group">Same image ({same.length})</p>
+              <MatchList matches={same} />
+            </>
+          )}
+          {!!similar.length && (
+            <>
+              <p className="match-group">Similar images</p>
+              <MatchList matches={similar} />
+            </>
+          )}
           <p className="muted small">
-            A match shows where the image appears online. It does not prove where or when it was
-            first published.
+            Dates are the ones the search provider shows for each page. A match shows where the
+            image appears online; it does not prove where or when it was first published.
           </p>
         </>
       )}
@@ -103,7 +174,17 @@ export function MediaFindings({ media }: { media: MediaFinding[] }) {
                   <blockquote className="visible-text" dir="auto">
                     {item.analysis.visible_text}
                   </blockquote>
+                  {item.analysis.claim_text && (
+                    <p className="muted small">
+                      {item.analysis.claim_text.length
+                        ? `Checked as claims: ${item.analysis.claim_text.join(' / ')}`
+                        : 'No statements to check; signs, labels and stamps are treated as details.'}
+                    </p>
+                  )}
                 </div>
+              )}
+              {!!item.analysis.caption_checks?.length && (
+                <CaptionChecks checks={item.analysis.caption_checks} />
               )}
               {!!item.analysis.observations.length && (
                 <div>

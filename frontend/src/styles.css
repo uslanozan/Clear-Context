@@ -878,6 +878,36 @@ h3 {
   background: #fbf7f0;
   overflow-wrap: anywhere;
 }
+.caption-checks > ul {
+  list-style: none;
+  padding: 0 !important;
+}
+.caption-checks > ul > li {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.caption-check-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-weight: 600;
+}
+.caption-check-basis {
+  margin-top: 4px !important;
+  color: var(--muted);
+}
+.earliest-match {
+  margin: 4px 0 8px;
+}
+.match-group {
+  margin: 8px 0 0;
+  font-weight: 600;
+  font-size: 13px;
+}
 .media-origin {
   margin-top: 14px;
   padding-top: 10px;

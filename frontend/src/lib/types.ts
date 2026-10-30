@@ -27,6 +27,11 @@ export interface ExtractedClaim {
   context_status?: 'standalone' | 'context_linked' | 'ambiguous' | null;
 }
 export type ResearchMode = 'fast' | 'balanced' | 'deep';
+export interface CaptionCheck {
+  caption_detail: string;
+  assessment: 'consistent' | 'inconsistent' | 'cannot_tell';
+  visible_basis: string[];
+}
 export interface MediaFinding {
   id: string;
   kind: 'image' | 'video';
@@ -36,8 +41,11 @@ export interface MediaFinding {
     status: 'analyzed' | 'not_analyzed' | 'failed';
     content_type: string | null;
     visible_text: string;
+    // Older reports predate statement selection and caption checks.
+    claim_text?: string[];
     observations: string[];
     context_cues: string[];
+    caption_checks?: CaptionCheck[];
     note: string | null;
   };
   origin: {
@@ -48,7 +56,10 @@ export interface MediaFinding {
       page_url: string;
       page_title: string | null;
       image_url: string | null;
-      match: 'full' | 'partial';
+      match: 'full' | 'partial' | 'similar';
+      source?: string | null;
+      date_text?: string | null;
+      published_on?: string | null;
     }[];
     best_guess_labels: string[];
   };
