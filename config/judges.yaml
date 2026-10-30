@@ -1,4 +1,7 @@
 schema_version: 1
+# Default for the standalone runner (evals/judge_evidence.py) when --method is omitted.
+# The application research flow explicitly selects need_components_v2, which requires
+# exactly one need per job; changing this default would break multi-need runner jobs.
 selected: need_evidence_v1_2
 judges:
   need_components_v2:
