@@ -1,7 +1,7 @@
 import { Check, Circle, LoaderCircle, X } from 'lucide-react';
 import type { ResearchStep } from '../lib/types';
 
-const STAGES = [
+const BASE_STAGES = [
   {
     event: 'graph_started',
     title: 'Receive input',
@@ -15,7 +15,7 @@ const STAGES = [
   {
     event: 'evaluate_evidence',
     title: 'Check evidence',
-    detail: 'Mark claims unresolved when no source evidence is available.',
+    detail: 'Assess the available evidence and identify unresolved details.',
   },
   {
     event: 'validate_report',
@@ -29,17 +29,44 @@ const STAGES = [
   },
 ];
 
+const RESEARCH_STAGES = [
+  { event: 'plan_queries', title: 'Plan searches', detail: 'Map research questions to claims.' },
+  {
+    event: 'retrieve_sources',
+    title: 'Find sources',
+    detail: 'Search and read sources within the available budget.',
+  },
+  {
+    event: 'select_passages',
+    title: 'Select passages',
+    detail: 'Find relevant passages in the collected sources.',
+  },
+  {
+    event: 'assess_components',
+    title: 'Assess details',
+    detail: 'Compare each detail with its source evidence.',
+  },
+];
+
 export function ProcessTimeline({
   steps = [],
   isRunning = false,
   planned = false,
   hasError = false,
+  researchEnabled = false,
 }: {
   steps?: ResearchStep[];
   isRunning?: boolean;
   planned?: boolean;
   hasError?: boolean;
+  researchEnabled?: boolean;
 }) {
+  const researchActive =
+    researchEnabled ||
+    steps.some((step) => RESEARCH_STAGES.some((stage) => stage.event === step.name));
+  const STAGES = researchActive
+    ? [...BASE_STAGES.slice(0, 2), ...RESEARCH_STAGES, ...BASE_STAGES.slice(2)]
+    : BASE_STAGES;
   const failure = steps.find((step) => step.status === 'failed');
   const lastCompleted = STAGES.reduce(
     (last, stage, index) => (steps.some((step) => step.name === stage.event) ? index : last),
@@ -111,9 +138,7 @@ export function ProcessTimeline({
           Later steps did not run.
         </p>
       )}
-      {planned && (
-        <p className="process-note">Source search and visual analysis are not connected yet.</p>
-      )}
+      {planned && <p className="process-note">Image and video analysis are not connected yet.</p>}
     </section>
   );
 }

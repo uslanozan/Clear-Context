@@ -9,6 +9,7 @@ def health(request: Request):
         "status": "ok",
         "mode": request.app.state.mode,
         "paid_api_calls_enabled": request.app.state.mode == "meta",
+        "research_enabled": request.app.state.research_enabled,
     }
 
 

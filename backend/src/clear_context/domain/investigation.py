@@ -104,6 +104,16 @@ class Finding(Record):
     assessment: Assessment
     explanation: str = Field(min_length=1)
     evidence_ids: list[UUID] = Field(default_factory=list)
+    components: list["FindingComponent"] = Field(default_factory=list)
+
+
+class FindingComponent(Record):
+    description: str = Field(min_length=1)
+    status: Literal["supported", "contradicted", "conflicting", "insufficient"]
+    explanation: str = Field(min_length=1)
+    evidence_ids: list[UUID] = Field(default_factory=list)
+    evidence_relations: dict[str, Literal["supports", "contradicts"]] = Field(default_factory=dict)
+    context_evidence_ids: list[UUID] = Field(default_factory=list)
 
 
 class InvestigationReport(Record):
@@ -142,6 +152,29 @@ class InvestigationReport(Record):
                 item = evidence.get(evidence_id)
                 if item is None or item.claim_id != finding.claim_id:
                     raise ValueError("Finding references invalid or unrelated evidence.")
+            for component in finding.components:
+                if len(component.evidence_ids) != len(set(component.evidence_ids)):
+                    raise ValueError("Duplicate component evidence references are not allowed.")
+                if component.status != "insufficient" and not component.evidence_ids:
+                    raise ValueError("A directional component requires evidence.")
+                if any(eid not in finding.evidence_ids for eid in component.evidence_ids):
+                    raise ValueError("Component references evidence outside its finding.")
+                if len(component.context_evidence_ids) != len(set(component.context_evidence_ids)):
+                    raise ValueError("Duplicate component context references are not allowed.")
+                if any(eid not in finding.evidence_ids for eid in component.context_evidence_ids):
+                    raise ValueError("Component context references evidence outside its finding.")
+                if set(component.evidence_relations) != {
+                    str(eid) for eid in component.evidence_ids
+                }:
+                    raise ValueError("Component evidence relations must match evidence IDs.")
+                expected = {
+                    "supported": {"supports"},
+                    "contradicted": {"contradicts"},
+                    "conflicting": {"supports", "contradicts"},
+                    "insufficient": set(),
+                }
+                if set(component.evidence_relations.values()) != expected[component.status]:
+                    raise ValueError("Component status and evidence relations disagree.")
         if {finding.claim_id for finding in self.findings} != claims:
             raise ValueError("Every claim requires a finding.")
         if len(self.findings) != len(claims):

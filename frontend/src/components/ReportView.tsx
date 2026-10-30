@@ -170,7 +170,7 @@ export function ReportView({
             </strong>
             <p>
               {report.claims.length
-                ? 'These statements haven’t been verified. Source research is not connected yet, so every finding remains unresolved.'
+                ? 'These statements haven’t been verified. No source evidence is available in this report.'
                 : 'Check extraction coverage before treating an empty result as a passage without factual claims.'}
             </p>
           </div>
@@ -224,13 +224,80 @@ export function ReportView({
                   <p className="claim-explanation">
                     {finding?.explanation || 'A finding is not available for this claim.'}
                   </p>
-                  {evidence.map((item) => (
-                    <EvidenceExcerpt
-                      key={item.id}
-                      evidence={item}
-                      source={report.sources.find((source) => source.id === item.source_id)}
-                    />
-                  ))}
+                  {finding?.components?.length ? (
+                    <div className="component-assessments">
+                      <h4>Evidence by detail</h4>
+                      {finding.components.map((component, componentIndex) => (
+                        <section key={`${component.description}-${componentIndex}`}>
+                          <strong dir="auto">{component.description}</strong>{' '}
+                          <Badge
+                            variant="light"
+                            color={
+                              {
+                                supported: 'teal',
+                                contradicted: 'red',
+                                conflicting: 'orange',
+                                insufficient: 'yellow',
+                              }[component.status]
+                            }
+                            tt="none"
+                          >
+                            {
+                              {
+                                supported: 'Supported',
+                                contradicted: 'Contradicted',
+                                conflicting: 'Sources disagree',
+                                insufficient: 'Insufficient evidence',
+                              }[component.status]
+                            }
+                          </Badge>
+                          <p dir="auto">{component.explanation}</p>
+                          {component.evidence_ids.map((id) => {
+                            const item = evidence.find((entry) => entry.id === id);
+                            return item ? (
+                              <div key={id}>
+                                <span className="muted">
+                                  {component.evidence_relations?.[id] === 'contradicts'
+                                    ? 'Contradicting source'
+                                    : 'Supporting source'}
+                                </span>
+                                <EvidenceExcerpt
+                                  evidence={item}
+                                  source={report.sources.find(
+                                    (source) => source.id === item.source_id,
+                                  )}
+                                />
+                              </div>
+                            ) : null;
+                          })}
+                          {component.context_evidence_ids?.map((id) => {
+                            const item = evidence.find((entry) => entry.id === id);
+                            return item ? (
+                              <div key={id}>
+                                <span className="muted">
+                                  Source examined; evidence is insufficient
+                                </span>
+                                <EvidenceExcerpt
+                                  evidence={item}
+                                  source={report.sources.find(
+                                    (source) => source.id === item.source_id,
+                                  )}
+                                />
+                              </div>
+                            ) : null;
+                          })}
+                        </section>
+                      ))}
+                    </div>
+                  ) : (
+                    evidence.map((item) => (
+                      <EvidenceExcerpt
+                        key={item.id}
+                        evidence={item}
+                        source={report.sources.find((source) => source.id === item.source_id)}
+                      />
+                    ))
+                  )}
                   <div className="claim-source-line">
                     <Link2 size={13} />
                     <span>
@@ -284,9 +351,7 @@ export function ReportView({
               <div className="evidence-empty">
                 <FileSearch size={24} strokeWidth={1.5} aria-hidden="true" />
                 <strong>No sources collected</strong>
-                <p>
-                  When source research is connected, you’ll inspect the links and excerpts here.
-                </p>
+                <p>Source links and excerpts will appear here when available.</p>
               </div>
             ) : (
               <ul className="source-list">

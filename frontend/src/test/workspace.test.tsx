@@ -93,7 +93,7 @@ describe('Investigation workspace', () => {
   it('loads history and examples without submitting a paid request', async () => {
     mount();
     await screen.findByText(
-      'Text is sent to Meta when you start. Saved reports stay on your server.',
+      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
     );
     await userEvent.click(screen.getByRole('button', { name: /a date. a number. two claims/i }));
     expect(
@@ -106,7 +106,7 @@ describe('Investigation workspace', () => {
   it('submits once, opens a report, and labels missing evidence honestly', async () => {
     mount();
     await screen.findByText(
-      'Text is sent to Meta when you start. Saved reports stay on your server.',
+      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
     );
     fireEvent.change(screen.getByRole('textbox', { name: 'Passage to investigate' }), {
       target: { value: ' A synthetic claim. ' },
@@ -122,7 +122,7 @@ describe('Investigation workspace', () => {
     failPost = true;
     mount();
     await screen.findByText(
-      'Text is sent to Meta when you start. Saved reports stay on your server.',
+      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
     );
     const input = screen.getByRole('textbox', { name: 'Passage to investigate' });
     fireEvent.change(input, { target: { value: 'Keep this passage.' } });
@@ -159,7 +159,7 @@ describe('Media intake', () => {
   it('accepts pasted image and caption, then blocks silent text-only submission', async () => {
     mount();
     await screen.findByText(
-      'Text is sent to Meta when you start. Saved reports stay on your server.',
+      'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
     );
     const input = screen.getByRole('textbox', { name: 'Passage to investigate' });
     fireEvent.paste(input, { clipboardData: { files: [image()], getData: () => 'A caption.' } });

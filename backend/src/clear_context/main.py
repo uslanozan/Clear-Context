@@ -12,6 +12,7 @@ from clear_context.providers.meta import MetaInvestigationProvider
 from clear_context.providers.mock import MockInvestigationProvider
 from clear_context.repositories.investigation import InvestigationRepository
 from clear_context.services.investigation import InvestigationService
+from clear_context.services.investigation_research import InvestigationResearch
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -35,13 +36,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     raise RuntimeError(
                         "Database not initialized. Run Alembic upgrade head."
                     ) from None
-                if revision != "0003":
+                if revision != "0004":
                     raise RuntimeError("Database schema is unsupported. Run Alembic upgrade head.")
             repository = InvestigationRepository(create_session_factory(engine))
             repository.fail_interrupted()
             app.state.repository = repository
+            research = None
+            if settings.app_mode == "meta" and settings.research_enabled:
+                research = InvestigationResearch(
+                    settings,
+                    selections,
+                    resolve_path(settings.database_path).parent / "research.sqlite",
+                )
             app.state.service = InvestigationService(
-                repository, provider, settings.graph_recursion_limit
+                repository, provider, settings.graph_recursion_limit, research
             )
             app.state.models = selections
             yield
@@ -58,6 +66,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url="/openapi.json" if settings.api_docs_enabled else None,
     )
     app.state.mode = settings.app_mode
+    app.state.research_enabled = settings.app_mode == "meta" and settings.research_enabled
     if settings.cors_allowed_origins:
         app.add_middleware(
             CORSMiddleware,

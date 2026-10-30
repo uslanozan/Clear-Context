@@ -656,10 +656,12 @@ if __name__ == "__main__":
     from retrieval import main as generate_retrieval
     from judgment import main as generate_judgment
     from relevance import main as generate_relevance
+    from integrated_research import main as generate_integrated_research
 
     records.append(generate_retrieval())
     records.append(generate_judgment())
     records.append(generate_relevance())
+    records.append(generate_integrated_research())
     (OUT / "json/manifest.json").write_text(
         json.dumps(records, indent=2) + "\n", encoding="utf-8"
     )

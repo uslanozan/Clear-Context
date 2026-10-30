@@ -223,7 +223,9 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
           )}
           <p className="privacy-note">
             {health?.mode === 'meta'
-              ? 'Text is sent to Meta when you start. Saved reports stay on your server.'
+              ? health.research_enabled
+                ? 'Text is sent to Meta; generated search queries and source URLs are sent to Tavily. Saved reports stay on your server.'
+                : 'Text is sent to Meta when you start. Source research is disabled. Saved reports stay on your server.'
               : health?.mode === 'mock'
                 ? 'Preview mode. No model calls or credits used.'
                 : 'Waiting for your investigation service.'}
@@ -247,7 +249,7 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
           </section>
         </div>
         <aside className="intake-aside">
-          <ProcessTimeline planned />
+          <ProcessTimeline planned researchEnabled={Boolean(health?.research_enabled)} />
         </aside>
       </div>
     </div>

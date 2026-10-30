@@ -4,7 +4,7 @@ from clear_context.graph.state import InvestigationState
 
 def validate_report(state: InvestigationState) -> dict:
     data = state["report"].model_dump()
-    data["model_usage"] = state.get("model_usage", [])
+    data["model_usage"] = [*state.get("model_usage", []), *data["model_usage"]]
     data["extraction_coverage"] = state.get("extraction_coverage")
     report = InvestigationReport.model_validate(data)
     if report.investigation_id != state["investigation_id"]:
@@ -21,5 +21,11 @@ def validate_report(state: InvestigationState) -> dict:
             report.limitations.append(
                 "Claim extraction is partial; some input ranges remain unresolved."
             )
-        report.limitations.extend(report.extraction_coverage.notes)
+        report.limitations.extend(
+            "Semantic completeness is not established."
+            if note == "Semantic completeness is not established; source research is pending."
+            and any(finding.components for finding in report.findings)
+            else note
+            for note in report.extraction_coverage.notes
+        )
     return {"report": report}

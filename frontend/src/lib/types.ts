@@ -55,6 +55,14 @@ export interface Report {
     assessment: Assessment;
     explanation: string;
     evidence_ids: string[];
+    components?: {
+      description: string;
+      status: 'supported' | 'contradicted' | 'conflicting' | 'insufficient';
+      explanation: string;
+      evidence_ids: string[];
+      evidence_relations: Record<string, 'supports' | 'contradicts'>;
+      context_evidence_ids: string[];
+    }[];
   }[];
   limitations: string[];
   model_usage: ModelUsage[];
@@ -74,4 +82,5 @@ export interface Health {
   status: string;
   mode: 'mock' | 'meta';
   paid_api_calls_enabled: boolean;
+  research_enabled?: boolean;
 }

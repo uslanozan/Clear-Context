@@ -181,6 +181,7 @@ class InvestigationRepository:
                         claim_id=str(finding.claim_id),
                         assessment=finding.assessment,
                         explanation=finding.explanation,
+                        components=[item.model_dump(mode="json") for item in finding.components],
                     )
                 )
             session.flush()
@@ -260,6 +261,7 @@ class InvestigationRepository:
                         assessment=item.assessment,
                         explanation=item.explanation,
                         evidence_ids=evidence_by_finding.get(item.id, []),
+                        components=item.components or [],
                     )
                     for item in findings
                 ],

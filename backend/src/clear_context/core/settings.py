@@ -25,6 +25,7 @@ class Settings(BaseSettings):
 
     app_mode: Literal["mock", "meta"] = "mock"
     allow_paid_api_calls: bool = False
+    research_enabled: bool = False
     meta_timeout_seconds: float = Field(default=60, gt=0, le=120)
     meta_max_completion_tokens: int = Field(default=4096, ge=128, le=4096)
     meta_max_claims: int = Field(default=8, ge=1, le=12)

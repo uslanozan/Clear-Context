@@ -1,6 +1,6 @@
 # Initial API
 
-Local development only, single process. Mock mode is the default. Meta mode supports one claim-extraction call per investigation; retrieval, image input, and evidence-based judging are not implemented. A real key alone does not activate inference.
+Local development only, single process. Mock mode is the default. Meta mode supports claim extraction and optional bounded text research with `RESEARCH_ENABLED=true`. Image input remains preview-only. A real key alone does not activate inference.
 
 ## Endpoints
 
@@ -82,7 +82,7 @@ SQLite stores investigations, claims, sources, evidence, findings, finding/evide
 
 Apply migrations before starting: `python -m alembic -c backend/alembic.ini upgrade head`. Do not replace migrations with runtime `create_all`. Normal upgrades retain data; downgrading the initial migration drops its tables and data.
 
-State transitions: `queued -> running -> completed/failed`. Work runs in an in-process background task after the response, using LangGraph nodes `extract_claims -> evaluate_evidence -> validate_report`. Steps record `graph_started`, each successfully returned node, and `report_saved` or `investigation_failed`. Step status reflects the job lifecycle, so intermediate nodes retain `running` status. On restart, unfinished jobs are marked `failed` with `interrupted`, not silently resumed. No graph checkpointer is configured yet. Provider failures expose a generic `processing_failed` code without raw error messages. Run **one worker / one server instance per database**; this is not a durable queue and has no retry/resume guarantee. Bounded real research remains to be implemented.
+State transitions: `queued -> running -> completed/failed`. Work runs in an in-process background task after the response, using LangGraph nodes `extract_claims -> evaluate_evidence -> validate_report`. Opt-in research records completed planning, retrieval, selection and assessment steps as they occur. On restart, unfinished jobs are marked `failed` with `interrupted`, not silently resumed. No graph checkpointer is configured yet. Provider failures expose a generic `processing_failed` code without raw error messages. Run **one worker / one server instance per database**; this is not a durable queue and has no retry/resume guarantee.
 
 Bind to loopback for this slice. Network-accessible self-hosting, HTTPS, and access protection will be addressed before public deployment. Docker packaging is planned; SQLite and uploads must use a persistent volume when added.
 

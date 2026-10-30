@@ -1,0 +1,66 @@
+import { MantineProvider } from '@mantine/core';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { ReportView } from '../components/ReportView';
+import type { Investigation, Report } from '../lib/types';
+
+it('shows component status, directional source and highlighted source text', () => {
+  const investigation: Investigation = {
+    id: 'i1',
+    text: 'A bridge opened in 2017.',
+    status: 'completed',
+    mode: 'meta',
+    revision: 1,
+    created_at: '2026-10-30T12:00:00Z',
+    updated_at: '2026-10-30T12:00:01Z',
+    error_code: null,
+    model_usage: [],
+  };
+  const report: Report = {
+    investigation_id: 'i1',
+    mode: 'meta',
+    revision: 1,
+    claims: [{ id: 'c1', text: investigation.text }],
+    sources: [
+      {
+        id: 's1',
+        url: 'https://example.org/bridge',
+        title: 'Bridge record',
+        content: 'Record: opened in 2019.',
+      },
+    ],
+    evidence: [{ id: 'e1', claim_id: 'c1', source_id: 's1', excerpt: 'opened in 2019' }],
+    findings: [
+      {
+        id: 'f1',
+        claim_id: 'c1',
+        assessment: 'unresolved',
+        explanation: 'Review each detail.',
+        evidence_ids: ['e1'],
+        components: [
+          {
+            description: 'Opened in 2017',
+            status: 'contradicted',
+            explanation: 'The source states 2019.',
+            evidence_ids: ['e1'],
+            evidence_relations: { e1: 'contradicts' },
+            context_evidence_ids: [],
+          },
+        ],
+      },
+    ],
+    limitations: [],
+    model_usage: [],
+  };
+  render(
+    <MantineProvider>
+      <MemoryRouter>
+        <ReportView investigation={investigation} report={report} steps={[]} />
+      </MemoryRouter>
+    </MantineProvider>,
+  );
+  expect(screen.getByText('Evidence by detail')).toBeInTheDocument();
+  expect(screen.getByText('Contradicting source')).toBeInTheDocument();
+  expect(screen.getByText('opened in 2019').tagName).toBe('MARK');
+  expect(screen.getAllByRole('link', { name: /Bridge record/ }).length).toBeGreaterThan(0);
+});

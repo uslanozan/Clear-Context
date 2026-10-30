@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import JSON, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from clear_context.db.base import Base
@@ -11,6 +11,7 @@ class FindingRow(Base):
     claim_id: Mapped[str] = mapped_column(ForeignKey("claims.id"), unique=True)
     assessment: Mapped[str] = mapped_column(String(20))
     explanation: Mapped[str] = mapped_column(Text)
+    components: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
 
 
 class FindingEvidenceRow(Base):

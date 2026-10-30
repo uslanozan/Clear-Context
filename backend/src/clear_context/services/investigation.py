@@ -16,10 +16,12 @@ class InvestigationService:
         repository: InvestigationRepository,
         provider: InvestigationProvider,
         recursion_limit: int = 12,
+        research=None,
     ):
         self.repository = repository
         self.provider = provider
         self.recursion_limit = recursion_limit
+        self.research = research
         self.graph = build_investigation_graph()
 
     def run(self, investigation_id: UUID) -> None:
@@ -35,7 +37,11 @@ class InvestigationService:
             with tracing_context(enabled=False):
                 for update in self.graph.stream(
                     {"investigation_id": investigation_id, "text": row.text},
-                    context=InvestigationContext(provider=self.provider),
+                    context=InvestigationContext(
+                        provider=self.provider,
+                        research=self.research,
+                        progress=lambda stage: self.repository.record_step(investigation_id, stage),
+                    ),
                     config={"recursion_limit": self.recursion_limit},
                     stream_mode="updates",
                 ):
