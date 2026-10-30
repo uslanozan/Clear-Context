@@ -4,7 +4,7 @@ Investigate a claim. Inspect the evidence. Recover the context.
 
 Clear Context is a multimodal research agent being built for the Meta Global AI Developer Hackathon (October 26–November 4, 2026), in the solo Indie Developer track.
 
-**Status: local API and LangGraph workflow implemented, with mock mode by default. Optional Meta text research connects query planning, Tavily keyless search, source reading, passage selection and evidence assessment to saved web reports. Server-side media analysis and the Chrome extension are not implemented yet. Local image/video attachment previews are available.**
+**Status: local API and LangGraph workflow implemented, with mock mode by default. Optional Meta text research connects query planning, Tavily keyless search, source reading, passage selection and evidence assessment to saved web reports. Image upload and Muse image reading (visible text, observations, place/time cues) are implemented; reverse image search has an adapter but is off by default, and video analysis and the Chrome extension are not implemented yet.**
 
 A separate evaluation workspace now replays saved query plans, shares source URLs,
 reads selected pages through Tavily keyless, and preserves claim/need/passage links

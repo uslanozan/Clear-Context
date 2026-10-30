@@ -39,6 +39,7 @@ def settings(tmp_path):
     return Settings(
         _env_file=None,
         database_path=database_path,
+        media_dir=tmp_path / "media",
         meta_api_key="test-secret-never-expose",
         model_default="spark_1_3",
         prompt_claim_extraction="v1",

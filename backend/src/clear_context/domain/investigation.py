@@ -122,6 +122,45 @@ class FindingComponent(Record):
     context_evidence_ids: list[UUID] = Field(default_factory=list)
 
 
+class ImageMatch(Record):
+    page_url: str = Field(min_length=1)
+    page_title: str | None = None
+    image_url: str | None = None
+    match: Literal["full", "partial"]
+
+
+class MediaOrigin(Record):
+    """Where the image was found online; matches are leads, not proof of first publication."""
+
+    status: Literal["not_checked", "matches_found", "no_matches", "failed"]
+    provider: str | None = None
+    reason: str | None = None
+    matches: list[ImageMatch] = Field(default_factory=list)
+    best_guess_labels: list[str] = Field(default_factory=list)
+
+
+class MediaAnalysis(Record):
+    """Model-read content of one file; transcription and observations can contain errors."""
+
+    status: Literal["analyzed", "not_analyzed", "failed"]
+    content_type: (
+        Literal["photo", "post_screenshot", "text_screenshot", "graphic", "video", "other"] | None
+    ) = None
+    visible_text: str = ""
+    observations: list[str] = Field(default_factory=list)
+    context_cues: list[str] = Field(default_factory=list)
+    note: str | None = None
+
+
+class MediaFinding(Record):
+    id: UUID
+    kind: Literal["image", "video"]
+    mime_type: str
+    filename: str
+    analysis: MediaAnalysis
+    origin: MediaOrigin
+
+
 class InvestigationReport(Record):
     investigation_id: UUID
     mode: Literal["mock", "meta"] = "mock"
@@ -133,6 +172,9 @@ class InvestigationReport(Record):
     limitations: list[str]
     model_usage: list[ModelUsage] = Field(default_factory=list)
     extraction_coverage: ExtractionCoverage | None = None
+    # User text plus text read from images; claim spans refer to this when present.
+    analyzed_text: str | None = None
+    media: list[MediaFinding] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_evidence(self) -> Self:

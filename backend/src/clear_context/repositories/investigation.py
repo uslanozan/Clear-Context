@@ -9,6 +9,7 @@ from clear_context.domain.investigation import (
     Finding,
     InvestigationReport,
     InvestigationStatus,
+    MediaFinding,
     ModelUsage,
     Source,
     validate_transition,
@@ -19,6 +20,7 @@ from clear_context.models import (
     FindingEvidenceRow,
     FindingRow,
     InvestigationRow,
+    MediaRow,
     ResearchStepRow,
     SourceRow,
 )
@@ -33,7 +35,7 @@ class InvestigationRepository:
         self.sessions = session_factory
 
     def create(
-        self, text: str, mode: str = "mock", research_mode: str = "balanced"
+        self, text: str, mode: str = "mock", research_mode: str = "balanced", media=()
     ) -> InvestigationRow:
         now = utc_now()
         row = InvestigationRow(
@@ -48,7 +50,37 @@ class InvestigationRepository:
         )
         with self.sessions.begin() as session:
             session.add(row)
+            session.flush()
+            for position, item in enumerate(media):
+                session.add(
+                    MediaRow(
+                        id=str(uuid4()),
+                        investigation_id=row.id,
+                        position=position,
+                        kind=item.kind,
+                        mime_type=item.mime_type,
+                        size_bytes=item.size_bytes,
+                        sha256=item.sha256,
+                        filename=item.filename,
+                        storage_name=item.storage_name,
+                        created_at=now,
+                    )
+                )
         return row
+
+    def media_for(self, investigation_id: UUID) -> list[MediaRow]:
+        with self.sessions() as session:
+            return list(
+                session.scalars(
+                    select(MediaRow)
+                    .where(MediaRow.investigation_id == str(investigation_id))
+                    .order_by(MediaRow.position)
+                )
+            )
+
+    def media(self, media_id: UUID) -> MediaRow | None:
+        with self.sessions() as session:
+            return session.get(MediaRow, str(media_id))
 
     def get(self, investigation_id: UUID) -> InvestigationRow | None:
         with self.sessions() as session:
@@ -145,9 +177,25 @@ class InvestigationRepository:
             validate_transition(InvestigationStatus(row.status), InvestigationStatus.COMPLETED)
             if report.revision != row.revision or report.mode != row.mode:
                 raise ValueError("Report scope does not match the investigation.")
+            # Claims from images point into the analyzed text, not the user's input.
+            saved_text = report.analyzed_text if report.analyzed_text is not None else row.text
+            row.analyzed_text = report.analyzed_text
+            stored_media = {
+                item.id: item
+                for item in session.scalars(
+                    select(MediaRow).where(MediaRow.investigation_id == row.id)
+                )
+            }
+            if {str(item.id) for item in report.media} - set(stored_media):
+                raise ValueError("Report references media outside this investigation.")
+            for item in report.media:
+                stored_media[str(item.id)].finding = {
+                    "analysis": item.analysis.model_dump(mode="json"),
+                    "origin": item.origin.model_dump(mode="json"),
+                }
             for claim in report.claims:
                 for span in [claim.source_span, *claim.context_spans]:
-                    if span and row.text[span.start : span.end] != span.text:
+                    if span and saved_text[span.start : span.end] != span.text:
                         raise ValueError("Claim provenance does not match saved input.")
                 session.add(
                     ClaimRow(
@@ -236,6 +284,21 @@ class InvestigationRepository:
                 .join(ClaimRow)
                 .where(ClaimRow.investigation_id == row.id)
             )
+            media = [
+                MediaFinding(
+                    id=item.id,
+                    kind=item.kind,
+                    mime_type=item.mime_type,
+                    filename=item.filename,
+                    **item.finding,
+                )
+                for item in session.scalars(
+                    select(MediaRow)
+                    .where(MediaRow.investigation_id == row.id)
+                    .order_by(MediaRow.position)
+                )
+                if item.finding
+            ]
             evidence_by_finding: dict[str, list[str]] = {}
             for finding_id, evidence_id in references:
                 evidence_by_finding.setdefault(finding_id, []).append(evidence_id)
@@ -271,4 +334,6 @@ class InvestigationRepository:
                 limitations=row.limitations,
                 model_usage=row.model_usage,
                 extraction_coverage=row.extraction_coverage,
+                analyzed_text=row.analyzed_text,
+                media=media,
             )

@@ -1,3 +1,4 @@
+from pathlib import Path
 from uuid import UUID
 
 from langsmith import tracing_context
@@ -17,11 +18,17 @@ class InvestigationService:
         provider: InvestigationProvider,
         recursion_limit: int = 12,
         research=None,
+        media_analyzer=None,
+        reverse_image=None,
+        media_dir: Path | None = None,
     ):
         self.repository = repository
         self.provider = provider
         self.recursion_limit = recursion_limit
         self.research = research
+        self.media_analyzer = media_analyzer
+        self.reverse_image = reverse_image
+        self.media_dir = media_dir
         self.graph = build_investigation_graph()
 
     def run(self, investigation_id: UUID) -> None:
@@ -35,13 +42,28 @@ class InvestigationService:
             report: InvestigationReport | None = None
             # Keep local research out of remote tracing, including inherited environment settings.
             with tracing_context(enabled=False):
+                media = [
+                    {
+                        "id": item.id,
+                        "kind": item.kind,
+                        "mime_type": item.mime_type,
+                        "filename": item.filename,
+                        "path": str(self.media_dir / item.storage_name),
+                    }
+                    for item in self.repository.media_for(investigation_id)
+                ]
+                graph_input = {"investigation_id": investigation_id, "text": row.text}
+                if media:
+                    graph_input["media"] = media
                 for update in self.graph.stream(
-                    {"investigation_id": investigation_id, "text": row.text},
+                    graph_input,
                     context=InvestigationContext(
                         provider=self.provider,
                         research=self.research,
                         progress=lambda stage: self.repository.record_step(investigation_id, stage),
                         research_mode=row.research_mode,
+                        media_analyzer=self.media_analyzer,
+                        reverse_image=self.reverse_image,
                     ),
                     config={"recursion_limit": self.recursion_limit},
                     stream_mode="updates",

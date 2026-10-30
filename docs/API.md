@@ -1,6 +1,6 @@
 # Initial API
 
-Local development only, single process. Mock mode is the default. Meta mode supports claim extraction and optional bounded text research with `RESEARCH_ENABLED=true`. Image input remains preview-only. A real key alone does not activate inference.
+Local development only, single process. Mock mode is the default. Meta mode supports claim extraction and optional bounded text research with `RESEARCH_ENABLED=true`. Images can be uploaded and, in Meta mode, are read by a Muse model; video is stored but not analyzed yet. A real key alone does not activate inference.
 
 ## Endpoints
 
@@ -13,8 +13,12 @@ Local development only, single process. Mock mode is the default. Meta mode supp
 | GET | `/api/investigations/{id}` | Persisted status and input |
 | GET | `/api/investigations/{id}/steps` | Recorded processing steps |
 | GET | `/api/investigations/{id}/report` | Completed report; 409 until available |
+| POST | `/api/investigations/upload` | Multipart: `files` (1-4), optional `text` caption and `research_mode`; return 202 and Location |
+| GET | `/api/media/{id}` | An uploaded file with its detected content type |
 
-Text must contain 1-20,000 characters after trimming. `research_mode` is optional: `fast`, `balanced` (default) or `deep`. It changes only research budgets (see the README) and is ignored when source research is disabled. Unknown fields are rejected. Missing investigations return 404; malformed UUIDs and invalid input return 422. There is no URL fetching, image upload, cancellation, report revision, or authentication yet.
+Text must contain 1-20,000 characters after trimming. `research_mode` is optional: `fast`, `balanced` (default) or `deep`. It changes only research budgets (see the README) and is ignored when source research is disabled. Unknown fields are rejected. Missing investigations return 404; malformed UUIDs and invalid input return 422. There is no URL fetching, cancellation, report revision, or authentication yet.
+
+Uploads accept JPEG, PNG, GIF, WebP and MP4, detected from file signatures rather than names or declared types; images up to 20 MB, videos up to 100 MB, at most four files and 100 MB in total. Files are stored under `MEDIA_DIR` by SHA-256. A request needs text or at least one image. In Meta mode each image is sent to the `MODEL_SCREENSHOT` model, which returns visible text (a model transcription that can contain errors), observations and place/time cues; it does not judge truth, authenticity or first publication. Text read from images is appended to the analyzed text with a `[Text read from image N]` label, and claims are extracted from that combined text. Preview mode sends nothing to a model. Reverse image search is off by default; matching pages are leads, not proof of an image's origin or date. Otherwise the report states that the image origin was not checked.
 
 ## Try it
 

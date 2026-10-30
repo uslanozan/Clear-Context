@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     api_docs_enabled: bool = True
     cors_allowed_origins: list[str] = Field(default_factory=list)
     database_path: Path = PROJECT_ROOT / ".local" / "clear-context.db"
+    media_dir: Path = PROJECT_ROOT / ".local" / "media"
+    # Reverse image search adapter (providers/reverse_image.py); none disables it.
+    reverse_image_provider: Literal["none"] = "none"
     model_catalog_path: Path = PROJECT_ROOT / "config" / "models.yaml"
     prompt_catalog_path: Path = PROJECT_ROOT / "config" / "prompts.yaml"
     extractor_catalog_path: Path = PROJECT_ROOT / "config" / "extractors.yaml"

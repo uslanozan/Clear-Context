@@ -21,3 +21,4 @@ class InvestigationRow(Base):
     limitations: Mapped[list] = mapped_column(JSON, default=list)
     model_usage: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
     extraction_coverage: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    analyzed_text: Mapped[str | None] = mapped_column(Text, nullable=True)
