@@ -826,6 +826,34 @@ h3 {
   line-height: 1.8;
   margin-bottom: 20px;
 }
+.budget-notice {
+  background: #fbf3e4;
+  border: 1px solid #ecd9b4;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.budget-notice p {
+  margin: 4px 0 10px;
+}
+.budget-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.budget-error {
+  color: #8a3412;
+  margin: 8px 0 0 !important;
+}
+.report-origin {
+  font-size: 14px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--line);
+  background: var(--surface);
+}
 .link-findings {
   margin-bottom: 8px;
 }

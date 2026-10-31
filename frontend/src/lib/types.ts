@@ -107,6 +107,8 @@ export interface Investigation {
   updated_at: string;
   error_code: string | null;
   model_usage: ModelUsage[];
+  parent_id?: string | null;
+  relation?: 'rerun' | 'continue' | null;
 }
 export interface ResearchStep {
   name: string;
@@ -146,6 +148,15 @@ export interface Report {
   analyzed_text?: string | null;
   media?: MediaFinding[];
   links?: LinkFinding[];
+  research_summary?: {
+    planned: number;
+    assessed: number;
+    budget_limited: number;
+    needs_context: number;
+    not_checkable: number;
+    failed: number;
+    budget_limited_claim_ids: string[];
+  } | null;
   extraction_coverage?: {
     status: 'processed' | 'partial';
     model_calls: number;

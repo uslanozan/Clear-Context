@@ -45,6 +45,19 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
     }),
+  // Paid follow-up runs; called only from an explicit button press.
+  rerun: (id: string, research_mode: ResearchMode) =>
+    request<Investigation>(`/investigations/${encodeURIComponent(id)}/rerun`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ research_mode }),
+    }),
+  continueResearch: (id: string, research_mode: ResearchMode) =>
+    request<Investigation>(`/investigations/${encodeURIComponent(id)}/continue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ research_mode }),
+    }),
   // Multipart: the browser sets the boundary, so no Content-Type header here.
   upload: (input: { text: string; research_mode?: ResearchMode; files: File[] }) => {
     const form = new FormData();

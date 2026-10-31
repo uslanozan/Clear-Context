@@ -15,6 +15,7 @@ import {
 import { Link } from 'react-router-dom';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ClaimSource } from './ClaimSource';
+import { BudgetNotice } from './BudgetNotice';
 import { LinkFindings } from './LinkFindings';
 import { MediaFindings } from './MediaFindings';
 import { EvidenceExcerpt, SourceTypeLabel, sourceDisplayName } from './EvidenceExcerpt';
@@ -246,6 +247,7 @@ export function ReportView({
               </Accordion.Panel>
             </Accordion.Item>
           </Accordion>
+          <BudgetNotice investigation={investigation} report={report} />
           {!!report.links?.length && <LinkFindings links={report.links} />}
           {!!report.media?.length && <MediaFindings media={report.media} />}
           <div className="section-heading">
