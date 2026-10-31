@@ -187,7 +187,12 @@ def run_node(text, link_reader, tmp_path):
         return str(uuid4())
 
     runtime = SimpleNamespace(
-        context=SimpleNamespace(link_reader=link_reader, attach_media=attach, media_dir=tmp_path)
+        context=SimpleNamespace(
+            link_reader=link_reader,
+            attach_media=attach,
+            media_dir=tmp_path,
+            unread_link_reason="Preview mode does not open links.",
+        )
     )
     return fetch_links({"investigation_id": uuid4(), "text": text}, runtime), attached
 

@@ -40,10 +40,19 @@ class Settings(BaseSettings):
     log_level: Literal["critical", "error", "warning", "info", "debug", "trace"] = "info"
     api_docs_enabled: bool = True
     cors_allowed_origins: list[str] = Field(default_factory=list)
+    # Host names the API answers to; others are refused, which blocks DNS rebinding.
+    # "*.localhost" covers clearcontext.localhost.
+    allowed_hosts: list[str] = Field(
+        default_factory=lambda: ["localhost", "127.0.0.1", "*.localhost"]
+    )
     database_path: Path = PROJECT_ROOT / ".local" / "clear-context.db"
     media_dir: Path = PROJECT_ROOT / ".local" / "media"
     # Reverse image search adapter (providers/reverse_image.py); none disables it.
     reverse_image_provider: Literal["none", "serpapi_lens"] = "none"
+    # Links in the text are opened and read through Tavily in live mode.
+    link_reading: bool = True
+    # Research mode used when a request does not choose one.
+    default_research_mode: Literal["fast", "balanced", "deep"] = "balanced"
     model_catalog_path: Path = PROJECT_ROOT / "config" / "models.yaml"
     prompt_catalog_path: Path = PROJECT_ROOT / "config" / "prompts.yaml"
     extractor_catalog_path: Path = PROJECT_ROOT / "config" / "extractors.yaml"
@@ -119,9 +128,22 @@ def resolve_path(path: Path) -> Path:
     return path if path.is_absolute() else PROJECT_ROOT / path
 
 
-def load_model_selections(settings: Settings) -> dict[str, ModelSelection]:
+def load_model_catalog(settings: Settings) -> ModelCatalog:
     with resolve_path(settings.model_catalog_path).open(encoding="utf-8-sig") as stream:
-        catalog = ModelCatalog.model_validate(yaml.safe_load(stream))
+        return ModelCatalog.model_validate(yaml.safe_load(stream))
+
+
+def text_model_allowed(model: CatalogModel, settings: Settings) -> bool:
+    """Whether investigations may use this catalog model with these settings."""
+    return (
+        model.access in {"meta_api", "meta_api_select_countries"}
+        and model.api_model_id in TEXT_MODELS
+        and (not model.training_use or settings.model_allow_training_use)
+    )
+
+
+def load_model_selections(settings: Settings) -> dict[str, ModelSelection]:
+    catalog = load_model_catalog(settings)
     selections = {}
     for task in TASKS:
         override = getattr(settings, f"model_{task}").strip()

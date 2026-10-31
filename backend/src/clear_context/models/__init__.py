@@ -1,4 +1,5 @@
 from clear_context.db.base import Base
+from clear_context.models.app_setting import AppSettingRow
 from clear_context.models.claim import ClaimRow
 from clear_context.models.evidence import EvidenceRow
 from clear_context.models.finding import FindingEvidenceRow, FindingRow
@@ -18,4 +19,5 @@ __all__ = [
     "ResearchStepRow",
     "MediaRow",
     "LinkRow",
+    "AppSettingRow",
 ]

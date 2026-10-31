@@ -15,6 +15,7 @@ import {
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { EvaluationView } from './components/EvaluationView';
 import { Composer } from './components/Composer';
+import { SettingsPage } from './components/SettingsPage';
 import { Activity, ReportView } from './components/ReportView';
 import { Sidebar } from './components/Sidebar';
 import { api, ApiError, failureMessage } from './lib/api';
@@ -25,6 +26,7 @@ export function App() {
     <Routes>
       <Route path="/" element={<Workspace />} />
       <Route path="/evaluations" element={<Workspace />} />
+      <Route path="/settings" element={<Workspace />} />
       <Route path="/investigations/:id" element={<Workspace />} />
       <Route
         path="*"
@@ -44,6 +46,7 @@ function Workspace() {
   const navigate = useNavigate();
   const location = useLocation();
   const isEvaluations = location.pathname === '/evaluations';
+  const isSettings = location.pathname === '/settings';
   const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -101,8 +104,12 @@ function Workspace() {
     }
   }, [investigation.data?.status, id, queryClient]);
   useEffect(() => {
-    document.title = id ? 'Investigation — Clear Context' : 'Clear Context — Look closer';
-  }, [id]);
+    document.title = isSettings
+      ? 'Settings — Clear Context'
+      : id
+        ? 'Investigation — Clear Context'
+        : 'Clear Context — Look closer';
+  }, [id, isSettings]);
 
   const items = Array.from(
     new Map((history.data?.pages.flat() || []).map((item) => [item.id, item])).values(),
@@ -154,7 +161,13 @@ function Workspace() {
             <Link to="/">Workspace</Link>
             <span className="breadcrumb-divider">/</span>
             <span>
-              {isEvaluations ? 'Extraction review' : id ? 'Investigation' : 'New investigation'}
+              {isEvaluations
+                ? 'Extraction review'
+                : isSettings
+                  ? 'Settings'
+                  : id
+                    ? 'Investigation'
+                    : 'New investigation'}
             </span>
           </div>
           <div className="topbar-right">
@@ -189,6 +202,8 @@ function Workspace() {
           )}
           {isEvaluations ? (
             <EvaluationView />
+          ) : isSettings ? (
+            <SettingsPage />
           ) : !id ? (
             <Composer
               key={location.key}

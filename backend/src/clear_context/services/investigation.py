@@ -7,10 +7,10 @@ from langsmith import tracing_context
 from clear_context.domain.investigation import InvestigationReport, InvestigationStatus
 from clear_context.graph.investigation import build_investigation_graph
 from clear_context.graph.state import InvestigationContext
-from clear_context.providers.base import InvestigationProvider
 from clear_context.providers.errors import ProviderError
 from clear_context.repositories.investigation import InvestigationRepository
 from clear_context.services.continuation import continuation_state
+from clear_context.services.runtime import Runtime
 
 logger = logging.getLogger(__name__)
 
@@ -19,30 +19,26 @@ class InvestigationService:
     def __init__(
         self,
         repository: InvestigationRepository,
-        provider: InvestigationProvider,
+        runtime: Runtime,
         recursion_limit: int = 12,
-        research=None,
-        media_analyzer=None,
-        reverse_image=None,
         media_dir: Path | None = None,
-        fact_checks=None,
-        link_reader=None,
     ):
         self.repository = repository
-        self.provider = provider
+        self.runtime = runtime
         self.recursion_limit = recursion_limit
-        self.research = research
-        self.media_analyzer = media_analyzer
-        self.reverse_image = reverse_image
-        self.fact_checks = fact_checks
-        self.link_reader = link_reader
         self.media_dir = media_dir
         self.graph = build_investigation_graph()
+
+    def replace_runtime(self, runtime: Runtime) -> None:
+        """Use new settings from the next investigation on; running ones keep theirs."""
+        previous, self.runtime = self.runtime, runtime
+        previous.retire()
 
     def run(self, investigation_id: UUID) -> None:
         row = self.repository.get(investigation_id)
         if row is None or row.status != InvestigationStatus.QUEUED:
             return
+        runtime = self.runtime.acquire()
         try:
             self.repository.transition(
                 investigation_id, InvestigationStatus.RUNNING, "graph_started"
@@ -69,14 +65,19 @@ class InvestigationService:
                 for update in self.graph.stream(
                     graph_input,
                     context=InvestigationContext(
-                        provider=self.provider,
-                        research=self.research,
+                        provider=runtime.provider,
+                        research=runtime.research,
                         progress=lambda stage: self.repository.record_step(investigation_id, stage),
                         research_mode=row.research_mode,
-                        media_analyzer=self.media_analyzer,
-                        reverse_image=self.reverse_image,
-                        fact_checks=self.fact_checks,
-                        link_reader=self.link_reader,
+                        media_analyzer=runtime.media_analyzer,
+                        reverse_image=runtime.reverse_image,
+                        fact_checks=runtime.fact_checks,
+                        link_reader=runtime.link_reader,
+                        unread_link_reason=(
+                            "Link reading is turned off in settings."
+                            if runtime.live
+                            else "Preview mode does not open links."
+                        ),
                         attach_media=lambda stored, url: self.repository.add_media(
                             investigation_id, stored, source_url=url
                         ),
@@ -113,3 +114,5 @@ class InvestigationService:
                     if isinstance(error, ProviderError)
                     else "processing_failed",
                 )
+        finally:
+            runtime.release()

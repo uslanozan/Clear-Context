@@ -60,7 +60,7 @@ def test_invalid_graph_output_is_not_persisted(settings, failure):
 
     app = create_app(settings)
     with TestClient(app) as client:
-        app.state.service.provider = InvalidProvider()
+        app.state.service.runtime.provider = InvalidProvider()
         created = client.post("/api/investigations", json={"text": "Original claim"})
         location = created.headers["location"]
         assert client.get(location).json()["status"] == "failed"

@@ -174,4 +174,42 @@ export interface Health {
   mode: 'mock' | 'meta';
   paid_api_calls_enabled: boolean;
   research_enabled?: boolean;
+  default_research_mode?: ResearchMode;
 }
+
+export type KeyName =
+  'meta_api_key' | 'tavily_api_key' | 'serp_api_key' | 'google_fact_check_api_key';
+export type ModelTask = 'claim_extraction' | 'screenshot' | 'research' | 'judge';
+
+export interface KeyStatus {
+  configured: boolean;
+  ending: string | null;
+  source: 'panel' | 'env' | null;
+}
+
+export interface AppSettings {
+  keys: Record<KeyName, KeyStatus>;
+  paid_calls: boolean;
+  models: Record<ModelTask, string>;
+  model_options: { alias: string; name: string }[];
+  default_research_mode: ResearchMode;
+  reverse_image_search: boolean;
+  fact_check_search: boolean;
+  link_reading: boolean;
+  search_min_score: number;
+  changed: string[];
+  error: string | null;
+}
+
+/** Changed fields only; null returns a field to its .env value. Keys are write-only. */
+export type SettingsUpdate = Partial<
+  Record<KeyName, string | null> &
+    Record<`model_${ModelTask}`, string | null> & {
+      paid_calls: boolean | null;
+      default_research_mode: ResearchMode | null;
+      reverse_image_search: boolean | null;
+      fact_check_search: boolean | null;
+      link_reading: boolean | null;
+      search_min_score: number | null;
+    }
+>;

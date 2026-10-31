@@ -27,7 +27,9 @@ interface Props {
 
 export function Composer({ initialText = '', health, isPending, error, onSubmit }: Props) {
   const [text, setText] = useState(initialText);
-  const [researchMode, setResearchMode] = useState<ResearchMode>('balanced');
+  // Until the user picks a depth, the default from settings applies.
+  const [chosenMode, setResearchMode] = useState<ResearchMode | null>(null);
+  const researchMode = chosenMode ?? health?.default_research_mode ?? 'balanced';
   const [validation, setValidation] = useState('');
   const [dragging, setDragging] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);

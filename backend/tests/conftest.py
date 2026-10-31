@@ -33,6 +33,12 @@ def block_outbound_network(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def test_client_host(monkeypatch):
+    # TestClient sends Host: testserver; real servers allow only local host names.
+    monkeypatch.setenv("ALLOWED_HOSTS", '["testserver"]')
+
+
+@pytest.fixture(autouse=True)
 def no_retry_waits(monkeypatch):
     # Retries keep their count and order in tests, without real waiting.
     from clear_context.core import retry

@@ -196,7 +196,7 @@ def test_meta_api_flow_persists_usage_and_mode(settings):
     settings.allow_paid_api_calls = True
     app = create_app(settings)
     with TestClient(app) as client:
-        app.state.service.provider.transport = httpx.MockTransport(
+        app.state.service.runtime.provider.transport = httpx.MockTransport(
             lambda request: httpx.Response(200, json=completion())
         )
         created = client.post("/api/investigations", json={"text": "A synthetic claim."})
@@ -220,7 +220,7 @@ def test_meta_error_code_reaches_api_without_body(settings):
     settings.allow_paid_api_calls = True
     app = create_app(settings)
     with TestClient(app) as client:
-        app.state.service.provider.transport = httpx.MockTransport(
+        app.state.service.runtime.provider.transport = httpx.MockTransport(
             lambda request: httpx.Response(429, text="private provider body")
         )
         response = client.post("/api/investigations", json={"text": "A synthetic claim."})
@@ -235,7 +235,7 @@ def test_usage_survives_failure_after_successful_extraction(settings):
     settings.allow_paid_api_calls = True
     app = create_app(settings)
     with TestClient(app) as client:
-        provider = app.state.service.provider
+        provider = app.state.service.runtime.provider
         provider.transport = httpx.MockTransport(
             lambda request: httpx.Response(200, json=completion())
         )

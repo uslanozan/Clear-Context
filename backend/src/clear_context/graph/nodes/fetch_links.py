@@ -46,7 +46,7 @@ def fetch_links(state: InvestigationState, runtime: Runtime[InvestigationContext
                     url=url,
                     site=site,
                     status="not_read",
-                    reason="Preview mode does not open links.",
+                    reason=runtime.context.unread_link_reason,
                 )
             )
             continue

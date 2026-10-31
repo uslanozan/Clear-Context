@@ -29,6 +29,11 @@ from clear_context.services import media as media_service
 router = APIRouter()
 
 
+def default_mode(request: Request) -> str:
+    """The research mode from the panel or .env, for requests that do not choose one."""
+    return request.app.state.service.runtime.settings.default_research_mode
+
+
 @router.post("/investigations", status_code=202, response_model=InvestigationView)
 def create_investigation(
     payload: InvestigationCreate,
@@ -37,7 +42,9 @@ def create_investigation(
     response: Response,
 ):
     row = request.app.state.repository.create(
-        payload.text, mode=request.app.state.mode, research_mode=payload.research_mode
+        payload.text,
+        mode=request.app.state.service.runtime.mode,
+        research_mode=payload.research_mode or default_mode(request),
     )
     background_tasks.add_task(request.app.state.service.run, UUID(row.id))
     response.headers["Location"] = f"/api/investigations/{row.id}"
@@ -51,7 +58,7 @@ async def create_investigation_with_media(
     response: Response,
     files: Annotated[list[UploadFile], File()],
     text: Annotated[str, Form(max_length=20000)] = "",
-    research_mode: Annotated[ResearchMode, Form()] = "balanced",
+    research_mode: Annotated[ResearchMode | None, Form()] = None,
 ):
     """Start an investigation from images (and optional caption text) in one request."""
     uploads, total = [], 0
@@ -77,7 +84,10 @@ async def create_investigation_with_media(
         for name, kind, mime_type, data in checked
     ]
     row = request.app.state.repository.create(
-        text, mode=request.app.state.mode, research_mode=research_mode, media=stored
+        text,
+        mode=request.app.state.service.runtime.mode,
+        research_mode=research_mode or default_mode(request),
+        media=stored,
     )
     background_tasks.add_task(request.app.state.service.run, UUID(row.id))
     response.headers["Location"] = f"/api/investigations/{row.id}"
@@ -101,7 +111,7 @@ def rerun_investigation(
     uploads = [item for item in repository.media_for(investigation_id) if not item.source_url]
     row = repository.create(
         parent.text,
-        mode=request.app.state.mode,
+        mode=request.app.state.service.runtime.mode,
         research_mode=payload.research_mode,
         media=uploads,
         parent_id=parent.id,
@@ -132,7 +142,7 @@ def continue_investigation(
         raise HTTPException(status_code=409, detail="No claims were left by the research budget.")
     row = request.app.state.repository.create(
         parent.text,
-        mode=request.app.state.mode,
+        mode=request.app.state.service.runtime.mode,
         research_mode=payload.research_mode,
         parent_id=parent.id,
         relation="continue",

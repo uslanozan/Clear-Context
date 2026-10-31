@@ -7,6 +7,7 @@ import {
   Plus,
   RefreshCw,
   FlaskConical,
+  Settings,
 } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import type { Investigation } from '../lib/types';
@@ -49,6 +50,13 @@ export function Sidebar(props: Props) {
         onClick={props.onNavigate}
       >
         <FlaskConical size={16} /> Extraction review
+      </NavLink>
+      <NavLink
+        to="/settings"
+        className={({ isActive }) => `evaluation-nav settings-nav ${isActive ? 'active' : ''}`}
+        onClick={props.onNavigate}
+      >
+        <Settings size={16} /> Settings
       </NavLink>
       <div className="sidebar-section-label">
         <span>YOUR INVESTIGATIONS</span>

@@ -1,4 +1,12 @@
-import type { Health, Investigation, Report, ResearchMode, ResearchStep } from './types';
+import type {
+  AppSettings,
+  Health,
+  Investigation,
+  Report,
+  ResearchMode,
+  ResearchStep,
+  SettingsUpdate,
+} from './types';
 
 export class ApiError extends Error {
   constructor(
@@ -57,6 +65,13 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ research_mode }),
+    }),
+  settings: (signal?: AbortSignal) => request<AppSettings>('/settings', { signal }),
+  saveSettings: (changes: SettingsUpdate) =>
+    request<AppSettings>('/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(changes),
     }),
   // Multipart: the browser sets the boundary, so no Content-Type header here.
   upload: (input: { text: string; research_mode?: ResearchMode; files: File[] }) => {

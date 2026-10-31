@@ -5,14 +5,17 @@ router = APIRouter()
 
 @router.get("/health")
 def health(request: Request):
+    runtime = request.app.state.service.runtime
     return {
         "status": "ok",
-        "mode": request.app.state.mode,
-        "paid_api_calls_enabled": request.app.state.mode == "meta",
-        "research_enabled": request.app.state.research_enabled,
+        "mode": runtime.mode,
+        "paid_api_calls_enabled": runtime.mode == "meta",
+        "research_enabled": runtime.research_enabled,
+        "default_research_mode": runtime.settings.default_research_mode,
     }
 
 
 @router.get("/models")
 def model_selection(request: Request):
-    return {"mode": request.app.state.mode, "configured_models": request.app.state.models}
+    runtime = request.app.state.service.runtime
+    return {"mode": runtime.mode, "configured_models": runtime.models}

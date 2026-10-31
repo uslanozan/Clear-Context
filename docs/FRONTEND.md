@@ -4,7 +4,7 @@ React, TypeScript, Vite, Mantine, TanStack Query, and React Router power the loc
 
 ## Run
 
-Start the backend from the repository root, then run `npm ci` and `npm run dev` in `frontend/`. The default URL is `http://127.0.0.1:5173`.
+Start the backend from the repository root, then run `npm ci` and `npm run dev` in `frontend/`. The default URL is `http://clearcontext.localhost:5173` (or `http://127.0.0.1:5173`); Vite accepts `*.localhost` host names.
 
 | Root environment setting | Default | Purpose |
 | --- | --- | --- |
@@ -13,7 +13,7 @@ Start the backend from the repository root, then run `npm ci` and `npm run dev` 
 | `API_HOST` / `API_PORT` | `127.0.0.1` / `8000` | Backend proxy destination |
 | `API_PROXY_TARGET` | Empty | Optional HTTP(S) backend override |
 
-Restart Vite after changing settings. Browser requests use relative `/api` paths. Only deliberately public variables prefixed `VITE_PUBLIC_` can enter client code; never put credentials in that namespace. Binding a dev server on a network interface is not a production deployment or authentication solution.
+Restart Vite after changing these settings. The **Settings** page (`/settings`) changes server settings at runtime: API keys are write-only fields that are never filled from the server, paid calls need a confirmation dialog, and only changed fields are sent. Browser requests use relative `/api` paths. Only deliberately public variables prefixed `VITE_PUBLIC_` can enter client code; never put credentials in that namespace. Binding a dev server on a network interface is not a production deployment or authentication solution.
 
 ## Shared design
 

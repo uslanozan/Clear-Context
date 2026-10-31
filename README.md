@@ -95,7 +95,7 @@ Requires Docker with Compose v2.24 or newer. From the repository root:
 docker compose up -d --build
 ```
 
-Open `http://127.0.0.1:8080`. The `web` container serves the built interface and proxies `/api` to the `api` container, which applies database migrations before starting. Settings come from `.env`; the container overrides only the bind address, the database path and CORS. Mock mode stays the default, and the paid-call settings described below apply unchanged.
+Open `http://clearcontext.localhost` (or `http://127.0.0.1`). Chrome, Edge and Firefox resolve every `*.localhost` name to this machine, so no hosts-file or DNS change is needed; other browsers may need `http://127.0.0.1`. The `web` container serves the built interface on port 80 and proxies `/api` to the `api` container, which applies database migrations before starting. Settings come from `.env` and the [Settings page](#settings); the container overrides only the bind address, the database path and CORS. Mock mode stays the default, and the paid-call settings described below apply unchanged.
 
 Both SQLite databases (investigations and research cache) live in the `clear-context-data` volume and survive `docker compose down` and image rebuilds. `docker compose down -v` deletes them. The volume starts empty. To bring over reports from a non-Docker setup, stop the local API, then run:
 
@@ -107,7 +107,7 @@ docker compose start api
 
 The command copies `clear-context.db` and the `research.sqlite` cache beside it with SQLite's backup API, refuses to overwrite a volume that already holds data unless you add `--replace`, and refuses a source with an unfinished journal. Pending migrations run when the API starts. In Git Bash, prefix the `run` command with `MSYS_NO_PATHCONV=1` so `/import` is not rewritten.
 
-The published port binds to loopback because the application has no authentication. Set `CLEAR_CONTEXT_PORT` to change the port. Changing `CLEAR_CONTEXT_BIND` exposes the app to your network without access control or HTTPS; do not do that on an untrusted network. Interactive API documentation is available at `http://127.0.0.1:8080/docs` (and `/redoc`) unless `API_DOCS_ENABLED=false`.
+The published port binds to loopback because the application has no authentication. Set `CLEAR_CONTEXT_PORT` if port 80 is taken (for example `8080`, then open `http://clearcontext.localhost:8080`). The API answers only to the host names in `ALLOWED_HOSTS` (default `localhost`, `127.0.0.1` and `*.localhost`), which stops other websites from reaching it through DNS rebinding. Changing `CLEAR_CONTEXT_BIND` exposes the app to your network without access control or HTTPS; do not do that on an untrusted network. Interactive API documentation is available at `http://clearcontext.localhost/docs` (and `/redoc`) unless `API_DOCS_ENABLED=false`.
 
 ## Development
 
@@ -125,7 +125,7 @@ python -m venv .venv
 
 On Linux/macOS, use `.venv/bin/python` instead of `.venv\Scripts\python.exe`. The dependency snapshot was tested on Windows/Python 3.12. See [API guide](docs/API.md) for endpoints and limitations. Open the interactive API documentation at `http://127.0.0.1:8000/docs`.
 
-Mock mode is the default. A configured API key does not enable calls by itself. To enable Meta claim extraction, set both `APP_MODE=meta` and `ALLOW_PAID_API_CALLS=true`, then restart. To also enable source research, set `RESEARCH_ENABLED=true`: the flow sends generated queries and source URLs to Tavily and selected text to Meta. Each investigation picks a research depth that changes only call budgets, never the methods. Every readable page that search finds is read and gets one passage-selection call; page caps only bound time. Results that Tavily scores below `SEARCH_MIN_SCORE` (default 0.30) for relevance are skipped; in measured runs those were unrelated pages, while useful primary sources scored 0.45 and up. Image matches and fact checks have no score and are always read. `balanced` (default) uses up to six searches (up to 20 pages), one planning call and six judgment calls, in addition to extraction; research needs left with insufficient evidence then get one follow-up round of one more planning call, up to two searches (up to 10 pages) and two judgment calls. `fast` uses three searches (up to 12 pages) and four judgment calls with no follow-up. `deep` uses ten searches (up to 30 pages) and ten judgment calls, plus a follow-up of up to four searches (up to 15 pages) and four judgment calls; it costs more and is more likely to reach Tavily keyless rate limits. Each search returns three results, so the number of pages read follows the number of searches. Needs beyond the judgment budget are reported as not assessed. Claim-wide coverage and source reliability remain unresolved. Run `alembic upgrade head` for migration `0005`. See the [API guide](docs/API.md) for limits and data handling.
+Mock mode is the default. A configured API key does not enable calls by itself. To enable Meta claim extraction, set both `APP_MODE=meta` and `ALLOW_PAID_API_CALLS=true`, then restart. To also enable source research, set `RESEARCH_ENABLED=true`: the flow sends generated queries and source URLs to Tavily and selected text to Meta. Each investigation picks a research depth that changes only call budgets, never the methods. Every readable page that search finds is read and gets one passage-selection call; page caps only bound time. Results that Tavily scores below `SEARCH_MIN_SCORE` (default 0.30) for relevance are skipped; in measured runs those were unrelated pages, while useful primary sources scored 0.45 and up. Image matches and fact checks have no score and are always read. `balanced` (default) uses up to six searches (up to 20 pages), one planning call and six judgment calls, in addition to extraction; research needs left with insufficient evidence then get one follow-up round of one more planning call, up to two searches (up to 10 pages) and two judgment calls. `fast` uses three searches (up to 12 pages) and four judgment calls with no follow-up. `deep` uses ten searches (up to 30 pages) and ten judgment calls, plus a follow-up of up to four searches (up to 15 pages) and four judgment calls; it costs more and is more likely to reach Tavily keyless rate limits. Each search returns three results, so the number of pages read follows the number of searches. Needs beyond the judgment budget are reported as not assessed. Claim-wide coverage and source reliability remain unresolved. Run `alembic upgrade head` after updating; the settings page needs migration `0009`. See the [API guide](docs/API.md) for limits and data handling.
 
 Start the web workspace in a second terminal (Node.js 22.12+ or a supported newer release):
 
@@ -135,7 +135,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173`. Root `.env` settings `WEB_HOST`, `WEB_PORT`, and optional `API_PROXY_TARGET` configure the dev server; by default `/api` proxies to `API_HOST` / `API_PORT`. Selecting an example fills the form without submitting. Starting an investigation in Meta mode uses credits. Opening saved reports does not call the model. See the [frontend guide](docs/FRONTEND.md) for production routing and checks.
+Open `http://clearcontext.localhost:5173` (or `http://127.0.0.1:5173`). Root `.env` settings `WEB_HOST`, `WEB_PORT`, and optional `API_PROXY_TARGET` configure the dev server; by default `/api` proxies to `API_HOST` / `API_PORT`. Selecting an example fills the form without submitting. Starting an investigation in Meta mode uses credits. Opening saved reports does not call the model. See the [frontend guide](docs/FRONTEND.md) for production routing and checks.
 
 Checks from the repository root:
 
@@ -146,6 +146,17 @@ Checks from the repository root:
 ```
 
 New project work starts on October 26, 2026. External dependencies and reused components must be attributed; earlier private work must not be presented as hackathon output.
+
+## Settings
+
+The **Settings** page in the sidebar changes the most common settings without editing `.env` or restarting:
+
+- **API keys** for Meta, Tavily, SerpApi and Google Fact Check Tools. Keys are write-only: the page shows whether a key is set, where it comes from and its last four characters (for keys of 16 characters or more), never the key itself. To change a key, enter it again.
+- **Models** for claim extraction, image reading, research planning and evidence judging. Only catalog models allowed for text investigations are offered; contributor models stay hidden while `MODEL_ALLOW_TRAINING_USE=false`.
+- **Allow paid calls**, behind a confirmation. It switches between preview mode and live mode (Meta calls plus source research) and needs a Meta key. Saving a key never turns paid calls on by itself, and investigations still start only from an explicit button press.
+- **Advanced settings** (collapsed): default research depth, reverse image search, fact check search, link reading and the search score threshold.
+
+Values saved there are stored in the SQLite database (the Docker data volume), override `.env`, and apply from the next investigation; investigations already running finish with the settings they started with. Keys are stored as plain text, like `.env`, so keep the database private. Choosing **Use .env key** or the advanced-settings reset returns a value to `.env`. Saved values that the server cannot use at start-up are reported on the page while the server runs with `.env`.
 
 ## Submission target
 

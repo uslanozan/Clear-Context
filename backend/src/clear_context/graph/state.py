@@ -44,6 +44,8 @@ class InvestigationContext:
     reverse_image: object | None = field(default=None, repr=False)
     fact_checks: object | None = field(default=None, repr=False)
     link_reader: object | None = field(default=None, repr=False)
+    # Shown for each link when no link reader is available.
+    unread_link_reason: str = "Preview mode does not open links."
     # Saves a file found while running (an image from a link); returns its media ID.
     attach_media: Callable[..., str] | None = field(default=None, repr=False)
     media_dir: Path | None = None

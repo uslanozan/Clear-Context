@@ -82,11 +82,13 @@ def test_health_models_and_openapi_do_not_expose_secrets(settings):
         assert client.get("/api/health").json()["paid_api_calls_enabled"] is False
         models = client.get("/api/models")
         assert models.json()["configured_models"]["judge"]["api_model_id"] == "muse-spark-1.3"
-        for path in ("/api/models", "/api/health", "/openapi.json"):
+        for path in ("/api/models", "/api/health", "/api/settings", "/openapi.json"):
             response = client.get(path)
             assert response.status_code == 200
             assert "test-secret-never-expose" not in response.text
-            assert "meta_api_key" not in response.text.lower()
+            # Settings and the schema name the write-only key field, never its value.
+            if path in ("/api/models", "/api/health"):
+                assert "meta_api_key" not in response.text.lower()
 
 
 def test_provider_failure_is_sanitized_and_persisted(settings):
@@ -96,7 +98,7 @@ def test_provider_failure_is_sanitized_and_persisted(settings):
 
     app = create_app(settings)
     with TestClient(app) as client:
-        app.state.service.provider = FailingProvider()
+        app.state.service.runtime.provider = FailingProvider()
         response = client.post("/api/investigations", json={"text": "A claim"})
         location = response.headers["location"]
         status = client.get(location)

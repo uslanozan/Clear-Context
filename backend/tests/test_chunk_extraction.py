@@ -233,7 +233,7 @@ def test_v2_provenance_and_partial_scope_round_trip(settings):
     settings.prompt_claim_extraction = "v2"
     app = create_app(settings)
     with TestClient(app) as client:
-        app.state.service.provider.transport = httpx.MockTransport(
+        app.state.service.runtime.provider.transport = httpx.MockTransport(
             lambda request: completion([model_claim("A fact.")], has_more=True)
         )
         created = client.post("/api/investigations", json={"text": "A fact."})
@@ -252,7 +252,9 @@ def test_nonfactual_v2_input_can_finish_without_fabricated_claims(settings):
     settings.prompt_claim_extraction = "v2"
     app = create_app(settings)
     with TestClient(app) as client:
-        app.state.service.provider.transport = httpx.MockTransport(lambda request: completion([]))
+        app.state.service.runtime.provider.transport = httpx.MockTransport(
+            lambda request: completion([])
+        )
         created = client.post("/api/investigations", json={"text": "Please help?"})
         report = client.get(created.headers["location"] + "/report").json()
         assert report["claims"] == report["findings"] == []
