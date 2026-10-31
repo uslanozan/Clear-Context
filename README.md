@@ -4,7 +4,7 @@ Investigate a claim. Inspect the evidence. Recover the context.
 
 Clear Context is a multimodal research agent being built for the Meta Global AI Developer Hackathon (October 26–November 4, 2026), in the solo Indie Developer track.
 
-**Status: local API and LangGraph workflow implemented, with mock mode by default. Optional Meta text research connects query planning, Tavily keyless search, source reading, passage selection and evidence assessment to saved web reports. Image upload and Muse image reading (visible text, observations, place/time cues and a labeled caption-versus-image assessment) are implemented. Uploaded MP4 videos up to 50 MB and 10 minutes are checked too: Muse Voice Transcribe transcribes the speech with timestamps, a Muse model reads the frames with that transcript as context, and three frames are searched like images. Optional reverse image search (Google Lens through SerpApi) lists pages where the image appears and feeds readable ones to research; it is off by default. Links in the text (up to three) are read through Tavily: the first 3,000 characters of each page are checked like pasted text, its main image goes through the image checks, and a publication date is shown only when a news search index reports one for that exact page. The checked page is never used as evidence for itself. Opinions, value judgments and experiences only the author could know are reported as not researched. When a report's budget leaves details unresearched, the report offers to run again in Deep or to research only the remaining details as a linked continuation. Video analysis and the Chrome extension are not implemented yet.**
+**Status: local API and LangGraph workflow implemented, with mock mode by default. Optional Meta text research connects query planning, Tavily keyless search, source reading, passage selection and evidence assessment to saved web reports. Image upload and Muse image reading (visible text, observations, place/time cues and a labeled caption-versus-image assessment) are implemented. Uploaded MP4 videos up to 50 MB and 10 minutes are checked too: Muse Voice Transcribe transcribes the speech with timestamps, a Muse model reads the frames with that transcript as context, and three frames are searched like images. Optional reverse image search (Google Lens through SerpApi) lists pages where the image appears and feeds readable ones to research; it is off by default. Links in the text (up to three) are read through Tavily: the first 3,000 characters of each page are checked like pasted text, its main image goes through the image checks, and a publication date is shown only when a news search index reports one for that exact page. The checked page is never used as evidence for itself. Opinions, value judgments and experiences only the author could know are reported as not researched. When a report's budget leaves details unresearched, the report offers to run again in Deep or to research only the remaining details as a linked continuation. A thin Chrome extension captures selected text, an image or video frame, or an area of a page, previews it and opens the web report.**
 
 A separate evaluation workspace now replays saved query plans, shares source URLs,
 reads selected pages through Tavily keyless, and preserves claim/need/passage links
@@ -147,6 +147,24 @@ Checks from the repository root:
 
 New project work starts on October 26, 2026. External dependencies and reused components must be attributed; earlier private work must not be presented as hackathon output.
 
+## Chrome extension
+
+The extension in `frontend/extension/` sends something from the page you are reading to your own Clear Context server and opens the web report. It does not show reports itself.
+
+```powershell
+cd frontend
+npm ci
+npm run build:extension
+```
+
+Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select `frontend/dist-extension`. Three ways to capture:
+
+- **Selected text:** select text, right-click and choose **Check with Clear Context** (or use **Use selected text** from the toolbar button). The page address is added so the server reads the page too; you can untick that.
+- **An image or a video frame:** right-click it and choose **Check with Clear Context**. The picture is cut from a screenshot of what you see, so it works on pages that need a login. For an image, **Use the full-size image** fetches the original after you grant access to that one site.
+- **An area:** toolbar button, **Capture an area**, then drag over anything on screen, such as a post or a paused video.
+
+A window then shows what was captured, lets you edit the text, choose the research depth and press **Investigate**; nothing is sent before that, and a failed request keeps the capture. It then shows the steps the server records and **Open report**. The server address defaults to `http://clearcontext.localhost` (change it in the window, for example to `http://clearcontext.localhost:5173` while developing). Local addresses are allowed by the manifest; any other address, and full-size images, ask for permission when used. The API key stays on the server. Videos on platforms such as YouTube or X are not downloaded; capture a frame or an area instead.
+
 ## Settings
 
 The **Settings** page in the sidebar changes the most common settings without editing `.env` or restarting:
@@ -164,4 +182,4 @@ Public GitHub repository and a three-minute demo submitted through Cerebral Vall
 
 ## License
 
-Clear Context is released under the [MIT License](LICENSE). Third-party dependencies keep their own licenses; for example, language detection uses [langdetect](https://github.com/Mimino666/langdetect) (a port of Google's language-detection library) image resizing uses [Pillow](https://python-pillow.org/), and video decoding uses [PyAV](https://github.com/PyAV-Org/PyAV) (BSD-3-Clause), whose wheels bundle [FFmpeg](https://ffmpeg.org/) libraries under the LGPL. The Meta wordmark and Muse artwork in `frontend/public/brand/` are third-party trademarks and artwork, not covered by this license; see [brand asset notes](frontend/public/brand/README.md).
+Clear Context is released under the [MIT License](LICENSE). Third-party dependencies keep their own licenses; for example, language detection uses [langdetect](https://github.com/Mimino666/langdetect) (a port of Google's language-detection library) image resizing uses [Pillow](https://python-pillow.org/), video decoding uses [PyAV](https://github.com/PyAV-Org/PyAV) (BSD-3-Clause), whose wheels bundle [FFmpeg](https://ffmpeg.org/) libraries under the LGPL, and the interface and extension icons come from [Lucide](https://lucide.dev/) (ISC). The Meta wordmark and Muse artwork in `frontend/public/brand/` are third-party trademarks and artwork, not covered by this license; see [brand asset notes](frontend/public/brand/README.md).

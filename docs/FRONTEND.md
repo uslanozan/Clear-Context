@@ -53,3 +53,7 @@ The durable visual rules are in [DESIGN.md](../DESIGN.md). The official Meta and
 ## Review saved extraction runs
 
 Open **Extraction review** in the web workspace and choose the local `evals/runs` folder. The browser reads matching `run.json` and `results.jsonl` files locally; it does not upload them or start model calls. Select up to two runs and an input to inspect their recorded claims, source passages, processing ranges, and token-based cost estimates. The folder is ignored by Git and may not be present in another checkout. Reloading the page requires selecting the folder again. Extracted statements and processed ranges do not establish truth or exhaustive extraction.
+
+## Chrome extension
+
+`extension/` holds the Manifest V3 extension; `npm run build:extension` builds it into `dist-extension/` with `vite.extension.config.ts`. It shares the theme, styles, types and stage titles (`src/lib/stages.ts`) with the web app. `background.ts` owns the context menus and cuts captures from `chrome.tabs.captureVisibleTab` (the `activeTab` grant from a menu or toolbar click); `area.ts` is a self-contained content script for drag selection; `CaptureApp.tsx` previews, starts the investigation on an explicit click, polls recorded steps and opens the web report; `PopupApp.tsx` is the toolbar menu. Captures live in `chrome.storage.session` and are removed once the server accepts them.

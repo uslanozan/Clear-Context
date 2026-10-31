@@ -57,7 +57,7 @@ describe('Recorded investigation steps', () => {
       <ProcessTimeline steps={['graph_started', 'analyze_media', 'extract_claims'].map(step)} />,
     );
     const stages = screen.getAllByRole('listitem');
-    expect(within(stages[1]).getByText('Read images')).toBeInTheDocument();
+    expect(within(stages[1]).getByText('Read images and video')).toBeInTheDocument();
     expect(within(stages[2]).getByText('Separate claims')).toBeInTheDocument();
   });
   it('distinguishes unavailable activity from completed work', () => {

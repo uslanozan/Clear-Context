@@ -21,6 +21,7 @@ pytest-cache-files-*/
 .ruff_cache/
 node_modules/
 dist/
+dist-extension/
 build/
 bin/
 coverage/
