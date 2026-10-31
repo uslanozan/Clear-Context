@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Badge, Button, Drawer, Loader, Modal, Skeleton } from '@mantine/core';
+import { Alert, Button, Drawer, Loader, Modal, Skeleton } from '@mantine/core';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowRight,
@@ -9,14 +9,15 @@ import {
   FileSearch,
   Menu,
   RefreshCw,
-  Search,
   X,
 } from 'lucide-react';
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { EvaluationView } from './components/EvaluationView';
 import { Composer } from './components/Composer';
 import { SettingsPage } from './components/SettingsPage';
+import { runningStage } from './components/ProcessTimeline';
 import { Activity, ReportView } from './components/ReportView';
+import { StepGlyph } from './components/StepGlyph';
 import { Sidebar } from './components/Sidebar';
 import { api, ApiError, failureMessage } from './lib/api';
 import { queueMessage } from './lib/stages';
@@ -80,6 +81,7 @@ function Workspace() {
     enabled: Boolean(investigation.data),
     refetchInterval: active ? 800 : false,
   });
+  const running = runningStage(steps.data || []);
   const report = useQuery({
     queryKey: ['report', id],
     queryFn: ({ signal }) => api.report(id!, signal),
@@ -263,24 +265,30 @@ function Workspace() {
             </div>
           ) : active ? (
             <div className="progress-page" role="status" aria-live="polite">
-              <div className="progress-symbol">
-                <Search size={35} strokeWidth={1.2} />
-                <span />
-              </div>
-              <Badge variant="light" color="ember">
-                {investigation.data?.status === 'queued' ? 'QUEUED' : 'INVESTIGATION IN PROGRESS'}
-              </Badge>
-              <h1>
-                {investigation.data?.status === 'queued' ? 'In the queue' : 'Investigation running'}
-              </h1>
-              <p>
-                {queueMessage(
-                  investigation.data?.status ?? '',
-                  investigation.data?.queue_position,
-                ) ?? 'We’re separating the claims and checking the report.'}
-                <br />
-                You can return to this investigation from your history.
-              </p>
+              {investigation.data?.status === 'queued' ? (
+                <div className="current-step">
+                  <span className="current-step-glyph waiting">
+                    <StepGlyph event="graph_started" size={52} />
+                  </span>
+                  <div>
+                    <h1>In the queue</h1>
+                    <p>
+                      {queueMessage('queued', investigation.data.queue_position)} You can return to
+                      this investigation from your history.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="current-step">
+                  <span className="current-step-glyph">
+                    <StepGlyph event={running.event} size={52} animate />
+                  </span>
+                  <div>
+                    <h1>{running.title}</h1>
+                    <p>{running.detail} You can return to this investigation from your history.</p>
+                  </div>
+                </div>
+              )}
               <div className="progress-activity">
                 {/* A queued investigation has not started: no step is shown as running. */}
                 <Activity
@@ -313,7 +321,7 @@ function Workspace() {
         </main>
         <footer className="workspace-footer">
           <span>Clear Context</span>
-          <span>Self-hosted · Clear Context</span>
+          <span>Runs on your own server with your own keys</span>
         </footer>
       </div>
       <Modal

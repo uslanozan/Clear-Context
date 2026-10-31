@@ -19,7 +19,8 @@ Restart Vite after changing these settings. The **Settings** page (`/settings`) 
 
 - `src/theme.ts`: Mantine palette, fonts, radii, and component defaults.
 - `src/styles.css`: shared surface/text tokens, layout, reusable domain classes, responsive rules, focus, and reduced-motion styles.
-- Warm paper surfaces, dark ink, restrained orange accents, Source Sans 3 interface text, and Source Sans 3 headings. Fonts are bundled locally.
+- A navy navigation rail, cool white work surfaces, Meta blue for actions and a cream highlighter for quoted evidence. Onest for text and JetBrains Mono for timestamps and counts; both are bundled locally.
+- `components/StepGlyph.tsx` draws one glyph per recorded stage; it moves only while that stage runs and stays still under reduced motion. `components/Logo.tsx` holds the Clear Context mark (also in `public/brand/`).
 - `Composer`, `Sidebar`, and `ReportView` share this system. Use Mantine controls for forms, dialogs, alerts, and disclosure rather than introducing a second component library.
 
 ## Working flow
@@ -46,7 +47,7 @@ For production, build output is `frontend/dist/`. Serve it with SPA fallback to 
 
 ## Dependencies and assets
 
-Mantine (MIT), React (MIT), Vite (MIT), TanStack Query (MIT), React Router (MIT), and Lucide (ISC) retain their upstream licenses. Source Sans 3 fonts use the SIL Open Font License; packaged font licenses remain in their installed dependencies. The current wordmark uses a Lucide icon; custom branding is deferred.
+Mantine (MIT), React (MIT), Vite (MIT), TanStack Query (MIT), React Router (MIT), and Lucide (ISC) retain their upstream licenses. Onest and JetBrains Mono fonts use the SIL Open Font License; packaged font licenses remain in their installed dependencies. The Clear Context mark is original to this project.
 
 The durable visual rules are in [DESIGN.md](../DESIGN.md). The official Meta and Muse assets have separate [attribution](../frontend/public/brand/README.md).
 

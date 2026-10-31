@@ -48,7 +48,7 @@
   background: var(--line);
 }
 .ext-dot.ready {
-  background: #3f6a3a;
+  background: var(--success);
 }
 .ext-dot.unreachable {
   background: var(--danger);
@@ -151,7 +151,7 @@
   line-height: 1.5;
 }
 .ext-mismatch {
-  color: #8a3412;
+  color: var(--danger);
 }
 .ext-summary-claims {
   list-style: none;

@@ -280,7 +280,10 @@ export function ReportView({
               return (
                 <article className="claim-card" key={claim.id}>
                   <div className="claim-topline">
-                    <span className="claim-number">CLAIM {String(index + 1).padStart(2, '0')}</span>
+                    <span className="claim-number" aria-label={`Claim ${index + 1}`}>
+                      {index + 1}
+                    </span>
+                    <h3 dir="auto">{claim.statement || claim.text}</h3>
                     {assessment && (
                       <Badge
                         color={assessment.color}
@@ -293,7 +296,6 @@ export function ReportView({
                       </Badge>
                     )}
                   </div>
-                  <h3 dir="auto">{claim.statement || claim.text}</h3>
                   {claim.context_status === 'ambiguous' && (
                     <p className="claim-explanation">The source context is ambiguous.</p>
                   )}

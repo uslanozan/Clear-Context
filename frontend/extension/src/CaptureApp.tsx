@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Loader, SegmentedControl, Textarea } from '@mantine/core';
-import { ArrowUpRight, Check, CircleAlert, LoaderCircle } from 'lucide-react';
+import { ArrowUpRight, Check, CircleAlert } from 'lucide-react';
 import { failureMessage } from '../../src/lib/api';
 import { RESEARCH_MODES } from '../../src/lib/modes';
 import { queueMessage, stageTitle } from '../../src/lib/stages';
@@ -9,6 +9,8 @@ import { isTextKind, MAX_TEXT, type PendingCapture } from './capture-model';
 import { ServerError, serverApi } from './server-api';
 import { summarize, type ReportSummary } from './summary';
 import { SummaryView } from './SummaryView';
+import { LogoMark } from '../../src/components/Logo';
+import { StepGlyph } from '../../src/components/StepGlyph';
 import { ServerLine, useServer, type Connection } from './ServerLine';
 import { clearPending, loadPending } from './storage';
 
@@ -35,7 +37,7 @@ export function CaptureApp() {
     <main className="ext-page">
       <header className="ext-header">
         <span className="brand-icon" aria-hidden="true">
-          <img src="icons/icon-32.png" alt="" width={20} height={20} />
+          <LogoMark size={26} />
         </span>
         <div>
           <strong>Clear Context</strong>
@@ -291,8 +293,10 @@ function Status({
   }, [done, server, investigation.id]);
 
   // Recorded events only, in the order they happened; no invented progress.
-  const titles = Array.from(
-    new Set(steps.map((step) => stageTitle(step.name)).filter((t): t is string => !!t)),
+  // One row per titled stage, in recorded order.
+  const stages = steps.filter(
+    (step, index) =>
+      stageTitle(step.name) && steps.findIndex((other) => other.name === step.name) === index,
   );
   const report = `${server}/investigations/${encodeURIComponent(investigation.id)}`;
   return (
@@ -314,16 +318,16 @@ function Status({
       {/* Once the summary is in, it replaces the step list. */}
       {!summary && (
         <ol className="ext-steps">
-          {titles.map((title, index) => {
-            const active = !done && index === titles.length - 1;
+          {stages.map((step, index) => {
+            const active = !done && index === stages.length - 1;
             return (
-              <li key={title} className={active ? 'active' : ''}>
-                {active ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />}
-                {title}
+              <li key={step.name} className={active ? 'active' : ''}>
+                {active ? <StepGlyph event={step.name} size={16} animate /> : <Check size={15} />}
+                {stageTitle(step.name)}
               </li>
             );
           })}
-          {!titles.length && current.status === 'running' && (
+          {!stages.length && current.status === 'running' && (
             <li className="muted">Waiting for the first step…</li>
           )}
         </ol>

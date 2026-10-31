@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-01T00:00:00Z",
+  "title": "Design System: Clear Context",
+  "extensions": {
+    "colorMeta": {
+      "meta-blue": { "role": "primary", "displayName": "Meta Blue", "canonical": "#0064e0", "tonalRamp": ["#003f8f", "#0050b5", "#0064e0", "#2f7cf2", "#78a9fd", "#a8c8ff", "#d4e4ff", "#eaf2ff"] },
+      "jolly-cream": { "role": "secondary", "displayName": "Jolly Cream", "canonical": "#f3e6d6", "tonalRamp": ["#54412d", "#7d6346", "#a98762", "#d2ae86", "#e6c8a7", "#f3e6d6", "#fbf5ee", "#fdfaf6"] },
+      "rail-navy": { "role": "neutral", "displayName": "Rail Navy", "canonical": "#0f2742", "tonalRamp": ["#0a1b2e", "#0f2742", "#19395d", "#27445f", "#536372", "#a3b5ca", "#d8e1eb", "#f4f7fb"] }
+    },
+    "motion": [
+      { "name": "stage-glyph", "value": "1.8s to 2.7s loops, cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Only the running investigation stage moves; none under reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "drawer", "value": "900px" },
+      { "name": "phone", "value": "640px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Starts an investigation or saves settings.",
+      "html": "<button class=\"ds-btn-primary\">Start investigation</button>",
+      "css": ".ds-btn-primary { background: #0064e0; color: #fff; border: 0; border-radius: 6px; height: 42px; padding: 0 18px; font: 550 14px 'Onest Variable', sans-serif; } .ds-btn-primary:hover { background: #0050b5; } .ds-btn-primary:focus-visible { outline: 2px solid #0064e0; outline-offset: 4px; }"
+    },
+    {
+      "name": "Rail Item",
+      "kind": "nav",
+      "refersTo": "rail-item-active",
+      "description": "History and navigation entries on the navy rail.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-rail-item\">Settings</a><a class=\"ds-rail-item is-active\">The Eiffel Tower is in Paris.</a></nav>",
+      "css": ".ds-rail { background: #0f2742; padding: 12px; display: grid; gap: 2px; width: 220px; } .ds-rail-item { color: #a3b5ca; padding: 9px 10px; border-radius: 6px; font: 13px 'Onest Variable', sans-serif; } .ds-rail-item:hover { background: #19395d; color: #e8eef7; } .ds-rail-item.is-active { background: #f3e6d6; color: #0f2742; font-weight: 550; }"
+    },
+    {
+      "name": "Quoted Evidence",
+      "kind": "custom",
+      "refersTo": "quote-mark",
+      "description": "Source excerpt with the passage the finding rests on highlighted.",
+      "html": "<blockquote class=\"ds-quote\">… the photo has circulated since 2012; <mark>the original shows a single-headed cobra</mark> photographed in India …</blockquote>",
+      "css": ".ds-quote { margin: 0; padding-left: 12px; border-left: 1px solid #536372; font: 14px/1.7 'Onest Variable', sans-serif; color: #1c2b33; } .ds-quote mark { background: #f7dfc0; color: inherit; padding: 1px 2px; border-radius: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Annotated Source",
+    "keyCharacteristics": ["Navy rail, white work surface, one blue for actions.", "Cream is a highlighter, never a background.", "Status color only where it carries a verdict on evidence.", "Stage glyphs instead of spinners; still under reduced motion."],
+    "rules": [
+      { "name": "The Highlighter Rule", "body": "Cream marks the passage a finding rests on. Do not use it for panels, page backgrounds or decoration.", "section": "colors" },
+      { "name": "The One Blue Rule", "body": "Blue never means true. Verdict colors come only from the state palette.", "section": "colors" },
+      { "name": "The No Eyebrow Rule", "body": "No small uppercase labels above headings. A number that orders claims sits beside the heading, not above it.", "section": "typography" }
+    ]
+  }
+}

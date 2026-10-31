@@ -3,7 +3,6 @@ import {
   ArrowUpRight,
   BookOpenText,
   CircleHelp,
-  Focus,
   Plus,
   RefreshCw,
   FlaskConical,
@@ -11,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import type { Investigation } from '../lib/types';
+import { LogoMark } from './Logo';
 
 interface Props {
   items: Investigation[];
@@ -24,12 +24,19 @@ interface Props {
   onNavigate: () => void;
 }
 
+// Finished investigations need no label; only the exceptions are named.
+const HISTORY_STATE: Record<string, string> = {
+  queued: 'Queued',
+  running: 'Running',
+  failed: 'Failed',
+};
+
 export function Sidebar(props: Props) {
   return (
     <aside className="sidebar" aria-label="Workspace navigation">
       <Link to="/" className="brand" onClick={props.onNavigate}>
         <span className="brand-icon">
-          <Focus size={23} strokeWidth={1.7} />
+          <LogoMark size={34} tone="dark" />
         </span>
         <span>
           Clear Context<span className="brand-tagline">Investigation workspace</span>
@@ -59,7 +66,7 @@ export function Sidebar(props: Props) {
         <Settings size={16} /> Settings
       </NavLink>
       <div className="sidebar-section-label">
-        <span>YOUR INVESTIGATIONS</span>
+        <span>History</span>
         <span>{props.items.length || '—'}</span>
       </div>
       <nav className="history-list" aria-label="Investigation history">
@@ -92,7 +99,9 @@ export function Sidebar(props: Props) {
             <span className="history-item-title">
               {item.text || <em className="muted">Files without text</em>}
             </span>
-            <span className={`history-dot ${item.status}`} aria-label={item.status} />
+            {item.status !== 'completed' && (
+              <span className={`history-state ${item.status}`}>{HISTORY_STATE[item.status]}</span>
+            )}
           </NavLink>
         ))}
         {props.hasMore && (
@@ -105,9 +114,6 @@ export function Sidebar(props: Props) {
         <button className="help-button" onClick={props.onHelp}>
           <CircleHelp size={16} /> How Clear Context works <ArrowUpRight size={14} />
         </button>
-        <div className="local-label">
-          <span /> Local workspace
-        </div>
       </div>
     </aside>
   );

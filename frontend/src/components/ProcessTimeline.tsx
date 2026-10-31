@@ -1,4 +1,4 @@
-import { Check, Circle, LoaderCircle, X } from 'lucide-react';
+import { Check, Circle, X } from 'lucide-react';
 import {
   BASE_STAGES,
   FOLLOWUP_STAGE,
@@ -7,6 +7,37 @@ import {
   RESEARCH_STAGES,
 } from '../lib/stages';
 import type { ResearchStep } from '../lib/types';
+import { StepGlyph } from './StepGlyph';
+
+/** The stages this investigation shows, in order, given what was recorded so far. */
+export function stageOrder(steps: ResearchStep[], researchEnabled = false) {
+  const researchActive =
+    researchEnabled ||
+    steps.some((step) => RESEARCH_STAGES.some((stage) => stage.event === step.name));
+  // The follow-up round is conditional, so it appears only after it was recorded.
+  const researchStages = steps.some((step) => step.name === FOLLOWUP_STAGE.event)
+    ? [...RESEARCH_STAGES, FOLLOWUP_STAGE]
+    : RESEARCH_STAGES;
+  // Link and media reading only run when links or files were given.
+  const optional = [LINK_STAGE, MEDIA_STAGE].filter((stage) =>
+    steps.some((step) => step.name === stage.event),
+  );
+  const baseStages = [BASE_STAGES[0], ...optional, ...BASE_STAGES.slice(1)];
+  const extract = baseStages.findIndex((stage) => stage.event === 'extract_claims') + 1;
+  return researchActive
+    ? [...baseStages.slice(0, extract), ...researchStages, ...baseStages.slice(extract)]
+    : baseStages;
+}
+
+/** The stage after the last recorded one: what a running investigation is doing now. */
+export function runningStage(steps: ResearchStep[]) {
+  const stages = stageOrder(steps);
+  const lastCompleted = stages.reduce(
+    (last, stage, index) => (steps.some((step) => step.name === stage.event) ? index : last),
+    -1,
+  );
+  return stages[Math.min(lastCompleted + 1, stages.length - 1)];
+}
 
 export function ProcessTimeline({
   steps = [],
@@ -21,22 +52,7 @@ export function ProcessTimeline({
   hasError?: boolean;
   researchEnabled?: boolean;
 }) {
-  const researchActive =
-    researchEnabled ||
-    steps.some((step) => RESEARCH_STAGES.some((stage) => stage.event === step.name));
-  // The follow-up round is conditional, so it appears only after it was recorded.
-  const researchStages = steps.some((step) => step.name === FOLLOWUP_STAGE.event)
-    ? [...RESEARCH_STAGES, FOLLOWUP_STAGE]
-    : RESEARCH_STAGES;
-  // Link and media reading only run when links or files were given.
-  const optional = [LINK_STAGE, MEDIA_STAGE].filter((stage) =>
-    steps.some((step) => step.name === stage.event),
-  );
-  const baseStages = [BASE_STAGES[0], ...optional, ...BASE_STAGES.slice(1)];
-  const extract = baseStages.findIndex((stage) => stage.event === 'extract_claims') + 1;
-  const STAGES = researchActive
-    ? [...baseStages.slice(0, extract), ...researchStages, ...baseStages.slice(extract)]
-    : baseStages;
+  const STAGES = stageOrder(steps, researchEnabled);
   const failure = steps.find((step) => step.status === 'failed');
   const lastCompleted = STAGES.reduce(
     (last, stage, index) => (steps.some((step) => step.name === stage.event) ? index : last),
@@ -81,7 +97,7 @@ export function ProcessTimeline({
                 ) : failed ? (
                   <X size={14} />
                 ) : active ? (
-                  <LoaderCircle size={15} className="spin" />
+                  <StepGlyph event={stage.event} size={17} animate />
                 ) : (
                   <Circle size={11} />
                 )}
@@ -89,7 +105,12 @@ export function ProcessTimeline({
               <div className="process-copy">
                 <div>
                   <strong>{stage.title}</strong>
-                  <span className="process-state">{label}</span>
+                  {/* Only running and stopped stages need words; markers show the rest. */}
+                  <span
+                    className={active || failed ? 'process-state' : 'process-state visually-hidden'}
+                  >
+                    {label}
+                  </span>
                 </div>
                 <p>{stage.detail}</p>
                 {event && (

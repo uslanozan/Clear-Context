@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Textarea } from '@mantine/core';
 import { ArrowUpRight, Crop, TextSelect } from 'lucide-react';
 import { MAX_TEXT } from './capture-model';
+import { LogoMark } from '../../src/components/Logo';
 import { ServerLine, useServer } from './ServerLine';
 import { loadPending, openCaptureWindow, savePending } from './storage';
 
@@ -87,7 +88,7 @@ export function PopupApp() {
     <main className="ext-popup">
       <header className="ext-header">
         <span className="brand-icon" aria-hidden="true">
-          <img src="icons/icon-32.png" alt="" width={20} height={20} />
+          <LogoMark size={26} />
         </span>
         <div>
           <strong>Clear Context</strong>
