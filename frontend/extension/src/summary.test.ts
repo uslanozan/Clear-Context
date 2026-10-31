@@ -1,51 +1,5 @@
 import type { Report } from '../../src/lib/types';
-import { probePage } from './page-probe';
 import { summarize } from './summary';
-
-afterEach(() => {
-  document.body.innerHTML = '';
-  window.getSelection()?.removeAllRanges();
-});
-
-function feed() {
-  // The shape of a post on X: an article whose timestamp links to the post.
-  document.body.innerHTML = `
-    <main>
-      <article>
-        <a href="/obsrvate"><span>Obsrvate</span></a>
-        <a href="/obsrvate/status/2116292001104794001"><time>19h</time></a>
-        <div id="text">Drake's girlfriend posted a video</div>
-        <img id="photo" src="https://pbs.example/media/1.jpg">
-      </article>
-      <p id="outside">Trending now</p>
-    </main>`;
-}
-
-function select(id: string) {
-  const range = document.createRange();
-  range.selectNodeContents(document.getElementById(id)!.firstChild!);
-  window.getSelection()!.addRange(range);
-}
-
-it('finds the post link around a selection or a picture on a feed', () => {
-  feed();
-  select('text');
-  expect(probePage(null).post).toBe('http://localhost:3000/obsrvate/status/2116292001104794001');
-  expect(probePage('https://pbs.example/media/1.jpg').post).toBe(
-    'http://localhost:3000/obsrvate/status/2116292001104794001',
-  );
-});
-
-it('returns no post outside one, and no rectangle for a missing picture', () => {
-  feed();
-  select('outside');
-  expect(probePage(null).post).toBeNull();
-  expect(probePage('https://pbs.example/other.jpg')).toEqual({
-    rect: null,
-    viewportWidth: window.innerWidth,
-    post: null,
-  });
-});
 
 const report = {
   investigation_id: 'r1',

@@ -6,7 +6,6 @@
  * the capture window, after the user grants access to that site.
  */
 import { cropBox, type CaptureKind, type Rect } from './capture-model';
-import { probePage, type Probe } from './page-probe';
 import { openCaptureWindow, savePending } from './storage';
 
 const TEXT_MENU = 'clear-context-text';
@@ -24,6 +23,30 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ['image', 'video'],
   });
 });
+
+interface Located {
+  rect: Rect;
+  viewportWidth: number;
+}
+
+/** Find the right-clicked image or video on the page by its address; runs in the page. */
+function locateMedia(src: string): Located | null {
+  const candidates = Array.from(document.querySelectorAll('img, video')) as (
+    HTMLImageElement | HTMLVideoElement
+  )[];
+  const element = candidates.find(
+    (item) => item.currentSrc === src || item.getAttribute('src') === src || item.src === src,
+  );
+  if (!element) return null;
+  const box = element.getBoundingClientRect();
+  // Only the part inside the viewport is in a screenshot.
+  const x = Math.max(0, box.left);
+  const y = Math.max(0, box.top);
+  const right = Math.min(window.innerWidth, box.right);
+  const bottom = Math.min(window.innerHeight, box.bottom);
+  if (right - x < 8 || bottom - y < 8) return null;
+  return { rect: { x, y, width: right - x, height: bottom - y }, viewportWidth: window.innerWidth };
+}
 
 function toDataUrl(bytes: ArrayBuffer, type: string) {
   let binary = '';
@@ -53,13 +76,11 @@ async function savePicture(
   kind: CaptureKind,
   image: string,
   sourceUrl: string | null,
-  post: string | null = null,
 ) {
   await savePending({
     kind,
     text: '',
-    pageUrl: post ?? tab.url ?? null,
-    fromPost: !!post,
+    pageUrl: tab.url ?? null,
     pageTitle: tab.title ?? null,
     image,
     sourceUrl,
@@ -83,28 +104,13 @@ async function reportFailure(tab: chrome.tabs.Tab, kind: CaptureKind, error: unk
   await openCaptureWindow();
 }
 
-/** Look at the page: the right-clicked media (src) or the selection, and their post. */
-async function probe(tabId: number, frameId: number | undefined, src: string | null) {
-  const [result] = await chrome.scripting.executeScript({
-    target: { tabId, frameIds: [frameId ?? 0] },
-    func: probePage,
-    args: [src],
-  });
-  return result?.result as Probe | undefined;
-}
-
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!tab?.id || tab.windowId === undefined) return;
   if (info.menuItemId === TEXT_MENU) {
-    // On a feed the page address is the feed; the selected post has its own link.
-    const post = await probe(tab.id, info.frameId, null)
-      .then((found) => found?.post ?? null)
-      .catch(() => null);
     await savePending({
       kind: 'text',
       text: info.selectionText ?? '',
-      pageUrl: post ?? info.pageUrl ?? tab.url ?? null,
-      fromPost: !!post,
+      pageUrl: info.pageUrl ?? tab.url ?? null,
       pageTitle: tab.title ?? null,
       image: null,
       sourceUrl: null,
@@ -116,8 +122,13 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MEDIA_MENU || !info.srcUrl) return;
   const kind: CaptureKind = info.mediaType === 'video' ? 'video' : 'image';
   try {
-    const located = await probe(tab.id, info.frameId, info.srcUrl);
-    if (!located?.rect) {
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id, frameIds: info.frameId ? [info.frameId] : [0] },
+      func: locateMedia,
+      args: [info.srcUrl],
+    });
+    const located = result?.result as Located | null | undefined;
+    if (!located) {
       // The element could not be found (for example inside a frame); let the user pick it.
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['area.js'] });
       return;
@@ -125,7 +136,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const image = await captureRect(tab.windowId, located.rect, located.viewportWidth);
     // Video addresses are often temporary blob: URLs that cannot be fetched again.
     const source = kind === 'image' && /^https?:/i.test(info.srcUrl) ? info.srcUrl : null;
-    await savePicture(tab, kind, image, source, located.post);
+    await savePicture(tab, kind, image, source);
   } catch (error) {
     await reportFailure(tab, kind, error);
   }

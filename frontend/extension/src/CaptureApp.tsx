@@ -88,10 +88,8 @@ function Preview({
 }) {
   const health = connection.state === 'ready' ? connection.health : null;
   const [text, setText] = useState(capture.text);
-  // A post's own link carries its text and pictures, so it is read by default; a whole page
-  // only for selected text.
   const [includePage, setIncludePage] = useState(
-    readablePage(capture.pageUrl) && (capture.kind === 'text' || !!capture.fromPost),
+    capture.kind === 'text' && readablePage(capture.pageUrl),
   );
   const [chosenMode, setMode] = useState<ResearchMode | null>(null);
   const [image, setImage] = useState(capture.image);
@@ -203,7 +201,7 @@ function Preview({
       />
       {readablePage(capture.pageUrl) && (
         <Checkbox
-          label={capture.fromPost ? 'Also read this post' : 'Also read this page'}
+          label="Also read this page"
           description={capture.pageTitle || new URL(capture.pageUrl).host}
           checked={includePage}
           onChange={(event) => setIncludePage(event.currentTarget.checked)}
