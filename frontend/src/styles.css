@@ -1858,3 +1858,59 @@ h3 {
     padding: 16px;
   }
 }
+.time-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.time-link:hover {
+  text-decoration: underline;
+}
+.speech-turns {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.speech-turns li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  line-height: 1.55;
+}
+.media-matches .time-link {
+  margin-left: 8px;
+}
+.video-frames {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.video-frames button {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 6px;
+  text-align: left;
+  color: var(--ink);
+}
+.video-frames img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 5px;
+}

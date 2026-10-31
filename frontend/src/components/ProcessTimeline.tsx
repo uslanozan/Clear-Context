@@ -166,7 +166,6 @@ export function ProcessTimeline({
           Later steps did not run.
         </p>
       )}
-      {planned && <p className="process-note">Image and video analysis are not connected yet.</p>}
     </section>
   );
 }

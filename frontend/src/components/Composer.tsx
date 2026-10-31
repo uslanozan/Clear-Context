@@ -37,12 +37,12 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
   const submitting = useRef(false);
   const media = useMediaAttachments();
   const count = text.trim().length;
-  const hasImage = media.attachments.some((item) => item.kind === 'image');
+  const hasMedia = media.attachments.length > 0;
   const hasVideo = media.attachments.some((item) => item.kind === 'video');
   async function submit() {
     if (isPending || submitting.current) return;
-    if ((!count && !hasImage) || count > 20000) {
-      setValidation('Enter up to 20,000 characters or attach an image.');
+    if ((!count && !hasMedia) || count > 20000) {
+      setValidation('Enter up to 20,000 characters or attach an image or video.');
       textarea.current?.focus();
       return;
     }
@@ -186,7 +186,7 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
               <Button
                 type="submit"
                 loading={isPending}
-                disabled={!health || (!count && !hasImage)}
+                disabled={!health || (!count && !hasMedia)}
                 rightSection={<ArrowRight size={16} />}
               >
                 Start investigation
@@ -237,7 +237,9 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
                 {health?.mode === 'mock'
                   ? 'Preview mode stores the files but does not analyze them.'
                   : 'A Muse model reads visible text in images and describes them. It does not decide where or when a photo was taken.'}
-                {hasVideo && ' Videos are stored, but video analysis is not connected yet.'}
+                {hasVideo &&
+                  health?.mode !== 'mock' &&
+                  ' Videos up to 50 MB and 10 minutes: speech is transcribed by a speech model, the frames are described and three frames are searched for earlier copies.'}
               </p>
               <Button type="button" size="xs" variant="default" onClick={() => media.remove()}>
                 Remove media{count ? ' and use text only' : ''}

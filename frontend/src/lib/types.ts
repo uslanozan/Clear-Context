@@ -54,6 +54,13 @@ export interface LinkFinding {
   media_ids: string[];
   reason: string | null;
 }
+export interface SpeechTurn {
+  start: number;
+  end: number;
+  speaker: string | null;
+  text: string;
+}
+
 export interface MediaFinding {
   id: string;
   kind: 'image' | 'video';
@@ -69,9 +76,15 @@ export interface MediaFinding {
     context_cues: string[];
     caption_checks?: CaptionCheck[];
     note: string | null;
+    // Videos only; speech comes from a transcription model.
+    speech?: SpeechTurn[];
+    on_screen_text?: { at: number | null; text: string }[];
+    duration_seconds?: number | null;
   };
   // Set when the image came from a linked page.
   source_url?: string | null;
+  // Videos only: frames that were searched as images.
+  frames?: { at: number; chosen_by: 'model' | 'scene' }[];
   // Absent in reports saved before fact check search.
   prior_checks?: {
     status: 'not_checked' | 'found' | 'none' | 'failed';
@@ -92,6 +105,8 @@ export interface MediaFinding {
       date_text?: string | null;
       published_on?: string | null;
       found_by?: string | null;
+      // Videos: position (seconds) of the frame that matched.
+      frame_at?: number | null;
     }[];
     best_guess_labels: string[];
   };

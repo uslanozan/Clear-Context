@@ -176,3 +176,46 @@ it('lists published fact checks with the publisher rating labeled as theirs', ()
   expect(screen.getByText('Yanlış')).toBeInTheDocument();
   expect(screen.getByText(/not adopted as a verdict/)).toBeInTheDocument();
 });
+
+it('shows video speech, on-screen text and searched frames, and seeks the video', async () => {
+  const { fireEvent } = await import('@testing-library/react');
+  renderMedia([
+    {
+      ...base,
+      id: 'v1',
+      kind: 'video',
+      mime_type: 'video/mp4',
+      filename: 'storm.mp4',
+      analysis: {
+        ...base.analysis,
+        content_type: 'video',
+        visible_text: 'Cebu Pacific',
+        claim_text: [],
+        speech: [{ start: 65, end: 72.4, speaker: 'A', text: 'The bridge is closed.' }],
+        on_screen_text: [{ at: 42, text: 'Cebu Pacific' }],
+        caption_checks: [
+          { caption_detail: 'Recorded in Izmir', assessment: 'inconsistent', visible_basis: [] },
+        ],
+      },
+      frames: [
+        { at: 4, chosen_by: 'model' },
+        { at: 42.1, chosen_by: 'scene' },
+      ],
+      origin: {
+        ...base.origin,
+        matches: [{ ...base.origin.matches[0], frame_at: 42.1 }],
+      },
+    },
+  ]);
+  expect(screen.getByText('The bridge is closed.')).toBeInTheDocument();
+  expect(screen.getByText(/not identities/)).toBeInTheDocument();
+  expect(screen.getByText('Does not fit the video')).toBeInTheDocument();
+  expect(screen.getByText('Where frames of this video appear')).toBeInTheDocument();
+  const frame = screen.getByAltText('Frame at 0:42');
+  expect(frame).toHaveAttribute('src', '/api/media/v1/frames/1');
+  const video = screen.getByLabelText('Uploaded video 1: storm.mp4') as HTMLVideoElement;
+  fireEvent.click(screen.getByRole('button', { name: '1:05–1:12' }));
+  expect(video.currentTime).toBe(65);
+  fireEvent.click(screen.getByRole('button', { name: 'frame at 0:42' }));
+  expect(video.currentTime).toBe(42.1);
+});
