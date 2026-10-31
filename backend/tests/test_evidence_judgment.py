@@ -281,6 +281,28 @@ def test_bad_model_quote_is_failure_not_an_insufficient_verdict(saved):
     assert row["status"] == "invalid_judgment" and "result" not in row
     assert not repo.export()["research_judgments"]
     assert repo.research.cached("judgment", row["request_key"], 1000) is None
+    # The validation reason and the raw answer are kept for QA.
+    from sqlalchemy import select
+
+    from clear_context.models.retrieval_cache import events
+
+    with repo.research.engine.connect() as conn:
+        payload = json.loads(
+            conn.scalar(select(events.c.payload).where(events.c.kind == "judgment_failed"))
+        )
+    assert payload["reason"] and "Fabricated" in payload["raw_content"]
+
+
+def test_one_malformed_answer_does_not_stop_other_assessments(saved):
+    repo, job = saved
+    packet = repo.packet(job.case_id, job.need_ids, job.selection_ids)
+    good = response(packet)
+    bad = response(packet)
+    bad["assessments"][0]["evidence_assessments"][0]["excerpts"][0]["quote"] = "Fabricated"
+    answers = [bad, good]
+    runner = service(repo, lambda _: completion(answers.pop(0)), max_concurrency=1)
+    rows = asyncio.run(runner.assess([job, job]))
+    assert [r["status"] for r in rows] == ["invalid_judgment", "assessed"]
 
 
 def test_rate_failure_stops_queued_jobs_without_retry(saved):

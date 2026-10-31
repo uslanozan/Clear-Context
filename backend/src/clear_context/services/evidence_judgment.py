@@ -88,6 +88,7 @@ class EvidenceJudgmentService:
             async with semaphore:
                 started = perf_counter()
                 usage = {}
+                content = None
                 try:
                     if not packet.evidence:
                         if self.response_contract == "components_v3":
@@ -191,9 +192,10 @@ class EvidenceJudgmentService:
                                 self.active -= 1
                             at = self.clock()
                         usage = body.get("usage") or {}
+                        content = body["choices"][0]["message"]["content"]
                         if self.response_contract in COMPONENT_CONTRACTS:
                             output, component_citations = validate_components(
-                                body["choices"][0]["message"]["content"],
+                                content,
                                 packet,
                                 self.response_contract,
                             )
@@ -252,7 +254,9 @@ class EvidenceJudgmentService:
                         cached=row["cached"],
                     )
                 except (ModelResponseFailure, ValueError, KeyError, IndexError, TypeError) as error:
-                    self.halted = True
+                    # Provider failures stop further calls; one malformed answer affects only
+                    # its own need.
+                    self.halted = self.halted or isinstance(error, ModelResponseFailure)
                     if isinstance(error, ModelResponseFailure):
                         usage = error.usage or usage
                         if error.finish_reason:
@@ -263,8 +267,14 @@ class EvidenceJudgmentService:
                         else "invalid_judgment",
                         usage=usage,
                     )
+                    # Keep the validation reason and raw answer for QA; they hold no credentials.
                     self.repository.research.log(
-                        "judgment_failed", self.clock(), case_id=job.case_id, status=row["status"]
+                        "judgment_failed",
+                        self.clock(),
+                        case_id=job.case_id,
+                        status=row["status"],
+                        reason=str(error)[:500],
+                        raw_content=content[:20000] if isinstance(content, str) else None,
                     )
                 row["elapsed_seconds"] = round(perf_counter() - started, 3)
                 return row
