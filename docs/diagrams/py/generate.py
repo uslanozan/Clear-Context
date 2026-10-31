@@ -223,74 +223,43 @@ def media():
             [(808, y + 56), (936, y + 56)]
         )
     body += node(
-        48,
-        204,
-        296,
-        112,
-        "Image pasted or selected",
-        ["PNG / JPEG / WebP / GIF", "Max 20 MB"],
-        terminal=True,
+        48, 204, 296, 112, "Image attached",
+        ["PNG / JPEG / WebP / GIF", "Max 20 MB"], terminal=True,
     )
     body += node(
-        472,
-        204,
-        336,
-        112,
-        "Browser image preview",
-        ["Object URL, local only", "Remove to release preview"],
+        472, 204, 336, 112, "Upload and store",
+        ["Type from file signature", "Stored by SHA-256 on the server"],
     )
     body += node(
-        936,
-        204,
-        296,
-        112,
-        "No submission",
-        ["Text-only POST blocked", "No image sent to Meta"],
-        terminal=True,
-        focal=True,
+        936, 204, 296, 112, "Image checks",
+        ["Muse reading, copies, fact checks", "See diagram 14"], focal=True,
     )
     body += node(
-        48,
-        416,
-        296,
-        112,
-        "Video pasted or selected",
-        ["MP4 / WebM / QuickTime", "Max 100 MB"],
-        terminal=True,
+        48, 416, 296, 112, "MP4 video attached",
+        ["Max 100 MB", "Other video formats refused"], terminal=True,
     )
     body += node(
-        472,
-        416,
-        336,
-        112,
-        "Browser video preview",
-        ["Local playback controls", "Codec errors shown inline"],
+        472, 416, 336, 112, "Upload and store",
+        ["Kept with the report", "Playable in the report"],
     )
     body += node(
-        936,
-        416,
-        296,
-        112,
-        "No submission",
-        ["No frames or transcript", "No AI detector runs"],
-        terminal=True,
+        936, 416, 296, 112, "Not analyzed yet",
+        ["No frames or transcript", "Report states this"], terminal=True,
     )
     body += text(
-        48,
-        604,
-        "Shared limits: 4 files / 100 MB total. Unsupported, empty, or oversized files show an error.",
-        16,
-        MUTED,
+        48, 604,
+        "Shared limits: 4 files / 100 MB total. Text, an image, or both are required; a video alone is refused.",
+        16, MUTED,
     )
     return write(
         "03-media-today",
         "What happens to an image or video today",
-        "Accepted files remain in this browser tab; there is no server-side media pipeline.",
+        "Uploads are validated and stored on the server; images are analyzed, videos are not yet.",
         "IMPLEMENTED",
         body,
-        "Clipboard works when it contains actual file data; copying a media URL does not automatically fetch the file. Selection and drag/drop share validation. Duplicates are skipped. Preview errors offer removal. Attached media blocks normal and keyboard text submission rather than being silently dropped. Navigating away releases the local object URLs. No OCR, ASR, image lookup, C2PA, or generation detector is integrated.",
-        "frontend/src/components/Composer.tsx; components/MediaPreview.tsx; lib/media.ts",
-        "Solid: implemented flow | No submission: explicit current boundary",
+        "Clipboard, file picker and drag and drop share validation; files are checked by signature, not name. Images go through the image checks in diagram 14 in Meta mode; preview mode stores them without analysis. Videos are stored and shown but not analyzed: no frames, transcript or reverse search. No AI-generation detector is integrated.",
+        "api/routes/investigations.py; services/media.py; graph/nodes/analyze_media.py; components/Composer.tsx",
+        "Solid: implemented flow | Accent: analysis path",
     )
 
 
@@ -449,10 +418,10 @@ def photo():
         "05-photo-proposal",
         "A true event can have an unrelated photograph",
         "Research the caption and the image context independently before combining findings.",
-        "PROPOSED / OPTIONAL",
+        "PROPOSAL, MOSTLY IMPLEMENTED IN 14",
         body,
-        "Synthetic case: a current event uses an older photograph. No source lookup has been performed for this example. Metadata/credentials and any AI-generation detector would be optional independent signals. Missing credentials do not imply generation. A model cannot prove date, location, or authenticity from appearance alone. No detector or media provider is selected or integrated.",
-        "Proposed media branch; current boundary remains docs/diagrams/html/03-media-today.html",
+        "Original proposal, kept for the record. Caption assertions, visual observations and the search for earlier appearances are now implemented (diagram 14). Authenticity signals remain unimplemented: no credentials check or AI-generation detector is integrated. Synthetic case; no source lookup was performed for this example. A model cannot prove date, location, or authenticity from appearance alone.",
+        "Implemented path: docs/diagrams/html/14-image-research.html",
         "Dashed: proposed flow | OPTIONAL: experiment, not a truth verdict",
     )
 
@@ -657,11 +626,13 @@ if __name__ == "__main__":
     from judgment import main as generate_judgment
     from relevance import main as generate_relevance
     from integrated_research import main as generate_integrated_research
+    from media_research import budget_continuation, image_research, link_research
 
     records.append(generate_retrieval())
     records.append(generate_judgment())
     records.append(generate_relevance())
     records.append(generate_integrated_research())
+    records += [image_research(), link_research(), budget_continuation()]
     (OUT / "json/manifest.json").write_text(
         json.dumps(records, indent=2) + "\n", encoding="utf-8"
     )
@@ -670,7 +641,7 @@ if __name__ == "__main__":
         for row in records
     )
     (OUT / "html/index.html").write_text(
-        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>Diagrams 01-03, 07 and 13 describe working application code; 13 is the opt-in text research flow. Diagrams 04-06 describe proposals; 08-09 show experimental runners; 10-12 show evaluation-workspace stages that the application flow reuses or does not select. Examples are explanatory, not measured inference results.</p><ol>{links}</ol></body></html>',
+        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>Diagrams 01-03, 07 and 13-16 describe working application code: 13 is the opt-in text research flow, 14 images, 15 links and 16 budget continuations. Diagrams 04-06 describe proposals (05 is now mostly implemented as 14); 08-09 show experimental runners; 10-12 show evaluation-workspace stages that the application flow reuses or does not select. Examples are explanatory, not measured inference results.</p><ol>{links}</ol></body></html>',
         encoding="utf-8",
     )
     print(f"Generated {len(records)} HTML diagrams and index.")

@@ -15,7 +15,7 @@
     "slug": "03-media-today",
     "title": "What happens to an image or video today",
     "status": "IMPLEMENTED",
-    "notes": "Clipboard works when it contains actual file data; copying a media URL does not automatically fetch the file. Selection and drag/drop share validation. Duplicates are skipped. Preview errors offer removal. Attached media blocks normal and keyboard text submission rather than being silently dropped. Navigating away releases the local object URLs. No OCR, ASR, image lookup, C2PA, or generation detector is integrated."
+    "notes": "Clipboard, file picker and drag and drop share validation; files are checked by signature, not name. Images go through the image checks in diagram 14 in Meta mode; preview mode stores them without analysis. Videos are stored and shown but not analyzed: no frames, transcript or reverse search. No AI-generation detector is integrated."
   },
   {
     "slug": "04-long-text-proposal",
@@ -26,8 +26,8 @@
   {
     "slug": "05-photo-proposal",
     "title": "A true event can have an unrelated photograph",
-    "status": "PROPOSED / OPTIONAL",
-    "notes": "Synthetic case: a current event uses an older photograph. No source lookup has been performed for this example. Metadata/credentials and any AI-generation detector would be optional independent signals. Missing credentials do not imply generation. A model cannot prove date, location, or authenticity from appearance alone. No detector or media provider is selected or integrated."
+    "status": "PROPOSAL, MOSTLY IMPLEMENTED IN 14",
+    "notes": "Original proposal, kept for the record. Caption assertions, visual observations and the search for earlier appearances are now implemented (diagram 14). Authenticity signals remain unimplemented: no credentials check or AI-generation detector is integrated. Synthetic case; no source lookup was performed for this example. A model cannot prove date, location, or authenticity from appearance alone."
   },
   {
     "slug": "06-video-proposal",
@@ -75,6 +75,24 @@
     "slug": "13-text-research",
     "title": "From text to source-backed details",
     "status": "IMPLEMENTED / OPT-IN",
-    "notes": "Each need is assessed independently. A need left insufficient gets one follow-up search with new queries; only needs that gained passages are reassessed. Unreadable sources and unfinished steps remain limitations. The report preserves relevant source context; the overall claim remains unresolved when coverage is unknown."
+    "notes": "Planner v7 marks opinions and author-only experiences not_checkable and plans the main claims first. Every readable page that search finds is read (modes differ by search count); results Tavily scores below SEARCH_MIN_SCORE (0.30) are skipped. Pages are read as Markdown reduced to text. The v5 judge receives each passage's source type, and a passage that only repeats the claim is not support. Each need is assessed independently; a need left insufficient gets one follow-up search. Unreadable sources and unfinished steps remain limitations; the overall claim remains unresolved when coverage is unknown. Budget-limited needs can be continued (diagram 16)."
+  },
+  {
+    "slug": "14-image-research",
+    "title": "Checking a photo and its caption",
+    "status": "IMPLEMENTED",
+    "notes": "Muse transcribes visible text and marks which parts are statements; only statements, not signs, labels or date stamps, are extracted as claims. Caption checks compare what the caption says about the picture with visible details and are labelled a model visual assessment. SerpApi Google Lens returns same-image matches with the date Lens shows (earliest first); Bing reverse image search, queried with a Google-hosted copy Lens found, adds direct page links. Google Fact Check Tools image search uses the same copy, never the upload, and text search uses the caption. Research reads fact checks and other matching pages alternately on its own small budget, and the planner gets observations and matching page titles as context. Google redirect links that show a verification page are not read. Reverse image search runs only in Meta mode with REVERSE_IMAGE_PROVIDER set."
+  },
+  {
+    "slug": "15-link-research",
+    "title": "Checking a linked page",
+    "status": "IMPLEMENTED",
+    "notes": "fetch_links reads up to three links in Meta mode through Tavily Extract; preview mode lists them as not opened. Only the first 3,000 characters are checked, since a whole article produced more claims than one research budget can assess. A publication date is kept only when a Tavily news search returns the exact page; it is never guessed from page text. The main image is downloaded from a public HTTPS host, with redirects re-checked and the connection pinned to the checked address, then analysed like an upload. Research never reads the checked page as its own evidence. Unreadable links (often social posts) are reported with advice to paste the text or attach a screenshot."
+  },
+  {
+    "slug": "16-budget-continuation",
+    "title": "When the research budget runs out",
+    "status": "IMPLEMENTED",
+    "notes": "Planner v7 marks opinions, value judgments and experiences only the author could know as not_checkable; they are listed but never searched or judged. Under a tight budget it plans the headline and main claims first. Each report saves a research summary; budget-limited counts the needs the planner deferred or the judgment call budget did not reach. The notice offers Run again in Deep (same text and uploads, new report) or Research remaining details: a new investigation that copies settled claims, findings, evidence and sources under new IDs and researches only budget-limited claims, starting at evaluate_evidence and passing through merge_continuation. Images and links stay in the earlier report, which is linked."
   }
 ]
