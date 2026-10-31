@@ -138,7 +138,7 @@ describe('Investigation workspace', () => {
     researchEnabled = true;
     mount();
     await screen.findByText('Research depth');
-    expect(screen.getByText(/Up to 6 searches and 3 sources/)).toBeInTheDocument();
+    expect(screen.getByText(/Up to 6 searches; every page found is read/)).toBeInTheDocument();
     await userEvent.click(screen.getByText('Deep'));
     expect(screen.getByText(/Uses more credits/)).toBeInTheDocument();
     fireEvent.change(screen.getByRole('textbox', { name: 'Passage to investigate' }), {

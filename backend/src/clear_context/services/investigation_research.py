@@ -50,13 +50,16 @@ class ResearchBudget:
     """Per-investigation call limits; research modes vary these, not the methods."""
 
     max_queries: int = 6
-    max_source_reads: int = 3
-    max_selection_calls: int = 3
+    # Every readable page that search found is read and searched for passages; reading
+    # only the first few lost evidence in measured runs (experiment read-all-v1). These
+    # caps only bound time. Modes differ by how much they search.
+    max_source_reads: int = 20
+    max_selection_calls: int = 20
     max_judgment_calls: int = 6
     # One follow-up round for needs left insufficient; 0 disables it.
     followup_queries: int = 2
-    followup_source_reads: int = 2
-    followup_selection_calls: int = 3
+    followup_source_reads: int = 10
+    followup_selection_calls: int = 10
     followup_judgment_calls: int = 2
     # Pages where reverse image search found the attached image; read in addition to
     # text-search sources.
@@ -66,8 +69,8 @@ class ResearchBudget:
 RESEARCH_MODES = {
     "fast": ResearchBudget(
         max_queries=3,
-        max_source_reads=2,
-        max_selection_calls=2,
+        max_source_reads=12,
+        max_selection_calls=12,
         max_judgment_calls=4,
         followup_queries=0,
         followup_source_reads=0,
@@ -78,12 +81,12 @@ RESEARCH_MODES = {
     "balanced": ResearchBudget(),
     "deep": ResearchBudget(
         max_queries=10,
-        max_source_reads=5,
-        max_selection_calls=5,
+        max_source_reads=30,
+        max_selection_calls=30,
         max_judgment_calls=10,
         followup_queries=4,
-        followup_source_reads=3,
-        followup_selection_calls=4,
+        followup_source_reads=15,
+        followup_selection_calls=15,
         followup_judgment_calls=4,
         image_match_reads=3,
     ),
