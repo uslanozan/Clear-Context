@@ -585,3 +585,34 @@ def test_low_scored_search_results_are_not_read():
     # The unrelated result is skipped; a primary source at 0.45 and an unscored result are read.
     assert complete and len(session.read) == 2
     assert limitations == ["1 search result(s) scored below 0.30 for relevance were not read."]
+
+
+def test_one_unusable_search_answer_skips_only_that_query():
+    from clear_context.schemas.retrieval import ResearchQuery, SearchRequest
+
+    class Session:
+        halted = False
+
+        def __init__(self):
+            self.searched, self.read = [], []
+
+        def search(self, case_id, query_id):
+            self.searched.append(query_id)
+            if query_id == "q1":
+                raise RetrievalFailure("invalid_response")
+            return {"results": [{"url": "https://example.org/primary", "score": 0.9}]}
+
+        def read_source(self, source):
+            self.read.append(source)
+            return "page-1"
+
+    queries = [
+        ResearchQuery(id=q, request=SearchRequest(query=q, language="en"), need_ids=["n1"])
+        for q in ("q1", "q2")
+    ]
+    session, limitations = Session(), []
+    complete = InvestigationResearch._search(
+        session, None, "case", queries, {}, {}, {}, 10, limitations
+    )
+    assert complete and session.searched == ["q1", "q2"] and len(session.read) == 1
+    assert limitations == ["One search returned an unusable answer and was skipped."]

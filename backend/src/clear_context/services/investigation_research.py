@@ -485,6 +485,9 @@ class InvestigationResearch:
             try:
                 response = session.search(case_id, query.id)
             except RetrievalFailure as error:
+                if error.code == "invalid_response" and not session.halted:
+                    limitations.append("One search returned an unusable answer and was skipped.")
+                    continue
                 limitations.append(f"Search stopped: {error.code}.")
                 return False
             results = response.get("results", [])

@@ -76,6 +76,16 @@ def markdown_to_text(markdown: str) -> str:
     return BLANK_LINES.sub("\n\n", "\n".join(lines)).strip()
 
 
+def valid_result(item) -> bool:
+    if not isinstance(item, dict) or not isinstance(item.get("url"), str):
+        return False
+    try:
+        canonical_source_url(item["url"])
+    except ValueError:
+        return False
+    return True
+
+
 class RetrievalFailure(RuntimeError):
     def __init__(self, code: str, status_code: int | None = None):
         super().__init__(code)
@@ -124,6 +134,9 @@ class TavilyClient:
 
     def search(self, request: SearchRequest) -> dict:
         value = self._post(ENDPOINT, request.payload())
+        # One malformed result (for example a non-HTTP link) must not discard the others.
+        if isinstance(value, dict) and isinstance(value.get("results"), list):
+            value["results"] = [item for item in value["results"] if valid_result(item)]
         try:
             parse_response(json.dumps(value), request)
         except ValueError as error:

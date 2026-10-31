@@ -366,3 +366,23 @@ def test_menus_are_dropped_but_short_lists_inside_an_article_stay():
         "* Bursa",
         "Languages",
     ]
+
+
+def test_malformed_search_results_are_dropped_not_fatal(repository):
+    client = TavilyClient(
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                200,
+                json={
+                    "query": json.loads(request.content)["query"],
+                    "results": [
+                        {"title": "Bad", "url": "javascript:alert(1)"},
+                        {"title": "Good", "url": "https://example.org/a"},
+                    ],
+                },
+            )
+        )
+    )
+    response = client.search(SearchRequest(query="bridge", language="en", max_results=3))
+    assert [r["url"] for r in response["results"]] == ["https://example.org/a"]
+    client.close()

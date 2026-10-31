@@ -46,7 +46,9 @@ class RetrievalSession:
         try:
             value = operation()
         except RetrievalFailure as error:
-            self.halted = error.code != "extract_failed"
+            # A bad page or one malformed search answer affects only that request; rate limits
+            # and transport failures stop the session.
+            self.halted = error.code not in {"extract_failed", "invalid_response"}
             self.repository.log(
                 "request_failed",
                 self.clock(),
