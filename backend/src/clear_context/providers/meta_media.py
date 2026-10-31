@@ -10,6 +10,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from clear_context.core.prompts import experiment_system
 from clear_context.core.settings import ModelSelection, Settings
 from clear_context.domain.investigation import (
     CaptionCheck,
@@ -22,7 +23,7 @@ from clear_context.providers.meta_structured import MetaStructuredProvider, Mode
 from clear_context.services.video import moment_seconds
 
 PROMPT_VERSION = "media_analysis_v2"
-VIDEO_PROMPT_VERSION = "video_analysis_v2"
+VIDEO_PROMPT_VERSION = "video_analysis_v3"
 # A one-minute video took 25-75 s in testing; the general Meta timeout is shorter.
 VIDEO_TIMEOUT_SECONDS = 240
 # Frames sampled per second of video.
@@ -61,6 +62,7 @@ class VideoDescription(BaseModel):
     context_cues: list[str] = Field(max_length=12)
     key_moments: list[str] = Field(max_length=3)
     caption_checks: list[CaptionCheckOutput] = Field(max_length=8)
+    speech_heard: bool
 
 
 def clock(seconds: float) -> str:
@@ -102,10 +104,24 @@ def to_analysis(description: MediaDescription) -> MediaAnalysis:
     )
 
 
+# A transcript this short is dropped when the video model hears no speech; longer ones are
+# kept, so a wrong "no speech" answer cannot remove real speech.
+MAX_NOISE_WORDS = 8
+
+
 def to_video_analysis(
     description: VideoDescription, speech: list[SpeechTurn], duration: float
 ) -> MediaAnalysis:
-    """Keep on-screen statements copied verbatim from the on-screen text, as for images."""
+    """Keep on-screen statements copied verbatim from the on-screen text, as for images.
+
+    Speech the video model did not hear is dropped when it is only a few words: the speech
+    model put single words to wind noise in testing.
+    """
+    notes = []
+    words = sum(len(turn.text.split()) for turn in speech)
+    if speech and not description.speech_heard and words <= MAX_NOISE_WORDS:
+        speech = []
+        notes.append("A few transcribed words were dropped: no speech was heard in the video.")
     on_screen = [
         ScreenText(at=moment_seconds(item.at), text=item.text.strip())
         for item in description.on_screen_text
@@ -115,6 +131,10 @@ def to_video_analysis(
     candidates = [part for part in description.claim_text if is_statement(part)]
     claim_text = [part for part in candidates if part in shown]
     dropped = len(candidates) - len(claim_text)
+    if dropped:
+        notes.append(
+            f"{dropped} on-screen statement(s) did not match the on-screen text and were not used."
+        )
     return MediaAnalysis(
         status="analyzed",
         content_type="video",
@@ -130,11 +150,7 @@ def to_video_analysis(
         speech=speech,
         on_screen_text=on_screen,
         duration_seconds=round(duration, 1),
-        note=(
-            f"{dropped} on-screen statement(s) did not match the on-screen text and were not used."
-            if dropped
-            else None
-        ),
+        note=" ".join(notes) or None,
     )
 
 
@@ -164,7 +180,7 @@ class MetaMediaAnalyzer:
         self.model = model
         catalog = yaml.safe_load(prompts_path.read_text(encoding="utf-8-sig"))
         self.system = catalog["experiments"][PROMPT_VERSION]["system"]
-        self.video_system = catalog["experiments"][VIDEO_PROMPT_VERSION]["system"]
+        self.video_system = experiment_system(catalog["experiments"], VIDEO_PROMPT_VERSION)
 
     def build_request(self, data: bytes, mime_type: str, caption: str) -> dict:
         image_url = f"data:{mime_type};base64,{base64.b64encode(data).decode('ascii')}"

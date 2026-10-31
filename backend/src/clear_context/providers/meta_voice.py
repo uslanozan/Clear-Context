@@ -1,6 +1,7 @@
 """Speech to text with Muse Voice Transcribe (https://dev.meta.ai/docs/speech-to-text)."""
 
 import json
+import re
 import time
 import uuid
 
@@ -15,6 +16,10 @@ MODEL_ID = "muse-voice-transcribe-1.0"
 # Turns with fewer characters per second are background noise the model put words to; in
 # testing, wind noise came back as one character over twenty seconds. Speech runs at 10-20.
 MIN_CHARS_PER_SECOND = 0.5
+# Shorter turns carried no speech in testing: empty text or an internal marker.
+MIN_TURN_SECONDS = 0.3
+# Internal markers that sometimes leak into the text, such as "speaker_A|>".
+MARKER = re.compile(r"<\|[^|]*\|>|\bspeaker_\w+\|>")
 
 
 class TranscriptionFailure(Exception):
@@ -24,7 +29,9 @@ class TranscriptionFailure(Exception):
 
 
 def keep_turn(turn: SpeechTurn) -> bool:
-    seconds = max(turn.end - turn.start, 0.001)
+    seconds = turn.end - turn.start
+    if seconds < MIN_TURN_SECONDS:
+        return False
     return len(turn.text.strip()) / seconds >= MIN_CHARS_PER_SECOND
 
 
@@ -82,10 +89,10 @@ class MetaVoiceTranscriber:
                     start=offset + turn["startMs"] / 1000,
                     end=offset + turn["endMs"] / 1000,
                     speaker=turn.get("speaker"),
-                    text=turn["transcript"].strip(),
+                    text=" ".join(MARKER.sub(" ", turn["transcript"]).split()),
                 )
                 for turn in turns
-                if str(turn.get("transcript", "")).strip()
+                if MARKER.sub(" ", str(turn.get("transcript", ""))).strip()
             ]
         except (ValueError, KeyError, TypeError):
             raise TranscriptionFailure("invalid_response") from None

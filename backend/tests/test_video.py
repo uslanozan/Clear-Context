@@ -107,6 +107,19 @@ def test_voice_transcriber_sends_wav_and_drops_noise_turns():
                         "speaker": "A",
                         "transcript": "Bridge closed.",
                     },
+                    # An internal marker in a turn of zero length, and an empty turn.
+                    {
+                        "startMs": 76000,
+                        "endMs": 76000,
+                        "speaker": None,
+                        "transcript": "speaker_A|>",
+                    },
+                    {
+                        "startMs": 5000,
+                        "endMs": 9000,
+                        "speaker": "A",
+                        "transcript": " <|nospeech|> ",
+                    },
                     # One character over twenty seconds: wind noise, not speech.
                     {"startMs": 27000, "endMs": 47000, "speaker": "A", "transcript": "就。"},
                 ]
@@ -157,6 +170,7 @@ def test_on_screen_statements_must_match_the_shown_text():
         context_cues=[],
         key_moments=["00:04 - flooded bridge"],
         caption_checks=[],
+        speech_heard=True,
     )
     speech = [SpeechTurn(start=1, end=3, text="The bridge is closed.")]
     analysis = to_video_analysis(description, speech, 12.34)
@@ -167,6 +181,13 @@ def test_on_screen_statements_must_match_the_shown_text():
     )
     assert analysis.speech == speech and analysis.duration_seconds == 12.3
     assert "1 on-screen statement" in analysis.note
+    # A few words the video model did not hear are noise; a longer transcript is kept.
+    quiet = description.model_copy(update={"speech_heard": False})
+    noise = [SpeechTurn(start=27, end=47, text="So")]
+    assert to_video_analysis(quiet, noise, 50).speech == []
+    assert "no speech was heard" in to_video_analysis(quiet, noise, 50).note
+    long = [SpeechTurn(start=0, end=9, text="one two three four five six seven eight nine")]
+    assert to_video_analysis(quiet, long, 50).speech == long
 
 
 class Analyzer:

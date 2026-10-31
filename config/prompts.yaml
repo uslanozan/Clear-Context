@@ -1520,3 +1520,10 @@ experiments:
       Never claim to recognize this specific video, its source or its first publication; do not
       identify private people from faces; do not judge whether the video was generated or
       edited. These are model observations, not proof. Return only the required JSON.
+  video_analysis_v3:
+    # Extends video_analysis_v2 with whether speech is heard.
+    extends: video_analysis_v2
+    system: |-
+      speech_heard: true when a person can be heard speaking in the audio, false otherwise.
+      The speech model sometimes puts a word to wind, music or crowd noise; answer from what
+      you hear, not from the transcript.
