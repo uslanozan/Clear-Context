@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button } from '@mantine/core';
 import { ArrowUpRight, Crop, TextSelect } from 'lucide-react';
+import { ServerLine, useConnection } from './ServerLine';
 import { loadPending, loadServer, openCaptureWindow, savePending } from './storage';
 
 /** Selected text of the page; runs in the page. */
@@ -22,6 +23,7 @@ export function PopupApp() {
   const [server, setServer] = useState<string | null>(null);
   const [hasPending, setHasPending] = useState(false);
   const [error, setError] = useState('');
+  const connection = useConnection(server);
 
   useEffect(() => {
     void loadServer().then(setServer);
@@ -72,7 +74,10 @@ export function PopupApp() {
         <span className="brand-icon" aria-hidden="true">
           <img src="icons/icon-32.png" alt="" width={20} height={20} />
         </span>
-        <strong>Clear Context</strong>
+        <div>
+          <strong>Clear Context</strong>
+          {server && <ServerLine server={server} connection={connection} onChange={setServer} />}
+        </div>
       </header>
       <Button fullWidth leftSection={<Crop size={16} />} onClick={() => void captureArea()}>
         Capture an area

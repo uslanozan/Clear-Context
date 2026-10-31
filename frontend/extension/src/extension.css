@@ -24,14 +24,16 @@
 }
 .ext-server {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 2px 8px;
   margin: 2px 0 0;
   color: var(--muted);
   font-size: 12.5px;
 }
 .ext-server .text-button {
   padding: 0;
+  white-space: nowrap;
 }
 .ext-server-form {
   display: flex;

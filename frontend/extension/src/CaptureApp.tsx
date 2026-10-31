@@ -1,33 +1,14 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Checkbox,
-  Loader,
-  SegmentedControl,
-  Textarea,
-  TextInput,
-} from '@mantine/core';
+import { Alert, Button, Checkbox, Loader, SegmentedControl, Textarea } from '@mantine/core';
 import { ArrowUpRight, Check, CircleAlert, LoaderCircle } from 'lucide-react';
 import { failureMessage } from '../../src/lib/api';
 import { RESEARCH_MODES } from '../../src/lib/modes';
 import { stageTitle } from '../../src/lib/stages';
-import type { Health, Investigation, ResearchMode, ResearchStep } from '../../src/lib/types';
-import {
-  MAX_TEXT,
-  isLocalServer,
-  normalizeServer,
-  readablePage,
-  submissionText,
-  type PendingCapture,
-} from './capture-model';
+import type { Investigation, ResearchMode, ResearchStep } from '../../src/lib/types';
+import { MAX_TEXT, readablePage, submissionText, type PendingCapture } from './capture-model';
 import { ServerError, serverApi } from './server-api';
-import { clearPending, loadPending, loadServer, saveServer } from './storage';
-
-type Connection =
-  | { state: 'checking' }
-  | { state: 'ready'; health: Health }
-  | { state: 'unreachable'; message: string };
+import { ServerLine, useConnection, type Connection } from './ServerLine';
+import { clearPending, loadPending, loadServer } from './storage';
 
 const KIND_LABEL: Record<PendingCapture['kind'], string> = {
   text: 'Selected text',
@@ -39,7 +20,7 @@ const KIND_LABEL: Record<PendingCapture['kind'], string> = {
 export function CaptureApp() {
   const [capture, setCapture] = useState<PendingCapture | null | undefined>(undefined);
   const [server, setServer] = useState<string | null>(null);
-  const [connection, setConnection] = useState<Connection>({ state: 'checking' });
+  const connection = useConnection(server);
   const [started, setStarted] = useState<Investigation | null>(null);
 
   useEffect(() => {
@@ -48,15 +29,6 @@ export function CaptureApp() {
       setServer(origin);
     });
   }, []);
-
-  useEffect(() => {
-    if (!server) return;
-    setConnection({ state: 'checking' });
-    serverApi
-      .health(server)
-      .then((health) => setConnection({ state: 'ready', health }))
-      .catch((error: Error) => setConnection({ state: 'unreachable', message: error.message }));
-  }, [server]);
 
   return (
     <main className="ext-page">
@@ -100,75 +72,6 @@ export function CaptureApp() {
         <Preview capture={capture} server={server} connection={connection} onStarted={setStarted} />
       )}
     </main>
-  );
-}
-
-function ServerLine({
-  server,
-  connection,
-  onChange,
-}: {
-  server: string;
-  connection: Connection;
-  onChange: (origin: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(server);
-  const [error, setError] = useState('');
-  if (editing) {
-    return (
-      <form
-        className="ext-server-form"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          const origin = normalizeServer(value);
-          if (!origin) {
-            setError('Enter an address such as http://clearcontext.localhost');
-            return;
-          }
-          // Local addresses are allowed by the manifest; others need the user's permission.
-          if (!isLocalServer(origin)) {
-            const granted = await chrome.permissions.request({ origins: [`${origin}/*`] });
-            if (!granted) {
-              setError('Access to that address was not granted.');
-              return;
-            }
-          }
-          await saveServer(origin);
-          setEditing(false);
-          setError('');
-          onChange(origin);
-        }}
-      >
-        <TextInput
-          size="xs"
-          aria-label="Clear Context server address"
-          value={value}
-          onChange={(event) => setValue(event.currentTarget.value)}
-          error={error || undefined}
-        />
-        <Button size="xs" type="submit">
-          Save
-        </Button>
-      </form>
-    );
-  }
-  const status =
-    connection.state === 'checking'
-      ? 'Checking…'
-      : connection.state === 'unreachable'
-        ? 'Not reachable'
-        : connection.health.mode === 'mock'
-          ? 'Preview mode: no model calls'
-          : 'Connected';
-  return (
-    <p className="ext-server">
-      <span className={`ext-dot ${connection.state}`} aria-hidden="true" />
-      {new URL(server).host} · {status} ·{' '}
-      <button type="button" className="text-button" onClick={() => setEditing(true)}>
-        Change
-      </button>
-    </p>
   );
 }
 
