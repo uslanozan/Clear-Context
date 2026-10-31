@@ -88,14 +88,24 @@ def parse_published(value) -> date | None:
         return None
 
 
-def public_address(host: str) -> bool:
-    """True when every address the host resolves to is public."""
+def public_address(host: str) -> str | None:
+    """One address of the host when every address it resolves to is public, else None."""
     try:
         infos = socket.getaddrinfo(host, 443, proto=socket.IPPROTO_TCP)
     except (socket.gaierror, UnicodeError):
-        return False
-    addresses = {info[4][0] for info in infos}
-    return bool(addresses) and all(ipaddress.ip_address(a).is_global for a in addresses)
+        return None
+    addresses = sorted({info[4][0] for info in infos})
+    if not addresses or not all(ipaddress.ip_address(a).is_global for a in addresses):
+        return None
+    return addresses[0]
+
+
+def pinned_url(parts, address: str) -> str:
+    """The URL with its host replaced by the checked address (IPv6 in brackets)."""
+    host = f"[{address}]" if ":" in address else address
+    port = f":{parts.port}" if parts.port else ""
+    query = f"?{parts.query}" if parts.query else ""
+    return f"https://{host}{port}{parts.path or '/'}{query}"
 
 
 class TavilyLinkReader:
@@ -192,10 +202,18 @@ class TavilyLinkReader:
             parts = urlsplit(url)
             if parts.scheme != "https" or not parts.hostname or parts.username:
                 raise LinkFailure("image_address_rejected")
-            if not self.resolver(parts.hostname):
+            address = self.resolver(parts.hostname)
+            if not address:
                 raise LinkFailure("image_address_rejected")
+            # Connect to the address that was checked, so a second DNS answer cannot point the
+            # request at a private host. TLS still verifies the certificate for the host name.
             try:
-                with self.client.stream("GET", url, headers={"Accept": "image/*"}) as response:
+                with self.client.stream(
+                    "GET",
+                    pinned_url(parts, address),
+                    headers={"Accept": "image/*", "Host": parts.netloc},
+                    extensions={"sni_hostname": parts.hostname},
+                ) as response:
                     if response.status_code in {301, 302, 303, 307, 308}:
                         url = urljoin(url, response.headers.get("location", ""))
                         continue

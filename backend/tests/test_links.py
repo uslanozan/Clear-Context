@@ -32,7 +32,7 @@ def test_same_page_ignores_www_trailing_slash_and_tracking():
     assert not same_page("https://news.example/a", "https://news.example/b")
 
 
-def reader(handler, resolver=lambda host: True):
+def reader(handler, resolver=lambda host: "93.184.216.34"):
     return TavilyLinkReader("key", transport=httpx.MockTransport(handler), resolver=resolver)
 
 
@@ -92,20 +92,24 @@ def test_unreadable_page_and_missing_date_are_reported_not_guessed():
     link_reader.close()
 
 
-def test_image_download_rejects_private_hosts_redirects_and_non_images():
+def test_image_download_connects_to_the_checked_address_and_rejects_private_hosts():
     calls = []
 
     def handler(request):
-        calls.append(str(request.url))
-        if request.url.host == "redirect.example":
+        # The request goes to the checked address; the host name travels in Host and SNI.
+        calls.append(
+            (str(request.url), request.headers["host"], request.extensions["sni_hostname"])
+        )
+        if request.headers["host"] == "redirect.example":
             return httpx.Response(302, headers={"location": "https://internal.example/x.jpg"})
         if request.url.path == "/page.html":
             return httpx.Response(200, content=b"<html></html>")
         return httpx.Response(200, content=JPEG)
 
-    public = {"cdn.example", "redirect.example"}
-    link_reader = reader(handler, resolver=lambda host: host in public)
-    assert link_reader.download_image("https://cdn.example/a.jpg") == ("image/jpeg", JPEG)
+    public = {"cdn.example": "93.184.216.34", "redirect.example": "2606:2800:220:1::248"}
+    link_reader = reader(handler, resolver=public.get)
+    assert link_reader.download_image("https://cdn.example/a.jpg?w=1") == ("image/jpeg", JPEG)
+    assert calls[0] == ("https://93.184.216.34/a.jpg?w=1", "cdn.example", "cdn.example")
     for url, code in [
         ("http://cdn.example/a.jpg", "image_address_rejected"),
         ("https://localhost/a.jpg", "image_address_rejected"),
@@ -115,8 +119,27 @@ def test_image_download_rejects_private_hosts_redirects_and_non_images():
     ]:
         with pytest.raises(LinkFailure, match=code):
             link_reader.download_image(url)
-    assert "https://internal.example/x.jpg" not in calls
+    assert any(url.startswith("https://[2606:2800:220:1::248]/") for url, _, _ in calls)
+    assert not any("internal.example" in host for _, host, _ in calls)
     link_reader.close()
+
+
+def test_public_address_refuses_hosts_with_any_private_address(monkeypatch):
+    from clear_context.providers import link_reader as module
+
+    answers = {
+        "public.example": ["93.184.216.34"],
+        "mixed.example": ["93.184.216.34", "10.0.0.5"],
+        "loopback.example": ["127.0.0.1"],
+    }
+    monkeypatch.setattr(
+        module.socket,
+        "getaddrinfo",
+        lambda host, *args, **kwargs: [(None, None, None, None, (a, 443)) for a in answers[host]],
+    )
+    assert module.public_address("public.example") == "93.184.216.34"
+    assert module.public_address("mixed.example") is None
+    assert module.public_address("loopback.example") is None
 
 
 class Reader:
