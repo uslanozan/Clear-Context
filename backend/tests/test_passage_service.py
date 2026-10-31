@@ -203,7 +203,7 @@ def test_call_cap_and_oversized_page_do_not_silently_truncate(workspace):
     assert row["status"] == "page_too_large" and service.calls == 0
 
 
-def test_rate_limit_stops_queued_work_without_retries(workspace):
+def test_rate_limit_stops_queued_work_after_bounded_retries(workspace):
     repo, pages = workspace
     sent = []
 
@@ -215,7 +215,8 @@ def test_rate_limit_stops_queued_work_without_retries(workspace):
     rows = asyncio.run(
         service.select_pages([SelectionJob("case", page, ("n1",)) for page in pages])
     )
-    assert len(sent) == 1
+    # One call and two bounded retries; queued pages are not attempted.
+    assert len(sent) == 3
     assert [r["status"] for r in rows] == ["rate_limited", "not_run_after_failure"]
 
 

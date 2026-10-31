@@ -32,6 +32,15 @@ def block_outbound_network(monkeypatch):
     monkeypatch.setattr(socket.socket, "connect", local_connect)
 
 
+@pytest.fixture(autouse=True)
+def no_retry_waits(monkeypatch):
+    # Retries keep their count and order in tests, without real waiting.
+    from clear_context.core import retry
+
+    monkeypatch.setattr(retry, "DELAYS", (0.0, 0.0))
+    monkeypatch.setattr(retry, "MAX_RETRY_AFTER", 0.0)
+
+
 @pytest.fixture
 def settings(tmp_path):
     database_path = tmp_path / "test.db"

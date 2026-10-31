@@ -5,9 +5,11 @@ Uses an API key when one is configured, otherwise the rate-limited keyless mode.
 
 import json
 import re
+import time
 
 import httpx
 
+from clear_context.core.retry import retry_delay, should_retry_error, should_retry_status
 from clear_context.schemas.retrieval import (
     ENDPOINT,
     SearchRequest,
@@ -106,6 +108,7 @@ class TavilyClient:
             if api_key
             else {"X-Tavily-Access-Mode": "keyless"}
         )
+        self.sleep = time.sleep
         self.client = httpx.Client(
             timeout=timeout,
             transport=transport or httpx.HTTPTransport(retries=0),
@@ -117,10 +120,22 @@ class TavilyClient:
         self.client.close()
 
     def _post(self, endpoint: str, payload: dict) -> dict:
-        try:
-            response = self.client.post(endpoint, json=payload, headers=self.headers)
-        except httpx.HTTPError as error:
-            raise RetrievalFailure("transport_error") from error
+        attempt = 0
+        while True:
+            try:
+                response = self.client.post(endpoint, json=payload, headers=self.headers)
+            except httpx.HTTPError as error:
+                if should_retry_error(error, attempt, paid=False):
+                    self.sleep(retry_delay(attempt))
+                    attempt += 1
+                    continue
+                raise RetrievalFailure("transport_error") from error
+            # 432-434 are plan or usage limits; waiting does not help.
+            if should_retry_status(response.status_code, attempt):
+                self.sleep(retry_delay(attempt, response))
+                attempt += 1
+                continue
+            break
         if response.status_code != 200:
             code = "rate_limited" if response.status_code in {429, 432, 433, 434} else "http_error"
             raise RetrievalFailure(code, response.status_code)

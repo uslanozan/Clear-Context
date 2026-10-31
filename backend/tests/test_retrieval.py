@@ -168,7 +168,7 @@ def test_passage_cannot_attach_to_unrelated_case(repository):
         repository.add_passage(page, 0, 17, "A literal passage", "case-b", ["n1"])
 
 
-def test_rate_limit_halts_without_retry_or_paid_fallback(repository):
+def test_rate_limit_halts_after_bounded_retries_without_paid_fallback(repository):
     sent = []
 
     def handler(request):
@@ -180,7 +180,8 @@ def test_rate_limit_halts_without_retry_or_paid_fallback(repository):
         service.search("case-a", "Q1")
     with pytest.raises(RetrievalFailure, match="session_halted"):
         service.search("case-a", "Q2")
-    assert len(sent) == 1
+    # One call and two bounded retries, then the session stops.
+    assert len(sent) == 3
     assert repository.export()["research_events"][-1]["kind"] == "request_failed"
     service.provider.close()
 

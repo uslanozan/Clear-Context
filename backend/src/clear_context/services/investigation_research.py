@@ -102,6 +102,28 @@ RESEARCH_MODES = {
 }
 
 
+def research_not_run(investigation_id, claims, code: str) -> InvestigationReport:
+    return InvestigationReport(
+        investigation_id=investigation_id,
+        mode="meta",
+        claims=claims,
+        sources=[],
+        evidence=[],
+        findings=[
+            Finding(
+                id=stable_uuid("finding", str(claim.id)),
+                claim_id=claim.id,
+                assessment=Assessment.UNRESOLVED,
+                explanation=report_text(
+                    "research_failed", claim.statement or claim.text, code=code
+                ),
+            )
+            for claim in claims
+        ],
+        limitations=[f"Research planning did not complete ({code}); claims were not researched."],
+    )
+
+
 def summarize(plan, judgments) -> ResearchSummary:
     """Count how each research need ended; budget-limited claims can be continued later."""
     outcome = {row["need_ids"][0]: row["status"] for row in judgments}
@@ -239,16 +261,22 @@ class InvestigationResearch:
             # The selected planner (v7) handles text and image context alike.
             image_context=images or None,
         )
-        body = await meta.complete(request, self.settings.meta_timeout_seconds)
+        try:
+            body = await meta.complete(request, self.settings.meta_timeout_seconds)
+            plan = parse_planner_response(
+                body["choices"][0]["message"]["content"],
+                planning_claims,
+                budget.max_queries,
+                profile,
+            )
+        except (ModelResponseFailure, ValueError, KeyError, IndexError, TypeError) as error:
+            # Keep the extracted claims; the report says research did not run.
+            return research_not_run(
+                investigation_id, claims, getattr(error, "code", "invalid_plan")
+            )
         usage = [
             usage_record("query_planning", self.models["research"].api_model_id, body.get("usage"))
         ]
-        plan = parse_planner_response(
-            body["choices"][0]["message"]["content"],
-            planning_claims,
-            budget.max_queries,
-            profile,
-        )
         if progress:
             progress("plan_queries")
         needs = [

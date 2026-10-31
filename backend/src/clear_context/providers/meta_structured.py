@@ -1,10 +1,15 @@
-"""Bounded Meta structured-output transport without retries or credential logging."""
+"""Bounded Meta structured-output transport without credential logging.
 
+Only failures Meta did not process are retried (core/retry.py).
+"""
+
+import asyncio
 import json
 from hashlib import sha256
 
 import httpx
 
+from clear_context.core.retry import retry_delay, should_retry_error, should_retry_status
 from clear_context.core.settings import Settings
 
 
@@ -35,24 +40,41 @@ class MetaStructuredProvider:
         self.transport = transport
         self.response_metadata: list[dict] = []
         self.response_records: list[dict] = []
+        # Retries of failures the provider did not process (core/retry.py).
+        self.retries = 0
+        self.sleep = asyncio.sleep
 
     async def complete(self, payload: dict, timeout: float) -> dict:
-        try:
-            async with httpx.AsyncClient(
-                transport=self.transport or httpx.AsyncHTTPTransport(retries=0),
-                timeout=timeout,
-                trust_env=False,
-                follow_redirects=False,
-            ) as client:
-                response = await client.post(
-                    "https://api.meta.ai/v1/chat/completions",
-                    json=payload,
-                    headers={
-                        "Authorization": "Bearer " + self.settings.meta_api_key.get_secret_value()
-                    },
-                )
-        except httpx.HTTPError as error:
-            raise ModelResponseFailure("transport_error") from error
+        attempt = 0
+        while True:
+            try:
+                async with httpx.AsyncClient(
+                    transport=self.transport or httpx.AsyncHTTPTransport(retries=0),
+                    timeout=timeout,
+                    trust_env=False,
+                    follow_redirects=False,
+                ) as client:
+                    response = await client.post(
+                        "https://api.meta.ai/v1/chat/completions",
+                        json=payload,
+                        headers={
+                            "Authorization": "Bearer "
+                            + self.settings.meta_api_key.get_secret_value()
+                        },
+                    )
+            except httpx.HTTPError as error:
+                if should_retry_error(error, attempt, paid=True):
+                    await self.sleep(retry_delay(attempt))
+                    attempt += 1
+                    self.retries += 1
+                    continue
+                raise ModelResponseFailure("transport_error") from error
+            if should_retry_status(response.status_code, attempt):
+                await self.sleep(retry_delay(attempt, response))
+                attempt += 1
+                self.retries += 1
+                continue
+            break
         fingerprint = sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
         self.response_records.append(
             {

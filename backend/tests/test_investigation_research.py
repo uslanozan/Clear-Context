@@ -616,3 +616,29 @@ def test_one_unusable_search_answer_skips_only_that_query():
     )
     assert complete and session.searched == ["q1", "q2"] and len(session.read) == 1
     assert limitations == ["One search returned an unusable answer and was skipped."]
+
+
+def test_failed_planning_keeps_the_claims_and_says_research_did_not_run(monkeypatch, tmp_path):
+    from clear_context.providers.meta_structured import ModelResponseFailure
+    from clear_context.services import investigation_research as module
+
+    class Failing:
+        def __init__(self, settings):
+            pass
+
+        async def complete(self, payload, timeout):
+            raise ModelResponseFailure("rate_limited", 429)
+
+    monkeypatch.setattr(module, "MetaStructuredProvider", Failing)
+    model = ModelSelection(alias="spark", api_model_id="muse-spark-1.3", training_use=False)
+    claim = Claim(id=uuid4(), text="The bridge opened in 2017 and the mayor opened it.")
+    research = InvestigationResearch(
+        Settings(_env_file=None), {"research": model, "judge": model}, tmp_path / "r.sqlite"
+    )
+    report = research.run(uuid4(), [claim])
+    assert report.claims == [claim]
+    assert report.findings[0].assessment == "unresolved"
+    assert "rate_limited" in report.findings[0].explanation
+    assert report.limitations == [
+        "Research planning did not complete (rate_limited); claims were not researched."
+    ]

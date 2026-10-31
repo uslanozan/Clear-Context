@@ -103,7 +103,7 @@ def test_paid_call_guard(overrides):
         (302, "meta_request_failed"),
     ],
 )
-def test_http_errors_are_sanitized_without_retries(status, code):
+def test_http_errors_are_sanitized_and_retried_only_when_transient(status, code):
     calls = []
 
     def handler(request):
@@ -120,7 +120,8 @@ def test_http_errors_are_sanitized_without_retries(status, code):
         provider_with(handler).extract_claims("A synthetic claim.")
     assert str(error.value) == code
     assert "private-error-and-key" not in str(error.value)
-    assert len(calls) == 1
+    # 429 and 5xx are retried twice; other failures are final.
+    assert len(calls) == (3 if status in {429, 500} else 1)
 
 
 @pytest.mark.parametrize(
@@ -131,11 +132,17 @@ def test_http_errors_are_sanitized_without_retries(status, code):
     ],
 )
 def test_transport_errors_are_sanitized(exception, code):
+    calls = []
+
     def handler(request):
+        calls.append(request)
         raise exception("private transport error", request=request)
 
     with pytest.raises(ProviderError, match=code):
         provider_with(handler).extract_claims("A synthetic claim.")
+    # A failed connection never reached Meta and is retried; a read timeout may have been
+    # processed and billed, so it is not.
+    assert len(calls) == (3 if exception is httpx.ConnectError else 1)
 
 
 @pytest.mark.parametrize(

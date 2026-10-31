@@ -1,6 +1,6 @@
 import json
 from collections import deque
-from time import monotonic
+from time import monotonic, sleep
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -8,6 +8,7 @@ import httpx
 from pydantic import Field, ValidationError
 
 from clear_context.core.prompts import RenderedPrompt, load_claim_extraction_prompt
+from clear_context.core.retry import retry_delay, should_retry_error, should_retry_status
 from clear_context.core.settings import ModelSelection, Settings
 from clear_context.domain.investigation import (
     Assessment,
@@ -81,6 +82,7 @@ class MetaInvestigationProvider:
         self.settings = settings
         self.model = model
         self.transport = transport
+        self.sleep = sleep
         self.prompt = prompt or load_claim_extraction_prompt(settings)
 
     def extract_claims(self, text: str) -> ClaimExtraction:
@@ -131,24 +133,36 @@ class MetaInvestigationProvider:
             "store": False,
             "stream": False,
         }
-        try:
-            with httpx.Client(
-                timeout=timeout,
-                transport=self.transport,
-                follow_redirects=False,
-                trust_env=False,
-            ) as client:
-                response = client.post(
-                    META_COMPLETIONS_URL,
-                    json=payload,
-                    headers={
-                        "Authorization": "Bearer " + self.settings.meta_api_key.get_secret_value()
-                    },
-                )
-        except httpx.TimeoutException:
-            raise ProviderError("meta_timeout") from None
-        except httpx.HTTPError:
-            raise ProviderError("meta_connection_failed") from None
+        attempt = 0
+        while True:
+            try:
+                with httpx.Client(
+                    timeout=timeout,
+                    transport=self.transport,
+                    follow_redirects=False,
+                    trust_env=False,
+                ) as client:
+                    response = client.post(
+                        META_COMPLETIONS_URL,
+                        json=payload,
+                        headers={
+                            "Authorization": "Bearer "
+                            + self.settings.meta_api_key.get_secret_value()
+                        },
+                    )
+            except httpx.HTTPError as error:
+                if should_retry_error(error, attempt, paid=True):
+                    self.sleep(retry_delay(attempt))
+                    attempt += 1
+                    continue
+                if isinstance(error, httpx.TimeoutException):
+                    raise ProviderError("meta_timeout") from None
+                raise ProviderError("meta_connection_failed") from None
+            if should_retry_status(response.status_code, attempt):
+                self.sleep(retry_delay(attempt, response))
+                attempt += 1
+                continue
+            break
         if response.status_code != 200:
             codes = {
                 401: "meta_authentication_failed",

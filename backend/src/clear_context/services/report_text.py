@@ -36,6 +36,10 @@ MESSAGES = {
         "en": "Not researched within this investigation's search budget.",
         "tr": "Bu araştırmanın arama bütçesi içinde araştırılmadı.",
     },
+    "research_failed": {
+        "en": "Source research could not run for this claim ({code}); it was not evaluated.",
+        "tr": "Bu iddia için kaynak araştırması çalışamadı ({code}); değerlendirilmedi.",
+    },
     "claim_wide_unresolved": {
         "en": "Claim-wide coverage is not established; review each detail below.",
         "tr": "İddianın tamamı için kapsam doğrulanmadı; aşağıdaki detayları tek tek inceleyin.",

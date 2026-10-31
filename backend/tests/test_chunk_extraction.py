@@ -212,7 +212,7 @@ def test_repeated_source_quote_is_marked_ambiguous():
     assert result.claims[0].context_status == "ambiguous"
 
 
-def test_service_error_stops_without_retry_and_marks_remaining_ranges():
+def test_rate_limit_is_retried_twice_then_marks_remaining_ranges():
     calls = []
 
     def handler(request):
@@ -220,7 +220,8 @@ def test_service_error_stops_without_retry_and_marks_remaining_ranges():
         return httpx.Response(429, text="private body")
 
     result = provider(handler).extract_claims("A fact. " * 150)
-    assert len(calls) == 1
+    # One call and two bounded retries, then extraction stops.
+    assert len(calls) == 3
     assert result.coverage.status == "partial"
     assert all(chunk.reason == "meta_rate_limited" for chunk in result.coverage.chunks)
     assert "private body" not in result.model_dump_json()
