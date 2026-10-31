@@ -1547,6 +1547,12 @@ experiments:
       default; treat it as unrelated to them only when it clearly concerns something else.
       Statements spoken or shown inside a video are claims by the speaker or the video; plan
       them as usual.
+      A report that something happened or did not happen is a factual statement even when the
+      speaker describes their own group or experience: "we received no test kits", "no such aid
+      reached us", "about thirty Turks live here", "the meeting took place". Plan it; news,
+      records or other witnesses can confirm or contradict it. Keep not_checkable for feelings,
+      opinions, tastes and private experiences nobody else could observe, such as how long a
+      task took the author or how they felt.
 
   evidence_component_experiment_v6:
     # Extends v5 with evidence found by reverse image search for the user's image or video.
