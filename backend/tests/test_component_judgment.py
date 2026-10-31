@@ -137,3 +137,25 @@ def test_anchored_profile_sends_the_claim_and_the_need_as_focus(profile):
     assert "Keep the claim's polarity" in system
     schema = request["response_format"]["json_schema"]["schema"]
     assert "claim_quote" in json.dumps(schema)
+
+
+def test_rejects_one_excerpt_cited_as_both_support_and_contradiction():
+    # Observed live: "17 km east" cited both ways for "about 18 km northeast". The report
+    # keeps one relation per excerpt, so this answer used to fail the whole investigation.
+    content = json.dumps(
+        {
+            "components": [
+                {
+                    "description": "The bridge opened in 2017.",
+                    "status": "conflicting",
+                    "explanation": "Mixed.",
+                    "evidence": [
+                        {"evidence_id": "E1", "relation": "supports", "quote": "The bridge"},
+                        {"evidence_id": "E1", "relation": "contradicts", "quote": "The bridge"},
+                    ],
+                }
+            ]
+        }
+    )
+    with pytest.raises(ValueError, match="both support and contradict"):
+        validate_components(content, packet())

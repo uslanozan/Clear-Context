@@ -63,6 +63,7 @@ def validate_components(
     citations = []
     for index, component in enumerate(response.components):
         relations = set()
+        span_relations = {}
         for ref in component.evidence:
             if ref.evidence_id not in aliases:
                 raise ValueError("Unknown evidence alias.")
@@ -70,6 +71,11 @@ def validate_components(
             if item.need_id != packet.needs[0].id or item.quote.count(ref.quote) != 1:
                 raise ValueError("Citation must uniquely match evidence for this need.")
             start = item.start + item.quote.index(ref.quote)
+            # Reports keep one relation per cited span; the same words cannot both support
+            # and contradict one component.
+            span = (item.page_id, start, start + len(ref.quote))
+            if span_relations.setdefault(span, ref.relation) != ref.relation:
+                raise ValueError("The same excerpt cannot both support and contradict a component.")
             citations.append(
                 {
                     "component_index": index,

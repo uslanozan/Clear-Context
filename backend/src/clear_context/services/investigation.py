@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from uuid import UUID
 
@@ -9,6 +10,8 @@ from clear_context.graph.state import InvestigationContext
 from clear_context.providers.base import InvestigationProvider
 from clear_context.providers.errors import ProviderError
 from clear_context.repositories.investigation import InvestigationRepository
+
+logger = logging.getLogger(__name__)
 
 
 class InvestigationService:
@@ -81,7 +84,14 @@ class InvestigationService:
                 raise ValueError("Graph finished without a validated report.")
             self.repository.complete(report)
         except Exception as error:
-            # Do not persist raw provider errors, which may contain secrets or input.
+            # The local server log gets the cause; the database keeps only a code, since raw
+            # provider errors may contain secrets or input.
+            logger.error(
+                "Investigation %s failed: %s: %s",
+                investigation_id,
+                type(error).__name__,
+                str(error)[:500],
+            )
             current = self.repository.get(investigation_id)
             if current and current.status in {"queued", "running"}:
                 self.repository.transition(
