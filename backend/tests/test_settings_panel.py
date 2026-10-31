@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 
 from clear_context.main import create_app
 from clear_context.services.runtime import Runtime
@@ -16,13 +17,13 @@ def test_keys_are_reported_without_their_values(settings):
         assert PANEL_KEY not in response.text
     assert view.json()["keys"]["meta_api_key"] == {
         "configured": True,
-        "ending": "pose",
+        "preview": "test-sec...pose",
         "source": "env",
     }
     assert view.json()["keys"]["serp_api_key"]["configured"] is False
     assert saved.json()["keys"]["tavily_api_key"] == {
         "configured": True,
-        "ending": "abcd",
+        "preview": "tvly-pan...abcd",
         "source": "panel",
     }
     assert saved.json()["changed"] == ["tavily_api_key"]
@@ -31,7 +32,7 @@ def test_keys_are_reported_without_their_values(settings):
 def test_short_keys_show_no_ending_and_bad_keys_are_rejected(settings):
     with TestClient(create_app(settings)) as client:
         short = client.put("/api/settings", json={"serp_api_key": "abcdefgh12"}).json()
-        assert short["keys"]["serp_api_key"]["ending"] is None
+        assert short["keys"]["serp_api_key"]["preview"] is None
         for bad in ("short", "has space inside", "line\nbreak-0123"):
             assert client.put("/api/settings", json={"serp_api_key": bad}).status_code == 422
         assert client.put("/api/settings", json={"unknown": 1}).status_code == 422
@@ -131,3 +132,48 @@ def test_replaced_runtime_closes_after_its_last_investigation():
     assert Client.closed == 0
     runtime.release()
     assert Client.closed == 1
+
+
+def test_env_seeds_the_database_once_and_later_edits_are_marked(settings):
+    from clear_context.repositories.settings import SettingsRepository
+
+    with TestClient(create_app(settings)) as client:
+        stored = SettingsRepository(client.app.state.repository.sessions).load()
+        assert stored["meta_api_key"] == "test-secret-never-expose"
+        assert (stored["link_reading"], stored["model_judge"]) == (True, "spark_1_3")
+        # Empty keys are not stored, so a key added to .env later can still be seeded.
+        assert "tavily_api_key" not in stored
+        assert client.get("/api/settings").json()["changed"] == []
+
+    edited = settings.model_copy(
+        update={"link_reading": False, "tavily_api_key": SecretStr("tvly-from-env-0123456789")}
+    )
+    with TestClient(create_app(edited)) as client:
+        view = client.get("/api/settings").json()
+        # The saved value stays and is marked; the new .env key fills the empty field.
+        assert (view["link_reading"], view["changed"]) == (True, ["link_reading"])
+        assert client.app.state.service.runtime.settings.link_reading is True
+        assert view["keys"]["tavily_api_key"] == {
+            "configured": True,
+            "preview": "tvly-fro...6789",
+            "source": "env",
+        }
+        reset = client.put("/api/settings", json={"link_reading": None}).json()
+        assert (reset["link_reading"], reset["changed"]) == (False, [])
+
+
+def test_reset_all_takes_every_value_from_env(settings):
+    from clear_context.services.app_settings import PANEL_FIELDS
+
+    with TestClient(create_app(settings)) as client:
+        client.put(
+            "/api/settings",
+            json={"serp_api_key": "serp-panel-key-000000", "model_judge": "wonder"},
+        )
+        client.put("/api/settings", json={"search_min_score": 0.5, "link_reading": False})
+        assert len(client.get("/api/settings").json()["changed"]) == 4
+        reset = client.put("/api/settings", json=dict.fromkeys(PANEL_FIELDS)).json()
+        assert reset["changed"] == []
+        assert reset["keys"]["serp_api_key"]["configured"] is False
+        assert (reset["models"]["judge"], reset["search_min_score"]) == ("spark_1_3", 0.3)
+

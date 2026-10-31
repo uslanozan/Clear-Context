@@ -10,8 +10,8 @@ ModelAlias = Annotated[str, StringConstraints(pattern=r"^[a-z0-9_]{1,60}$")]
 
 
 class SettingsUpdate(BaseModel):
-    """Changed panel values. A field set to null returns to the .env value; omitted fields
-    stay as they are. API keys are write-only."""
+    """Changed panel values. A field set to null takes the current .env value again; omitted
+    fields stay as they are. API keys are write-only."""
 
     model_config = ConfigDict(extra="forbid")
     meta_api_key: ApiKey | None = None
@@ -35,8 +35,9 @@ class SettingsUpdate(BaseModel):
 
 class KeyStatus(BaseModel):
     configured: bool
-    # Last four characters of a long key, so the user can tell keys apart; never the key.
-    ending: str | None = None
+    # Start and end of a long key ("LLM_2896...XkQs"), so keys can be told apart; never the key.
+    preview: str | None = None
+    # "env" when the saved key equals the current .env key, "panel" when it differs.
     source: Literal["panel", "env"] | None = None
 
 
@@ -55,7 +56,7 @@ class SettingsView(BaseModel):
     fact_check_search: bool
     link_reading: bool
     search_min_score: float
-    # Fields set in the panel; the others come from .env.
+    # Fields whose saved value differs from the current .env value.
     changed: list[str]
     # Saved panel values that could not be applied when the server started.
     error: str | None = None

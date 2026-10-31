@@ -151,12 +151,12 @@ New project work starts on October 26, 2026. External dependencies and reused co
 
 The **Settings** page in the sidebar changes the most common settings without editing `.env` or restarting:
 
-- **API keys** for Meta, Tavily, SerpApi and Google Fact Check Tools. Keys are write-only: the page shows whether a key is set, where it comes from and its last four characters (for keys of 16 characters or more), never the key itself. To change a key, enter it again.
+- **API keys** for Meta, Tavily, SerpApi and Google Fact Check Tools. Keys are write-only: the page shows whether a key is set, where it comes from and a preview such as `LLM_2896...XkQs` (first eight and last four characters for keys of 24 characters or more, only the last four for 16 to 23, nothing for shorter keys), never the whole key. To change a key, enter it again.
 - **Models** for claim extraction, image reading, research planning and evidence judging. Only catalog models allowed for text investigations are offered; contributor models stay hidden while `MODEL_ALLOW_TRAINING_USE=false`.
 - **Allow paid calls**, behind a confirmation. It switches between preview mode and live mode (Meta calls plus source research) and needs a Meta key. Saving a key never turns paid calls on by itself, and investigations still start only from an explicit button press.
 - **Advanced settings** (collapsed): default research depth, reverse image search, fact check search, link reading and the search score threshold.
 
-Values saved there are stored in the SQLite database (the Docker data volume), override `.env`, and apply from the next investigation; investigations already running finish with the settings they started with. Keys are stored as plain text, like `.env`, so keep the database private. Choosing **Use .env key** or the advanced-settings reset returns a value to `.env`. Saved values that the server cannot use at start-up are reported on the page while the server runs with `.env`.
+`.env` seeds these settings: when the server starts, every one of them that has no saved value yet is copied from `.env` into the SQLite database (the Docker data volume). From then on the database is the source, and changes apply from the next investigation; investigations already running finish with the settings they started with. Empty keys are not stored, so a key added to `.env` later is picked up at the next start. Editing any other value in `.env` later does not replace the saved one: the page marks it **Saved here · differs from .env**, and **Use .env value** copies the current `.env` value on save. **Reset all to .env**, behind a confirmation, does this for every field at once. Keys are stored as plain text, like `.env`, so keep the database private. Saved values that the server cannot use at start-up are reported on the page while the server runs with `.env`.
 
 ## Submission target
 

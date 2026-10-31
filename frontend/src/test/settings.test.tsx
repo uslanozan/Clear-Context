@@ -8,10 +8,10 @@ import { theme } from '../theme';
 
 const settings: AppSettings = {
   keys: {
-    meta_api_key: { configured: true, ending: 'a1b2', source: 'env' },
-    tavily_api_key: { configured: true, ending: 'c3d4', source: 'panel' },
-    serp_api_key: { configured: false, ending: null, source: null },
-    google_fact_check_api_key: { configured: false, ending: null, source: null },
+    meta_api_key: { configured: true, preview: 'LLM_2896...a1b2', source: 'env' },
+    tavily_api_key: { configured: true, preview: 'tvly-dev...c3d4', source: 'panel' },
+    serp_api_key: { configured: false, preview: null, source: null },
+    google_fact_check_api_key: { configured: false, preview: null, source: null },
   },
   paid_calls: false,
   models: {
@@ -68,14 +68,14 @@ function renderPage() {
 
 it('shows key status without values and saves only changed fields', async () => {
   renderPage();
-  expect(await screen.findByText('From .env · ends in a1b2')).toBeInTheDocument();
-  expect(screen.getByText('Saved here · ends in c3d4')).toBeInTheDocument();
+  expect(await screen.findByText('LLM_2896...a1b2')).toBeInTheDocument();
+  expect(screen.getByText('tvly-dev...c3d4')).toBeInTheDocument();
   const save = screen.getByRole('button', { name: 'Save changes' });
   expect(save).toBeDisabled();
   fireEvent.change(screen.getByLabelText('SerpApi key'), {
     target: { value: '  serp-new-key-123  ' },
   });
-  fireEvent.click(screen.getByRole('button', { name: 'Use .env key' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Use .env value' }));
   fireEvent.click(save);
   await waitFor(() => expect(puts).toHaveLength(1));
   expect(puts[0]).toEqual({ serp_api_key: 'serp-new-key-123', tavily_api_key: null });
@@ -98,4 +98,22 @@ it('asks before allowing paid calls', async () => {
   expect(puts).toHaveLength(0);
   fireEvent.click(await screen.findByRole('button', { name: 'Allow paid calls' }));
   await waitFor(() => expect(puts).toEqual([{ paid_calls: true }]));
+});
+
+it('marks values that differ from .env and resets everything after confirmation', async () => {
+  settings.changed = ['tavily_api_key', 'model_judge'];
+  renderPage();
+  expect(await screen.findAllByText('Saved here · differs from .env')).toHaveLength(2);
+  fireEvent.click(screen.getByRole('button', { name: 'Reset all to .env' }));
+  expect(puts).toHaveLength(0);
+  fireEvent.click(await screen.findByRole('button', { name: 'Reset all' }));
+  await waitFor(() => expect(puts).toHaveLength(1));
+  expect(puts[0]).toMatchObject({
+    meta_api_key: null,
+    model_judge: null,
+    paid_calls: null,
+    search_min_score: null,
+  });
+  expect(Object.keys(puts[0])).toHaveLength(14);
+  settings.changed = ['tavily_api_key'];
 });

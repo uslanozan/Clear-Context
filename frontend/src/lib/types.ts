@@ -183,7 +183,7 @@ export type ModelTask = 'claim_extraction' | 'screenshot' | 'research' | 'judge'
 
 export interface KeyStatus {
   configured: boolean;
-  ending: string | null;
+  preview: string | null;
   source: 'panel' | 'env' | null;
 }
 

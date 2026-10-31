@@ -1805,8 +1805,27 @@ h3 {
 .settings-advanced[open] summary svg {
   transform: rotate(90deg);
 }
-.settings-reset {
-  align-self: flex-start;
+.settings-key-preview {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 12.5px;
+  background: none;
+  padding: 0;
+}
+.settings-env-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  margin-top: 4px;
+  color: #8a5a12;
+  font-size: 13px;
+}
+.settings-env-note .text-button {
+  font-size: 13px;
+  padding: 2px 0;
+}
+.settings-reset-all {
+  margin-right: auto;
 }
 .settings-actions {
   display: flex;

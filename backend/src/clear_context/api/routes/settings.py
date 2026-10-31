@@ -16,7 +16,10 @@ def get_settings(request: Request):
     """Current settings. API keys are reported as configured or not, never returned."""
     state = request.app.state
     return settings_view(
-        state.service.runtime.settings, state.settings_repository.load(), state.settings_error
+        state.service.runtime.settings,
+        state.settings_repository.load(),
+        state.env_values,
+        state.settings_error,
     )
 
 
@@ -24,7 +27,11 @@ def get_settings(request: Request):
 def update_settings(payload: SettingsUpdate, request: Request):
     """Save changed values; the next investigation uses them, without a restart."""
     state = request.app.state
-    changes = payload.changes()
+    # null takes the current .env value again; an empty .env key removes the saved key.
+    changes = {}
+    for key, value in payload.changes().items():
+        value = state.env_values[key] if value is None else value
+        changes[key] = None if value == "" else value
     with update_lock:
         stored = {
             key: value
@@ -40,4 +47,4 @@ def update_settings(payload: SettingsUpdate, request: Request):
         state.settings_repository.save(changes)
         state.service.replace_runtime(runtime)
         state.settings_error = None
-    return settings_view(settings, stored, None)
+    return settings_view(settings, stored, state.env_values, None)

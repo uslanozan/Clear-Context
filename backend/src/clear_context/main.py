@@ -11,7 +11,7 @@ from clear_context.core.settings import Settings, resolve_path
 from clear_context.db.session import create_database, create_session_factory
 from clear_context.repositories.investigation import InvestigationRepository
 from clear_context.repositories.settings import SettingsRepository
-from clear_context.services.app_settings import effective_settings
+from clear_context.services.app_settings import differs_from_env, effective_settings, env_values
 from clear_context.services.investigation import InvestigationService
 from clear_context.services.runtime import build_runtime
 
@@ -23,6 +23,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     research_workspace = resolve_path(settings.database_path).parent / "research.sqlite"
     # Fails early when .env cannot run; panel values are applied once the database opens.
     base_runtime = build_runtime(settings, research_workspace)
+    env = env_values(settings)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -45,7 +46,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.settings_repository = SettingsRepository(sessions)
             app.state.settings_error = None
             stored = app.state.settings_repository.load()
-            if stored:
+            # .env seeds panel fields that have no saved value yet; saved values are kept.
+            # Empty keys are not stored, so a key added to .env later is seeded then.
+            seed = {key: value for key, value in env.items() if key not in stored and value != ""}
+            if seed:
+                app.state.settings_repository.save(seed)
+                stored |= seed
+            if differs_from_env(stored, env):
                 try:
                     runtime = build_runtime(
                         effective_settings(settings, stored), research_workspace
@@ -78,6 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url="/openapi.json" if settings.api_docs_enabled else None,
     )
     app.state.base_settings = settings
+    app.state.env_values = env
     app.state.research_workspace = research_workspace
     if settings.cors_allowed_origins:
         app.add_middleware(
