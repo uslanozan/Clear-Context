@@ -335,3 +335,34 @@ def test_markdown_pages_are_reduced_to_their_wording(repository):
     assert sent[0]["format"] == "markdown"
     assert repository.page(page)["content"].endswith("Fotoğraflar Çin’de videoda görülüyor.")
     service.provider.close()
+
+
+def test_menus_are_dropped_but_short_lists_inside_an_article_stay():
+    from clear_context.providers.tavily import markdown_to_text
+
+    body = " ".join(["word"] * 20)
+    markdown = "\n".join(
+        [
+            "* Home",
+            "* News",
+            "* Sport",
+            "Author",
+            "Author",
+            body,
+            "Member cities:",
+            "* Safranbolu",
+            "* Edirne",
+            "* Bursa",
+            "Languages",
+            *[f"* Lang {i}" for i in range(8)],
+        ]
+    )
+    assert markdown_to_text(markdown).split("\n") == [
+        "Author",
+        body,
+        "Member cities:",
+        "* Safranbolu",
+        "* Edirne",
+        "* Bursa",
+        "Languages",
+    ]

@@ -27,10 +27,44 @@ LINK = re.compile(r"\[([^\]]*)\]" + TARGET)
 HEADING = re.compile(r"^#{1,6}\s+", re.MULTILINE)
 EMPHASIS = re.compile(r"(\*\*|__)(.+?)\1")
 BLANK_LINES = re.compile(r"\n{3,}")
+BULLET = re.compile(r"^\s*[*+-]\s+(.*)$")
+# Menus and language pickers are runs of short list items. Short lists inside an article
+# can be evidence (for example member cities), so after the first body paragraph only long
+# runs are removed.
+MENU_ITEM_WORDS = 3
+HEADER_MENU_RUN = 3
+BODY_MENU_RUN = 7
+BODY_PARAGRAPH_WORDS = 20
+
+
+def drop_menus(lines: list[str]) -> list[str]:
+    """Remove menu-like runs of short list items and repeated adjacent lines."""
+    kept, run = [], []
+    in_body = False
+
+    def flush():
+        if len(run) < (BODY_MENU_RUN if in_body else HEADER_MENU_RUN):
+            kept.extend(run)
+        run.clear()
+
+    for line in lines:
+        item = BULLET.match(line)
+        if item and len(item.group(1).split()) <= MENU_ITEM_WORDS:
+            run.append(line)
+            continue
+        flush()
+        if not item and len(line.split()) >= BODY_PARAGRAPH_WORDS:
+            in_body = True
+        # Pages often repeat a caption or author name on the next line.
+        if line.strip() and kept and line.strip() == kept[-1].strip():
+            continue
+        kept.append(line)
+    flush()
+    return kept
 
 
 def markdown_to_text(markdown: str) -> str:
-    """Drop images and link targets, heading marks and bold markers; keep the wording."""
+    """Drop images, link targets, heading and bold marks and menus; keep the wording."""
     text = IMAGE.sub("", markdown)
     # Links can nest images; repeat until no link syntax is left.
     previous = None
@@ -38,7 +72,7 @@ def markdown_to_text(markdown: str) -> str:
         previous, text = text, LINK.sub(r"\1", text)
     text = HEADING.sub("", text)
     text = EMPHASIS.sub(r"\2", text)
-    lines = [line.rstrip() for line in text.split("\n")]
+    lines = drop_menus([line.rstrip() for line in text.split("\n")])
     return BLANK_LINES.sub("\n\n", "\n".join(lines)).strip()
 
 
