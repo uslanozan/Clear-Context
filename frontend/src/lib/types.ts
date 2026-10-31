@@ -27,6 +27,7 @@ export interface ExtractedClaim {
   context_status?: 'standalone' | 'context_linked' | 'ambiguous' | null;
 }
 export type ResearchMode = 'fast' | 'balanced' | 'deep';
+export type SourceType = 'fact_check' | 'reference' | 'social' | 'web';
 export interface CaptionCheck {
   caption_detail: string;
   assessment: 'consistent' | 'inconsistent' | 'cannot_tell';
@@ -104,7 +105,13 @@ export interface Report {
   mode: 'mock' | 'meta';
   revision: number;
   claims: ExtractedClaim[];
-  sources: { id: string; url: string; title: string; content: string }[];
+  sources: {
+    id: string;
+    url: string;
+    title: string;
+    content: string;
+    source_type?: SourceType | null;
+  }[];
   evidence: { id: string; claim_id: string; source_id: string; excerpt: string }[];
   findings: {
     id: string;

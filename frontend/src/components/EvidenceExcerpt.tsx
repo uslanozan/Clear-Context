@@ -20,6 +20,18 @@ function trimContext(raw: string, side: 'before' | 'after'): string {
   return (side === 'before' ? raw.replace(/^\S*\s/, '') : raw.replace(/\s\S*$/, '')).trim();
 }
 
+const SOURCE_TYPES: Record<string, string> = {
+  fact_check: 'Fact check',
+  reference: 'Reference',
+  social: 'Social post or forum',
+};
+
+/** Label for the kind of site; other web pages get none. Not a reliability rating. */
+export function SourceTypeLabel({ type }: { type?: string | null }) {
+  const label = type ? SOURCE_TYPES[type] : undefined;
+  return label ? <span className={`source-type source-type-${type}`}>{label}</span> : null;
+}
+
 /** Readable source name: its title, or the domain when the title is missing or just a URL. */
 export function sourceDisplayName(source: { title?: string; url: string } | undefined): string {
   const title = source?.title?.trim();
@@ -72,6 +84,7 @@ export function EvidenceExcerpt({
           {sourceDisplayName(source)} <ArrowUpRight size={13} aria-hidden="true" />
         </a>
       )}
+      {url && showSource && <SourceTypeLabel type={source?.source_type} />}
       <blockquote dir="auto">
         {unique ? (
           <>

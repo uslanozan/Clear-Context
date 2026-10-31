@@ -900,6 +900,25 @@ h3 {
   margin-top: 4px !important;
   color: var(--muted);
 }
+.source-type {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.source-type-social {
+  background: #fbf3e4;
+  color: #7a4b0f;
+}
+.source-type-fact_check {
+  background: #e6f2ec;
+  color: #1f5d3f;
+}
 .prior-checks {
   margin-top: 14px;
   padding-top: 10px;

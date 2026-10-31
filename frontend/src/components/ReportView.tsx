@@ -16,7 +16,7 @@ import { Link } from 'react-router-dom';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ClaimSource } from './ClaimSource';
 import { MediaFindings } from './MediaFindings';
-import { EvidenceExcerpt, sourceDisplayName } from './EvidenceExcerpt';
+import { EvidenceExcerpt, SourceTypeLabel, sourceDisplayName } from './EvidenceExcerpt';
 import { RESEARCH_MODES } from '../lib/modes';
 import type { Assessment, Investigation, Report, ResearchStep } from '../lib/types';
 
@@ -434,6 +434,7 @@ export function ReportView({
                       ) : (
                         <span>{sourceDisplayName(source)}</span>
                       )}
+                      <SourceTypeLabel type={source.source_type} />
                     </li>
                   );
                 })}
