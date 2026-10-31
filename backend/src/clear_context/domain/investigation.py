@@ -234,6 +234,20 @@ class LinkFinding(Record):
     reason: str | None = None
 
 
+class ResearchSummary(Record):
+    """How the research needs of a report were handled; counts, not quality scores."""
+
+    planned: int = Field(default=0, ge=0)
+    assessed: int = Field(default=0, ge=0)
+    # Needs the planner deferred or the judgment call budget did not reach.
+    budget_limited: int = Field(default=0, ge=0)
+    needs_context: int = Field(default=0, ge=0)
+    not_checkable: int = Field(default=0, ge=0)
+    failed: int = Field(default=0, ge=0)
+    # Claims with at least one budget-limited need; a continuation researches these.
+    budget_limited_claim_ids: list[UUID] = Field(default_factory=list)
+
+
 class InvestigationReport(Record):
     investigation_id: UUID
     mode: Literal["mock", "meta"] = "mock"
@@ -249,6 +263,7 @@ class InvestigationReport(Record):
     analyzed_text: str | None = None
     media: list[MediaFinding] = Field(default_factory=list)
     links: list[LinkFinding] = Field(default_factory=list)
+    research_summary: ResearchSummary | None = None
 
     @model_validator(mode="after")
     def validate_evidence(self) -> Self:

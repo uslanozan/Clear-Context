@@ -4,7 +4,7 @@ import asyncio
 import time
 from dataclasses import dataclass
 from itertools import zip_longest
-from uuid import NAMESPACE_URL, uuid5
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 from clear_context.core.judges import load_judge
 from clear_context.core.passage_selectors import load_selector
@@ -17,6 +17,7 @@ from clear_context.domain.investigation import (
     FindingComponent,
     InvestigationReport,
     ModelUsage,
+    ResearchSummary,
     Source,
 )
 from clear_context.providers.meta_passages import MetaPassageProvider
@@ -99,6 +100,30 @@ RESEARCH_MODES = {
         image_match_reads=3,
     ),
 }
+
+
+def summarize(plan, judgments) -> ResearchSummary:
+    """Count how each research need ended; budget-limited claims can be continued later."""
+    outcome = {row["need_ids"][0]: row["status"] for row in judgments}
+    limited = [
+        need
+        for need in plan.needs
+        if need.status == "budget_deferred" or outcome.get(need.id) == "call_budget_exhausted"
+    ]
+    planned = [need for need in plan.needs if need.status == "planned"]
+    return ResearchSummary(
+        planned=len(planned),
+        assessed=sum(1 for need in planned if outcome.get(need.id) == "assessed"),
+        budget_limited=len(limited),
+        needs_context=sum(1 for need in plan.needs if need.status == "needs_context"),
+        not_checkable=sum(1 for need in plan.needs if need.status == "not_checkable"),
+        failed=sum(
+            1
+            for need in planned
+            if outcome.get(need.id) not in {None, "assessed", "call_budget_exhausted"}
+        ),
+        budget_limited_claim_ids=list(dict.fromkeys(UUID(need.claim_id) for need in limited)),
+    )
 
 
 def image_context(media) -> list[dict]:
@@ -806,4 +831,5 @@ class InvestigationResearch:
             evidence=list(evidence.values()),
             findings=findings,
             limitations=limitations,
+            research_summary=summarize(plan, judgments),
         )

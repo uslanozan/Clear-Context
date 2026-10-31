@@ -18,7 +18,12 @@ from clear_context.domain.investigation import (
     InvestigationStatus,
     ResearchMode,
 )
-from clear_context.schemas.investigation import InvestigationCreate, InvestigationView, StepView
+from clear_context.schemas.investigation import (
+    InvestigationCreate,
+    InvestigationFollowUp,
+    InvestigationView,
+    StepView,
+)
 from clear_context.services import media as media_service
 
 router = APIRouter()
@@ -73,6 +78,64 @@ async def create_investigation_with_media(
     ]
     row = request.app.state.repository.create(
         text, mode=request.app.state.mode, research_mode=research_mode, media=stored
+    )
+    background_tasks.add_task(request.app.state.service.run, UUID(row.id))
+    response.headers["Location"] = f"/api/investigations/{row.id}"
+    return row
+
+
+@router.post(
+    "/investigations/{investigation_id}/rerun", status_code=202, response_model=InvestigationView
+)
+def rerun_investigation(
+    investigation_id: UUID,
+    payload: InvestigationFollowUp,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    response: Response,
+):
+    """Start a new investigation with the same text and uploaded files in another mode."""
+    parent = require_investigation(request, investigation_id)
+    repository = request.app.state.repository
+    # Images taken from links are read again from the links.
+    uploads = [item for item in repository.media_for(investigation_id) if not item.source_url]
+    row = repository.create(
+        parent.text,
+        mode=request.app.state.mode,
+        research_mode=payload.research_mode,
+        media=uploads,
+        parent_id=parent.id,
+        relation="rerun",
+    )
+    background_tasks.add_task(request.app.state.service.run, UUID(row.id))
+    response.headers["Location"] = f"/api/investigations/{row.id}"
+    return row
+
+
+@router.post(
+    "/investigations/{investigation_id}/continue",
+    status_code=202,
+    response_model=InvestigationView,
+)
+def continue_investigation(
+    investigation_id: UUID,
+    payload: InvestigationFollowUp,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    response: Response,
+):
+    """Research again only the claims the report's budget did not reach."""
+    parent = require_investigation(request, investigation_id)
+    report = request.app.state.repository.get_report(investigation_id)
+    summary = report.research_summary if report else None
+    if not summary or not summary.budget_limited_claim_ids:
+        raise HTTPException(status_code=409, detail="No claims were left by the research budget.")
+    row = request.app.state.repository.create(
+        parent.text,
+        mode=request.app.state.mode,
+        research_mode=payload.research_mode,
+        parent_id=parent.id,
+        relation="continue",
     )
     background_tasks.add_task(request.app.state.service.run, UUID(row.id))
     response.headers["Location"] = f"/api/investigations/{row.id}"

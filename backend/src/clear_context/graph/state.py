@@ -25,6 +25,9 @@ class InvestigationState(TypedDict):
     link_findings: NotRequired[list[LinkFinding]]
     analyzed_text: NotRequired[str]
     claims: NotRequired[list[Claim]]
+    # A continuation: every claim in report order, and findings copied from the earlier report.
+    all_claims: NotRequired[list[Claim]]
+    kept: NotRequired[dict]
     report: NotRequired[InvestigationReport]
     # Several nodes report usage; keep all of it.
     model_usage: NotRequired[Annotated[list[ModelUsage], operator.add]]

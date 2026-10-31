@@ -13,6 +13,13 @@ class InvestigationCreate(BaseModel):
     research_mode: ResearchMode = "balanced"
 
 
+class InvestigationFollowUp(BaseModel):
+    """Run a report again, or continue the claims its budget did not reach."""
+
+    model_config = ConfigDict(extra="forbid")
+    research_mode: ResearchMode = "deep"
+
+
 class InvestigationView(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
@@ -25,6 +32,8 @@ class InvestigationView(BaseModel):
     updated_at: datetime
     error_code: str | None
     model_usage: list[ModelUsage]
+    parent_id: UUID | None = None
+    relation: Literal["rerun", "continue"] | None = None
 
 
 class StepView(BaseModel):

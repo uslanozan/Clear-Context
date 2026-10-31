@@ -22,3 +22,7 @@ class InvestigationRow(Base):
     model_usage: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
     extraction_coverage: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     analyzed_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    research_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # A rerun or continuation points to the report it started from.
+    parent_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    relation: Mapped[str | None] = mapped_column(String(20), nullable=True)

@@ -37,7 +37,13 @@ class InvestigationRepository:
         self.sessions = session_factory
 
     def create(
-        self, text: str, mode: str = "mock", research_mode: str = "balanced", media=()
+        self,
+        text: str,
+        mode: str = "mock",
+        research_mode: str = "balanced",
+        media=(),
+        parent_id: str | None = None,
+        relation: str | None = None,
     ) -> InvestigationRow:
         now = utc_now()
         row = InvestigationRow(
@@ -49,6 +55,8 @@ class InvestigationRepository:
             revision=1,
             created_at=now,
             updated_at=now,
+            parent_id=parent_id,
+            relation=relation,
         )
         with self.sessions.begin() as session:
             session.add(row)
@@ -283,6 +291,9 @@ class InvestigationRepository:
                         FindingEvidenceRow(finding_id=str(finding.id), evidence_id=str(evidence_id))
                     )
             row.limitations = report.limitations
+            row.research_summary = (
+                report.research_summary.model_dump(mode="json") if report.research_summary else None
+            )
             row.model_usage = [item.model_dump(mode="json") for item in report.model_usage]
             row.extraction_coverage = (
                 report.extraction_coverage.model_dump(mode="json")
@@ -384,6 +395,7 @@ class InvestigationRepository:
                 limitations=row.limitations,
                 model_usage=row.model_usage,
                 extraction_coverage=row.extraction_coverage,
+                research_summary=row.research_summary,
                 analyzed_text=row.analyzed_text,
                 media=media,
                 links=links,

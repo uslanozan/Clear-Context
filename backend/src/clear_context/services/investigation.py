@@ -10,6 +10,7 @@ from clear_context.graph.state import InvestigationContext
 from clear_context.providers.base import InvestigationProvider
 from clear_context.providers.errors import ProviderError
 from clear_context.repositories.investigation import InvestigationRepository
+from clear_context.services.continuation import continuation_state
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,9 @@ class InvestigationService:
                     for item in self.repository.media_for(investigation_id)
                 ]
                 graph_input = {"investigation_id": investigation_id, "text": row.text}
+                if row.relation == "continue":
+                    parent = self.repository.get_report(UUID(row.parent_id))
+                    graph_input.update(continuation_state(parent, row.text))
                 if media:
                     graph_input["media"] = media
                 for update in self.graph.stream(
