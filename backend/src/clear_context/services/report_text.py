@@ -26,6 +26,12 @@ MESSAGES = {
         "en": "Not researched: the claim lacks context this detail depends on.",
         "tr": "Araştırılmadı: iddiada bu detayın dayandığı bağlam eksik.",
     },
+    "not_checkable": {
+        "en": "Not researched: an opinion, value judgment or experience only the author could "
+        "know, not a fact that sources could settle.",
+        "tr": "Araştırılmadı: görüş, değer yargısı ya da yalnızca yazarın bilebileceği bir "
+        "deneyim; kaynaklarla doğrulanabilecek bir olgu değil.",
+    },
     "budget_deferred": {
         "en": "Not researched within this investigation's search budget.",
         "tr": "Bu araştırmanın arama bütçesi içinde araştırılmadı.",

@@ -513,7 +513,7 @@ def test_pages_matching_the_image_are_read_beside_text_search(monkeypatch, tmp_p
     assert not any("could not be read" in item for item in report.limitations)
 
 
-def test_text_only_research_keeps_the_selected_planner(monkeypatch, tmp_path):
+def test_text_only_research_uses_the_selected_planner_without_image_context(monkeypatch, tmp_path):
     requests = []
     run_research(
         monkeypatch,
@@ -523,8 +523,36 @@ def test_text_only_research_keeps_the_selected_planner(monkeypatch, tmp_path):
         budget=ResearchBudget(followup_queries=0),
         planner_requests=requests,
     )
-    assert "image_context" not in requests[0]["messages"][0]["content"]
+    system = requests[0]["messages"][0]["content"]
+    # v7 = v5 rules, then v6 image rules, then not_checkable and main-claim priority.
+    assert system.index("Plan web research") < system.index("image_context")
+    assert system.index("image_context") < system.index("not_checkable")
     assert "image_context" not in json.loads(requests[0]["messages"][1]["content"])
+
+
+def test_not_checkable_need_is_reported_without_research(monkeypatch, tmp_path):
+    opinion = {
+        "id": "n2",
+        "description": "Rakiplerin bu duyguyu bilmediği",
+        "status": "not_checkable",
+        "reason": "Bir grubun ne hissettiğine dair değer yargısı.",
+    }
+    calls = []
+    _, report = run_research(
+        monkeypatch,
+        tmp_path,
+        [PLANNED_NEED, opinion],
+        TWO_COMPONENTS,
+        budget=ResearchBudget(followup_queries=0),
+        calls=calls,
+        claim_text="Köprü 2017'de açıldı; rakipler bu duyguyu bilmez.",
+    )
+    component = report.findings[0].components[-1]
+    assert component.status == "not_assessed"
+    assert component.explanation.startswith("Araştırılmadı: görüş, değer yargısı")
+    assert not component.evidence_ids
+    # Only the planned need was judged.
+    assert calls.count("component_assessment") == 1
 
 
 def test_low_scored_search_results_are_not_read():

@@ -211,8 +211,7 @@ class InvestigationResearch:
             source_published_at=subject.published_on.isoformat() if subject.published_on else None,
             maximum_queries=budget.max_queries,
             model=self.models["research"].api_model_id,
-            # v6 adds rules for image context; text-only research keeps the selected planner.
-            method="v6" if images else None,
+            # The selected planner (v7) handles text and image context alike.
             image_context=images or None,
         )
         body = await meta.complete(request, self.settings.meta_timeout_seconds)

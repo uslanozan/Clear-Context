@@ -1,5 +1,5 @@
 schema_version: 1
-selected: v5
+selected: v7
 planners:
   v1:
     implementation: structured_llm
@@ -26,9 +26,15 @@ planners:
     prompt: query_planning_v5
     status: candidate
     response_schema: mapped_component
-  # Research selects v6 instead of the selected planner when images are attached.
+  # Used for image investigations before v7.
   v6:
     implementation: structured_llm
     prompt: query_planning_v6
+    status: historical
+    response_schema: mapped_component
+  # v6 plus not_checkable needs and main-claim priority; used for all research.
+  v7:
+    implementation: structured_llm
+    prompt: query_planning_v7
     status: candidate
     response_schema: mapped_component

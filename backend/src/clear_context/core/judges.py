@@ -7,7 +7,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from clear_context.core.judgment_labels import load_judgment_labels
-from clear_context.core.prompts import PromptCatalog
+from clear_context.core.prompts import PromptCatalog, experiment_system
 from clear_context.core.settings import PROJECT_ROOT
 
 
@@ -62,8 +62,7 @@ def load_judge(
     limits = catalog.limits
     if profile.max_completion_tokens is not None:
         limits = limits.model_copy(update={"max_completion_tokens": profile.max_completion_tokens})
-    entry = prompts.experiments[profile.prompt]
-    system = entry.system
-    if entry.extends:
-        system = prompts.experiments[entry.extends].system.rstrip("\n") + "\n" + system
+    system = experiment_system(
+        {name: entry.model_dump() for name, entry in prompts.experiments.items()}, profile.prompt
+    )
     return (selected, limits, system, profile.response_contract)

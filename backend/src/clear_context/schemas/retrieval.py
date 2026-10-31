@@ -123,7 +123,7 @@ class ResearchNeed(BaseModel):
     id: str = Field(min_length=1)
     claim_id: str
     description: str
-    status: Literal["planned", "needs_context", "budget_deferred"]
+    status: Literal["planned", "needs_context", "budget_deferred", "not_checkable"]
 
 
 class ResearchQuery(BaseModel):

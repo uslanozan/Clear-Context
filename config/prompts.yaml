@@ -196,6 +196,23 @@ experiments:
           language: en
           need_ids:
           - s2
+  query_planning_v7:
+    # Extends query_planning_v6 (and through it v5).
+    extends: query_planning_v6
+    system: |-
+      A fourth status, not_checkable, marks a need that no public source could settle: an
+      opinion, a value judgment, taste, an insult, a claim about what a group of people feels,
+      knows or deserves, or an experience only the author could know (how long something took
+      them, how they felt). Give a short reason. Do not use it for factual statements that are
+      only hard to find, disputed, unusual or wrong; a concrete event a person reports, such as
+      a published app or a meeting, stays planned. When a claim mixes both, plan the factual
+      need and mark only the opinion part not_checkable. not_checkable does not replace
+      needs_context: a claim whose subject is missing, such as "this restaurant" with no name,
+      still needs_context.
+      When maximum_queries cannot cover every need, spend it first on the text's main
+      assertions: the headline or opening statement and the claims the rest depends on. Defer
+      peripheral details with budget_deferred, never silently.
+
   query_planning_v6:
     # Extends query_planning_v5; used only when the user attached images.
     extends: query_planning_v5

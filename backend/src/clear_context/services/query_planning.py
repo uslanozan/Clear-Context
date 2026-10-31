@@ -10,6 +10,8 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from clear_context.core.prompts import experiment_system
+
 PROMPT_VERSION = "query_planning_v1"
 
 
@@ -57,7 +59,8 @@ class InformationNeed(StrictRecord):
     id: str = Field(min_length=1)
     claim_id: str = Field(min_length=1)
     description: str = Field(min_length=1)
-    status: Literal["planned", "needs_context", "budget_deferred"]
+    # not_checkable: an opinion, value judgment or experience only the author could know.
+    status: Literal["planned", "needs_context", "budget_deferred", "not_checkable"]
     reason: str | None
 
 
@@ -104,14 +107,15 @@ def build_request(
     if not 1 <= maximum_queries <= 40:
         raise ValueError("Query budget must be between 1 and 40.")
     catalog = yaml.safe_load(catalog_path.read_text(encoding="utf-8-sig"))
-    entry = catalog["experiments"][prompt_version]
-    system = entry["system"]
+    experiments = catalog["experiments"]
+    entry = experiments[prompt_version]
+    # An extending entry appends its rules to the base prompts and keeps their examples.
+    system = experiment_system(experiments, prompt_version)
     examples = entry.get("few_shot_examples")
-    if entry.get("extends"):
-        # An extending entry appends its rules to the base prompt and keeps its examples.
-        base = catalog["experiments"][entry["extends"]]
-        system = base["system"].rstrip("\n") + "\n" + system
-        examples = examples or base.get("few_shot_examples")
+    base = entry.get("extends")
+    while not examples and base:
+        examples = experiments[base].get("few_shot_examples")
+        base = experiments[base].get("extends")
     if examples:
         system += "\nSynthetic examples:\n" + json.dumps(examples, ensure_ascii=False)
     context = {

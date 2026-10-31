@@ -43,6 +43,19 @@ class ExperimentalPrompt(BaseModel):
     extends: str | None = None
 
 
+def experiment_system(experiments: dict, name: str) -> str:
+    """An experiment's system prompt with the prompts it extends prepended, base first."""
+    parts, seen = [], set()
+    while name:
+        if name in seen or name not in experiments:
+            raise ValueError("Experiment extends an unknown experiment or forms a cycle.")
+        seen.add(name)
+        entry = experiments[name]
+        parts.append(entry["system"].rstrip("\n"))
+        name = entry.get("extends")
+    return "\n".join(reversed(parts))
+
+
 class PromptCatalog(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -52,10 +65,10 @@ class PromptCatalog(BaseModel):
 
     @model_validator(mode="after")
     def validate_extends(self):
-        for entry in self.experiments.values():
-            base = self.experiments.get(entry.extends) if entry.extends else None
-            if entry.extends and (base is None or base.extends):
-                raise ValueError("An experiment can only extend a base experiment.")
+        for name in self.experiments:
+            experiment_system(
+                {key: entry.model_dump() for key, entry in self.experiments.items()}, name
+            )
         return self
 
 
