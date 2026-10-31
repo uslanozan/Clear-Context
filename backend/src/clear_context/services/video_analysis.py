@@ -87,9 +87,13 @@ def merge_origins(searched: list[tuple[float, MediaOrigin]]) -> MediaOrigin:
     )
 
 
-def choose_frames(path: Path, moments: list[float]) -> list[tuple[float, str, bytes]]:
+def choose_frames(
+    path: Path, moments: list[float], duration: float
+) -> list[tuple[float, str, bytes]]:
+    margin = video.edge_seconds(duration)
+    inside = [at for at in moments if margin <= at <= duration - margin]
     picked = []
-    for at, data in video.frames_at(path, moments[:MODEL_FRAMES]):
+    for at, data in video.frames_at(path, inside[:MODEL_FRAMES]):
         if all(abs(at - other) >= video.MIN_FRAME_GAP_SECONDS for other, _, _ in picked):
             picked.append((at, "model", data))
     avoid = [at for at, _, _ in picked]
@@ -155,7 +159,7 @@ def analyze_video(
         return VideoResult(analysis, not_checked(reason), usage=usage)
     frames, searched = [], []
     try:
-        chosen = choose_frames(path, moments)
+        chosen = choose_frames(path, moments, info.duration_seconds)
     except video.VideoUnreadable:
         chosen = []
     for at, chosen_by, jpeg in chosen:

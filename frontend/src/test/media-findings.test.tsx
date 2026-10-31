@@ -219,3 +219,27 @@ it('shows video speech, on-screen text and searched frames, and seeks the video'
   fireEvent.click(screen.getByRole('button', { name: 'frame at 0:42' }));
   expect(video.currentTime).toBe(42.1);
 });
+
+it('marks a date that was not used as a publication date', () => {
+  renderMedia([
+    {
+      ...base,
+      origin: {
+        ...base.origin,
+        matches: [
+          {
+            page_url: 'https://www.facebook.com/page',
+            page_title: 'Sociedad',
+            image_url: null,
+            match: 'full',
+            source: 'Facebook',
+            date_text: 'Oct 15, 2013',
+            published_on: null,
+          },
+        ],
+      },
+    },
+  ]);
+  expect(screen.getByText('Facebook · Oct 15, 2013 (page date)')).toBeInTheDocument();
+  expect(screen.queryByText(/Earliest dated page/)).not.toBeInTheDocument();
+});

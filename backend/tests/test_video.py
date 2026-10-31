@@ -358,3 +358,28 @@ def test_report_keeps_frames_and_serves_them(clip, settings):
         assert frame.headers["content-type"] == "image/jpeg"
         assert client.get(f"/api/media/{media['id']}/frames/2").status_code == 404
         assert media["analysis"]["speech"][0]["text"] == "It flooded."
+
+
+def test_frames_skip_the_opening_and_closing_seconds(tmp_path, monkeypatch):
+    long_clip = make_video(tmp_path / "long.mp4", seconds=20, audio=False)
+    monkeypatch.setattr(video, "MIN_FRAME_GAP_SECONDS", 1.0)
+    # A logo at 0:01 and a moment at 0:19 are inside the 3 s margins; 0:10 is kept.
+    chosen = pipeline.choose_frames(long_clip, [1.0, 19.0, 10.0], 20.0)
+    model = [round(at) for at, by, _ in chosen if by == "model"]
+    assert model == [10]
+    assert all(3 <= at <= 17 for at, _, _ in chosen)
+    assert video.edge_seconds(6.0) == pytest.approx(0.9)
+
+
+def test_social_page_dates_are_shown_but_not_used_as_publication_dates():
+    from clear_context.providers.reverse_image import parse_lens_matches
+
+    items = [
+        {"link": "https://www.google.com/goto?url=x", "source": "Facebook", "date": "Oct 15, 2013"},
+        {"link": "https://m.facebook.com/page", "date": "Aug 22, 2014"},
+        {"link": "https://x.com/u/status/1", "date": "Mar 1, 2020"},
+        {"link": "https://news.example/a", "source": "News", "date": "Sep 15, 2018"},
+    ]
+    matches = parse_lens_matches(items, "full")
+    assert [m.published_on is None for m in matches] == [True, True, True, False]
+    assert matches[0].date_text == "Oct 15, 2013"

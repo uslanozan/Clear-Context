@@ -148,7 +148,12 @@ function MatchList({ matches, onSeek }: { matches: Match[]; onSeek?: (at: number
         const url = safeUrl(match.page_url);
         if (!url) return null;
         const engine = match.found_by === 'bing' ? 'via Bing' : null;
-        const meta = [match.source, match.date_text, engine].filter(Boolean).join(' · ');
+        // A date without a parsed publication date is a social page's own date.
+        const shown =
+          match.date_text && !match.published_on
+            ? `${match.date_text} (page date)`
+            : match.date_text;
+        const meta = [match.source, shown, engine].filter(Boolean).join(' · ');
         const frameAt = match.frame_at;
         return (
           <li key={url}>

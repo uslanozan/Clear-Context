@@ -119,6 +119,18 @@ def parse_bing_pages(items) -> list[ImageMatch]:
     return matches
 
 
+# Lens shows the page's date for these sites, which for a profile or group page can be when
+# the page was created: a 2026 video matched Facebook pages dated 2013. The date is still
+# shown, but it is not used as a publication date.
+SOCIAL_SITES = {"facebook", "instagram", "x", "twitter", "tiktok", "pinterest", "threads"}
+
+
+def social_site(source: str | None, url: str) -> bool:
+    # m.facebook.com and facebook.com both name the site facebook.
+    site = ((urlsplit(url).hostname or "").lower().split(".")[-2:] or [""])[0]
+    return (source or "").strip().lower() in SOCIAL_SITES or site in SOCIAL_SITES
+
+
 def parse_lens_matches(items, match: str) -> list[ImageMatch]:
     matches, seen = [], set()
     for item in items or []:
@@ -130,15 +142,16 @@ def parse_lens_matches(items, match: str) -> list[ImageMatch]:
         seen.add(url)
         image = _text(item, "image") or _text(item, "thumbnail")
         date_text = _text(item, "date")
+        source = _text(item, "source")
         matches.append(
             ImageMatch(
                 page_url=url,
                 page_title=_text(item, "title"),
                 image_url=image if image and image.startswith("https://") else None,
                 match=match,
-                source=_text(item, "source"),
+                source=source,
                 date_text=date_text,
-                published_on=parse_display_date(date_text),
+                published_on=None if social_site(source, url) else parse_display_date(date_text),
                 found_by="google_lens",
             )
         )

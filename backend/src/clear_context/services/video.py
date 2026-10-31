@@ -14,6 +14,16 @@ from PIL import ImageChops, ImageStat
 AUDIO_CHUNK_SECONDS = 570
 # Frames this close to another chosen frame show the same scene.
 MIN_FRAME_GAP_SECONDS = 4.0
+# Opening and closing seconds often show a channel logo or title card, which matches many
+# unrelated pages: a news logo at 0:02 matched pages from 2011.
+EDGE_SECONDS = 3.0
+
+
+def edge_seconds(duration: float) -> float:
+    """The margin at each end of a video where frames are not chosen."""
+    return min(EDGE_SECONDS, duration * 0.15)
+
+
 MOMENT = re.compile(r"^\s*(\d{1,2}):(\d{2})")
 
 
@@ -127,7 +137,8 @@ def scene_frames(path: Path, count: int, avoid: list[float] = ()) -> list[tuple[
                 if frame.pts is None:
                     continue
                 at = float(frame.pts * stream.time_base)
-                if at < next_time or (duration and at > duration - 1):
+                margin = edge_seconds(duration) if duration else 1.0
+                if at < max(next_time, margin) or (duration and at > duration - margin):
                     continue
                 next_time = at + 0.5
                 image = frame.to_image()
