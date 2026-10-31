@@ -46,6 +46,14 @@ from clear_context.services.retrieval import RetrievalSession, load_retrieval_po
 
 
 @dataclass(frozen=True)
+class Subject:
+    """The pages being checked: their source IDs and reported publication date."""
+
+    sources: frozenset[str] = frozenset()
+    published_on: object = None
+
+
+@dataclass(frozen=True)
 class ResearchBudget:
     """Per-investigation call limits; research modes vary these, not the methods."""
 
@@ -137,11 +145,29 @@ class InvestigationResearch:
         self.settings, self.models, self.workspace = settings, models, workspace
         self.budget = budget or ResearchBudget()
 
-    def run(self, investigation_id, claims, progress=None, mode=None, media=None):
+    def run(
+        self,
+        investigation_id,
+        claims,
+        progress=None,
+        mode=None,
+        media=None,
+        subject_urls=(),
+        published_on=None,
+    ):
+        """Research claims. subject_urls are the pages being checked, never read as evidence;
+        published_on is when the checked page was published, if a search index reported it."""
         budget = RESEARCH_MODES[mode] if mode else self.budget
-        return asyncio.run(self._run(investigation_id, claims, progress, budget, media or []))
+        subject = Subject(
+            sources=frozenset(identity("s_", canonical_source_url(url)) for url in subject_urls),
+            published_on=published_on,
+        )
+        return asyncio.run(
+            self._run(investigation_id, claims, progress, budget, media or [], subject)
+        )
 
-    async def _run(self, investigation_id, claims, progress, budget, media):
+    async def _run(self, investigation_id, claims, progress, budget, media, subject=None):
+        subject = subject or Subject()
         # Decide system text language once from all claims; one short claim misleads detection.
         text = "\n".join(dict.fromkeys(c.text for c in claims))
         language = await detect_language(
@@ -151,12 +177,14 @@ class InvestigationResearch:
             PROJECT_ROOT / "config/prompts.yaml",
         )
         with report_language(language.code):
-            report = await self._research(investigation_id, claims, progress, budget, media)
+            report = await self._research(
+                investigation_id, claims, progress, budget, media, subject
+            )
         if language.usage:
             report.model_usage.insert(0, language.usage)
         return report
 
-    async def _research(self, investigation_id, claims, progress, budget, media):
+    async def _research(self, investigation_id, claims, progress, budget, media, subject):
         meta = MetaStructuredProvider(self.settings)
         planning_claims = [
             PlanningClaim(
@@ -180,6 +208,7 @@ class InvestigationResearch:
             planners_path=PROJECT_ROOT / "config/query_planners.yaml",
             prompts_path=PROJECT_ROOT / "config/prompts.yaml",
             source_language="auto",
+            source_published_at=subject.published_on.isoformat() if subject.published_on else None,
             maximum_queries=budget.max_queries,
             model=self.models["research"].api_model_id,
             # v6 adds rules for image context; text-only research keeps the selected planner.
@@ -247,7 +276,9 @@ class InvestigationResearch:
                 }
             )
             session = RetrievalSession(research, tavily, policy)
-            page_needs, hits, read_sources = {}, {}, {}
+            page_needs, hits = {}, {}
+            # The checked page is marked unreadable so it never becomes its own evidence.
+            read_sources = dict.fromkeys(subject.sources)
             match_reads = self._read_image_matches(
                 session,
                 research,

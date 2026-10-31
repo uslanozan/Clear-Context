@@ -6,9 +6,10 @@ def validate_report(state: InvestigationState) -> dict:
     data = state["report"].model_dump()
     data["model_usage"] = [*state.get("model_usage", []), *data["model_usage"]]
     data["extraction_coverage"] = state.get("extraction_coverage")
-    if state.get("media"):
-        data["analyzed_text"] = state.get("analyzed_text", "")
+    if state.get("media") or state.get("link_findings"):
+        data["analyzed_text"] = state.get("analyzed_text", state["text"])
         data["media"] = [item.model_dump() for item in state.get("media_findings", [])]
+        data["links"] = [item.model_dump() for item in state.get("link_findings", [])]
     report = InvestigationReport.model_validate(data)
     if report.investigation_id != state["investigation_id"]:
         raise ValueError("Report belongs to a different investigation.")

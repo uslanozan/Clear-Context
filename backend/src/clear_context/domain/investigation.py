@@ -215,6 +215,23 @@ class MediaFinding(Record):
     origin: MediaOrigin
     # Reports saved before fact check search have no lookup.
     prior_checks: PriorChecks = Field(default_factory=lambda: PriorChecks(status="not_checked"))
+    # Set when the image was taken from a linked page rather than uploaded.
+    source_url: str | None = None
+
+
+class LinkFinding(Record):
+    """A link from the user's text and what was read from it."""
+
+    url: str = Field(min_length=1)
+    status: Literal["read", "not_read", "failed"]
+    title: str | None = None
+    site: str | None = None
+    # Only a date a search index reports for this exact page; never guessed from the text.
+    published_on: date | None = None
+    text_chars: int = Field(default=0, ge=0)
+    truncated: bool = False
+    media_ids: list[UUID] = Field(default_factory=list)
+    reason: str | None = None
 
 
 class InvestigationReport(Record):
@@ -231,6 +248,7 @@ class InvestigationReport(Record):
     # User text plus text read from images; claim spans refer to this when present.
     analyzed_text: str | None = None
     media: list[MediaFinding] = Field(default_factory=list)
+    links: list[LinkFinding] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_evidence(self) -> Self:

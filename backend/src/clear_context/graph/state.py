@@ -1,6 +1,7 @@
 import operator
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Annotated, NotRequired, TypedDict
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from clear_context.domain.investigation import (
     Claim,
     ExtractionCoverage,
     InvestigationReport,
+    LinkFinding,
     MediaFinding,
     ModelUsage,
 )
@@ -20,6 +22,7 @@ class InvestigationState(TypedDict):
     # Uploaded files: id, kind, mime_type, filename and a local path.
     media: NotRequired[list[dict]]
     media_findings: NotRequired[list[MediaFinding]]
+    link_findings: NotRequired[list[LinkFinding]]
     analyzed_text: NotRequired[str]
     claims: NotRequired[list[Claim]]
     report: NotRequired[InvestigationReport]
@@ -37,3 +40,7 @@ class InvestigationContext:
     media_analyzer: object | None = field(default=None, repr=False)
     reverse_image: object | None = field(default=None, repr=False)
     fact_checks: object | None = field(default=None, repr=False)
+    link_reader: object | None = field(default=None, repr=False)
+    # Saves a file found while running (an image from a link); returns its media ID.
+    attach_media: Callable[..., str] | None = field(default=None, repr=False)
+    media_dir: Path | None = None

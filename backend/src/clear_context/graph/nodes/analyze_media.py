@@ -60,14 +60,16 @@ def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationConte
             prior = PriorChecks(status="not_checked", reason="Videos are not searched yet.")
         else:
             data = Path(item["path"]).read_bytes()
+            # An image from a linked page is compared with that page, not the user's note.
+            caption = item.get("caption", state["text"])
             analysis, record = runtime.context.media_analyzer.analyze_image(
-                data, item["mime_type"], state["text"]
+                data, item["mime_type"], caption
             )
             if record:
                 usage.append(record)
             origin = check_origin(runtime.context.reverse_image, data, item["mime_type"])
             # The caption, or statements read from the image when there is no caption.
-            query = state["text"].strip() or "\n".join(analysis.claim_text)
+            query = caption.strip() or "\n".join(analysis.claim_text)
             prior = check_prior_fact_checks(
                 getattr(runtime.context, "fact_checks", None), origin, query
             )
@@ -80,10 +82,12 @@ def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationConte
                 analysis=analysis,
                 origin=origin,
                 prior_checks=prior,
+                source_url=item.get("source_url"),
             )
         )
     return {
         "media_findings": findings,
-        "analyzed_text": compose_analyzed_text(state["text"], findings),
+        # Builds on text read from links, when there were any.
+        "analyzed_text": compose_analyzed_text(state.get("analyzed_text", state["text"]), findings),
         "model_usage": usage,
     }

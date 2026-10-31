@@ -72,6 +72,7 @@ def run_research(
     first_url=None,
     media=None,
     planner_requests=None,
+    **run_options,
 ):
     """Run the flow with fakes; judge_response may be a list consumed per judgment call."""
     from clear_context.services import investigation_research as module
@@ -167,7 +168,7 @@ def run_research(
         tmp_path / "research.sqlite",
         budget,
     )
-    return claim, research.run(uuid4(), [claim], progress, mode, media=media)
+    return claim, research.run(uuid4(), [claim], progress, mode, media=media, **run_options)
 
 
 def test_research_pipeline_binds_queries_sources_and_components(monkeypatch, tmp_path):

@@ -9,6 +9,7 @@ from clear_context.domain.investigation import (
     Finding,
     InvestigationReport,
     InvestigationStatus,
+    LinkFinding,
     MediaFinding,
     ModelUsage,
     Source,
@@ -20,6 +21,7 @@ from clear_context.models import (
     FindingEvidenceRow,
     FindingRow,
     InvestigationRow,
+    LinkRow,
     MediaRow,
     ResearchStepRow,
     SourceRow,
@@ -77,6 +79,34 @@ class InvestigationRepository:
                     .order_by(MediaRow.position)
                 )
             )
+
+    def add_media(self, investigation_id: UUID, stored, source_url: str | None = None) -> str:
+        """Attach a file found while running, such as an image from a linked page."""
+        with self.sessions.begin() as session:
+            position = len(
+                list(
+                    session.scalars(
+                        select(MediaRow.id).where(
+                            MediaRow.investigation_id == str(investigation_id)
+                        )
+                    )
+                )
+            )
+            row = MediaRow(
+                id=str(uuid4()),
+                investigation_id=str(investigation_id),
+                position=position,
+                kind=stored.kind,
+                mime_type=stored.mime_type,
+                size_bytes=stored.size_bytes,
+                sha256=stored.sha256,
+                filename=stored.filename,
+                storage_name=stored.storage_name,
+                created_at=utc_now(),
+                source_url=source_url,
+            )
+            session.add(row)
+        return row.id
 
     def media(self, media_id: UUID) -> MediaRow | None:
         with self.sessions() as session:
@@ -194,6 +224,16 @@ class InvestigationRepository:
                     "origin": item.origin.model_dump(mode="json"),
                     "prior_checks": item.prior_checks.model_dump(mode="json"),
                 }
+            for position, link in enumerate(report.links):
+                session.add(
+                    LinkRow(
+                        id=str(uuid4()),
+                        investigation_id=row.id,
+                        position=position,
+                        url=link.url,
+                        finding=link.model_dump(mode="json"),
+                    )
+                )
             for claim in report.claims:
                 for span in [claim.source_span, *claim.context_spans]:
                     if span and saved_text[span.start : span.end] != span.text:
@@ -291,6 +331,7 @@ class InvestigationRepository:
                     kind=item.kind,
                     mime_type=item.mime_type,
                     filename=item.filename,
+                    source_url=item.source_url,
                     **item.finding,
                 )
                 for item in session.scalars(
@@ -299,6 +340,14 @@ class InvestigationRepository:
                     .order_by(MediaRow.position)
                 )
                 if item.finding
+            ]
+            links = [
+                LinkFinding.model_validate(item.finding)
+                for item in session.scalars(
+                    select(LinkRow)
+                    .where(LinkRow.investigation_id == row.id)
+                    .order_by(LinkRow.position)
+                )
             ]
             evidence_by_finding: dict[str, list[str]] = {}
             for finding_id, evidence_id in references:
@@ -337,4 +386,5 @@ class InvestigationRepository:
                 extraction_coverage=row.extraction_coverage,
                 analyzed_text=row.analyzed_text,
                 media=media,
+                links=links,
             )

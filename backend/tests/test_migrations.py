@@ -19,6 +19,8 @@ def test_migration_round_trip(tmp_path):
             "findings",
             "finding_evidence",
             "research_steps",
+            "media",
+            "links",
         }
         assert expected <= set(inspect(engine).get_table_names())
         with engine.connect() as connection:

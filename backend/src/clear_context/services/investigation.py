@@ -25,6 +25,7 @@ class InvestigationService:
         reverse_image=None,
         media_dir: Path | None = None,
         fact_checks=None,
+        link_reader=None,
     ):
         self.repository = repository
         self.provider = provider
@@ -33,6 +34,7 @@ class InvestigationService:
         self.media_analyzer = media_analyzer
         self.reverse_image = reverse_image
         self.fact_checks = fact_checks
+        self.link_reader = link_reader
         self.media_dir = media_dir
         self.graph = build_investigation_graph()
 
@@ -70,6 +72,11 @@ class InvestigationService:
                         media_analyzer=self.media_analyzer,
                         reverse_image=self.reverse_image,
                         fact_checks=self.fact_checks,
+                        link_reader=self.link_reader,
+                        attach_media=lambda stored, url: self.repository.add_media(
+                            investigation_id, stored, source_url=url
+                        ),
+                        media_dir=self.media_dir,
                     ),
                     config={"recursion_limit": self.recursion_limit},
                     stream_mode="updates",
