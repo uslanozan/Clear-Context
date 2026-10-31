@@ -60,7 +60,7 @@ async def create_investigation_with_media(
     text: Annotated[str, Form(max_length=20000)] = "",
     research_mode: Annotated[ResearchMode | None, Form()] = None,
 ):
-    """Start an investigation from images (and optional caption text) in one request."""
+    """Start an investigation from images or videos and optional caption text."""
     uploads, total = [], 0
     for upload in files:
         # Read one byte past the largest limit so oversized files are rejected, not truncated.
@@ -74,11 +74,6 @@ async def create_investigation_with_media(
     except media_service.MediaRejected as error:
         raise HTTPException(status_code=422, detail=str(error)) from None
     text = text.strip()
-    if not text and not any(kind == "image" for _, kind, _, _ in checked):
-        raise HTTPException(
-            status_code=422,
-            detail="Add text or an image; video analysis is not connected yet.",
-        )
     stored = [
         media_service.store(request.app.state.media_dir, name, kind, mime_type, data)
         for name, kind, mime_type, data in checked

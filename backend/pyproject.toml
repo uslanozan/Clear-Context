@@ -20,6 +20,8 @@ dependencies = [
   "python-multipart>=0.0.20,<1",
   "Pillow>=11,<13",
   "langdetect>=1.0.9,<2",
+  # Video decoding for audio and frames; wheels bundle FFmpeg (LGPL).
+  "av>=14,<20",
 ]
 
 [project.optional-dependencies]

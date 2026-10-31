@@ -3,26 +3,35 @@ from pathlib import Path
 from langgraph.runtime import Runtime
 
 from clear_context.domain.investigation import (
-    MediaAnalysis,
     MediaFinding,
     MediaOrigin,
     PriorChecks,
 )
 from clear_context.graph.state import InvestigationContext, InvestigationState
 from clear_context.providers.reverse_image import ReverseImageFailure
+from clear_context.services.video_analysis import analyze_video
+
+
+def clock(seconds: float) -> str:
+    seconds = int(seconds)
+    return f"{seconds // 60}:{seconds % 60:02d}"
 
 
 def compose_analyzed_text(text: str, findings: list[MediaFinding]) -> str:
-    """Join the user's text with statements read from images, each block labeled by its source.
+    """Join the user's text with statements read from media, each block labeled by its source.
 
-    Only claim text (post text, headlines) is joined; signs, labels and date stamps remain
-    observations, so they are not extracted as claims.
+    Only claim text (post text, headlines, captions shown in a video) and speech are joined;
+    signs, labels and date stamps remain observations, so they are not extracted as claims.
     """
     parts = [text.strip()] if text.strip() else []
     for index, finding in enumerate(findings, 1):
+        kind = finding.kind
         statements = "\n".join(part.strip() for part in finding.analysis.claim_text if part.strip())
         if statements:
-            parts.append(f"[Text read from image {index}]\n{statements}")
+            parts.append(f"[Text read from {kind} {index}]\n{statements}")
+        for turn in finding.analysis.speech:
+            span = f"{clock(turn.start)}-{clock(turn.end)}"
+            parts.append(f"[Speech in video {index}, {span}]\n{turn.text}")
     return "\n\n".join(parts)
 
 
@@ -49,15 +58,33 @@ def check_prior_fact_checks(search, origin: MediaOrigin, text: str) -> PriorChec
 
 def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationContext]) -> dict:
     findings, usage = [], []
+    context = runtime.context
+    reverse_image = context.reverse_image
+
+    def search_frame(jpeg: bytes) -> MediaOrigin:
+        return check_origin(reverse_image, jpeg, "image/jpeg")
+
     for item in state.get("media", []):
+        frames = []
         if item["kind"] == "video":
-            analysis = MediaAnalysis(
-                status="not_analyzed",
-                content_type="video",
-                note="Video analysis is not connected yet.",
+            caption = item.get("caption", state["text"])
+            result = analyze_video(
+                Path(item["path"]),
+                caption,
+                context.media_analyzer,
+                getattr(context, "transcriber", None),
+                search_frame if reverse_image is not None else None,
+                context.media_dir,
             )
-            origin = MediaOrigin(status="not_checked", reason="Video frames are not searched yet.")
-            prior = PriorChecks(status="not_checked", reason="Videos are not searched yet.")
+            analysis, origin, frames = result.analysis, result.origin, result.frames
+            usage += result.usage
+            # The caption, or statements shown in the video when there is no caption.
+            query = caption.strip() or "\n".join(analysis.claim_text)
+            prior = (
+                check_prior_fact_checks(getattr(context, "fact_checks", None), origin, query)
+                if analysis.status == "analyzed"
+                else PriorChecks(status="not_checked", reason="The video was not analyzed.")
+            )
         else:
             data = Path(item["path"]).read_bytes()
             # An image from a linked page is compared with that page, not the user's note.
@@ -83,6 +110,7 @@ def analyze_media(state: InvestigationState, runtime: Runtime[InvestigationConte
                 origin=origin,
                 prior_checks=prior,
                 source_url=item.get("source_url"),
+                frames=frames,
             )
         )
     return {

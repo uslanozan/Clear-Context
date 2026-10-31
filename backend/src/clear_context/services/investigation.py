@@ -73,6 +73,7 @@ class InvestigationService:
                         reverse_image=runtime.reverse_image,
                         fact_checks=runtime.fact_checks,
                         link_reader=runtime.link_reader,
+                        transcriber=runtime.transcriber,
                         unread_link_reason=(
                             "Link reading is turned off in settings."
                             if runtime.live

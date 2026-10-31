@@ -231,6 +231,7 @@ class InvestigationRepository:
                     "analysis": item.analysis.model_dump(mode="json"),
                     "origin": item.origin.model_dump(mode="json"),
                     "prior_checks": item.prior_checks.model_dump(mode="json"),
+                    "frames": [frame.model_dump(mode="json") for frame in item.frames],
                 }
             for position, link in enumerate(report.links):
                 session.add(

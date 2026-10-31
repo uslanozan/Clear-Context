@@ -69,7 +69,6 @@ def test_upload_flow_keeps_media_honest_in_preview_mode(settings):
 @pytest.mark.parametrize(
     ("files", "data", "detail"),
     [
-        ([("files", ("clip.mp4", MP4, "video/mp4"))], {}, "video analysis"),
         ([("files", ("fake.png", b"GIF8 nope", "image/png"))], {"text": "x"}, "use JPEG"),
     ],
 )
@@ -127,8 +126,12 @@ def test_text_read_from_an_image_is_labeled_and_used_for_extraction():
 
 def test_analyzed_text_skips_images_without_statements():
     # Scene text such as a date stamp is transcribed but is not sent to claim extraction.
-    stamp = SimpleNamespace(analysis=MediaAnalysis(status="analyzed", visible_text="1996"))
-    blank = SimpleNamespace(analysis=MediaAnalysis(status="analyzed", claim_text=["  "]))
+    stamp = SimpleNamespace(
+        kind="image", analysis=MediaAnalysis(status="analyzed", visible_text="1996")
+    )
+    blank = SimpleNamespace(
+        kind="image", analysis=MediaAnalysis(status="analyzed", claim_text=["  "])
+    )
     assert compose_analyzed_text("Caption.", [stamp, blank]) == "Caption."
 
 

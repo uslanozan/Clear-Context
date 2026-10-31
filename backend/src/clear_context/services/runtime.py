@@ -20,6 +20,7 @@ from clear_context.providers.fact_check import build_fact_check_search
 from clear_context.providers.link_reader import build_link_reader
 from clear_context.providers.meta import MetaInvestigationProvider
 from clear_context.providers.meta_media import MetaMediaAnalyzer, MockMediaAnalyzer
+from clear_context.providers.meta_voice import MetaVoiceTranscriber
 from clear_context.providers.mock import MockInvestigationProvider
 from clear_context.providers.reverse_image import build_reverse_image_search
 from clear_context.services.investigation_research import InvestigationResearch
@@ -34,6 +35,7 @@ class Runtime:
     reverse_image: object | None = field(default=None, repr=False)
     fact_checks: object | None = field(default=None, repr=False)
     link_reader: object | None = field(default=None, repr=False)
+    transcriber: object | None = field(default=None, repr=False)
     research: InvestigationResearch | None = field(default=None, repr=False)
     users: int = 0
     retired: bool = False
@@ -109,5 +111,6 @@ def build_runtime(settings: Settings, research_workspace: Path) -> Runtime:
         fact_checks=build_fact_check_search(settings) if live else None,
         # Links are read through Tavily, like research sources.
         link_reader=build_link_reader(settings) if live and settings.link_reading else None,
+        transcriber=MetaVoiceTranscriber(settings) if live else None,
         research=research,
     )

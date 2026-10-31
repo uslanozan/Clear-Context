@@ -146,6 +146,8 @@ class ImageMatch(Record):
     published_on: date | None = None
     # Search engine that returned the match, for example google_lens or bing.
     found_by: str | None = None
+    # For a video: the position (seconds) of the frame that was searched.
+    frame_at: float | None = None
 
 
 class MediaOrigin(Record):
@@ -166,6 +168,33 @@ class CaptionCheck(Record):
     visible_basis: list[str] = Field(default_factory=list)
 
 
+class SpeechTurn(Record):
+    """One stretch of speech from a transcription model; the wording can contain errors."""
+
+    start: float = Field(ge=0)
+    end: float = Field(ge=0)
+    # A session label such as A or B, not an identity.
+    speaker: str | None = None
+    text: str = Field(min_length=1)
+
+
+class ScreenText(Record):
+    """Text shown in a video, with the position (seconds) where it first appears."""
+
+    at: float | None = None
+    text: str = Field(min_length=1)
+
+
+class VideoFrame(Record):
+    """A frame taken from a video and searched as an image."""
+
+    at: float = Field(ge=0)
+    # model: a moment the model named as distinctive; scene: a large visual change.
+    chosen_by: Literal["model", "scene"]
+    # Stored like uploads, by content hash.
+    storage_name: str = Field(pattern=r"^[0-9a-f]{64}\.jpg$")
+
+
 class MediaAnalysis(Record):
     """Model-read content of one file; transcription and observations can contain errors."""
 
@@ -181,6 +210,10 @@ class MediaAnalysis(Record):
     context_cues: list[str] = Field(default_factory=list)
     caption_checks: list[CaptionCheck] = Field(default_factory=list)
     note: str | None = None
+    # Videos only: speech from a transcription model and text shown on screen.
+    speech: list[SpeechTurn] = Field(default_factory=list)
+    on_screen_text: list[ScreenText] = Field(default_factory=list)
+    duration_seconds: float | None = None
 
 
 class PriorFactCheck(Record):
@@ -217,6 +250,8 @@ class MediaFinding(Record):
     prior_checks: PriorChecks = Field(default_factory=lambda: PriorChecks(status="not_checked"))
     # Set when the image was taken from a linked page rather than uploaded.
     source_url: str | None = None
+    # Videos only: frames searched for earlier copies.
+    frames: list[VideoFrame] = Field(default_factory=list)
 
 
 class LinkFinding(Record):
