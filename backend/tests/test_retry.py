@@ -15,6 +15,11 @@ def test_retry_rules():
     assert should_retry_error(httpx.ConnectError("x", request=request), 0, paid=True)
     assert not should_retry_error(httpx.ReadTimeout("x", request=request), 0, paid=True)
     assert should_retry_error(httpx.ReadTimeout("x", request=request), 0, paid=False)
+    # A dropped connection is repeated for paid calls too, at most twice.
+    dropped = httpx.RemoteProtocolError("Server disconnected", request=request)
+    assert should_retry_error(dropped, 0, paid=True)
+    assert should_retry_error(httpx.ReadError("reset", request=request), 1, paid=True)
+    assert not should_retry_error(dropped, 2, paid=True)
 
 
 def test_retry_after_is_honoured_and_capped(monkeypatch):
@@ -41,3 +46,21 @@ def test_structured_provider_recovers_after_a_transient_failure():
     provider = MetaStructuredProvider(settings, transport=httpx.MockTransport(handler))
     assert asyncio.run(provider.complete({"model": "m"}, 5)) == body
     assert provider.retries == 2
+
+
+def test_structured_provider_repeats_a_dropped_connection():
+    calls = []
+    body = {"choices": [{"finish_reason": "stop", "message": {"content": "{}"}}], "usage": {}}
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) == 1:
+            raise httpx.RemoteProtocolError("Server disconnected", request=request)
+        return httpx.Response(200, json=body)
+
+    settings = Settings(
+        _env_file=None, app_mode="meta", allow_paid_api_calls=True, meta_api_key="k"
+    )
+    provider = MetaStructuredProvider(settings, transport=httpx.MockTransport(handler))
+    assert asyncio.run(provider.complete({"model": "m"}, 5)) == body
+    assert (provider.retries, len(calls)) == (1, 2)

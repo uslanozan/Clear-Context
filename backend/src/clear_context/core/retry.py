@@ -1,8 +1,9 @@
 """When an external call may be repeated: only failures the provider did not process.
 
-Connection failures and 429/5xx answers are retried up to MAX_RETRIES times. A read
-timeout on a paid model call is not retried, since the provider may already have processed
-and billed the request.
+Connection failures, dropped connections and 429/5xx answers are retried up to MAX_RETRIES
+times. A dropped connection on a paid model call may already have been billed; repeating it was
+accepted for Meta calls, since an investigation otherwise fails. A read timeout on a paid call
+is still not retried: it would double an already long wait.
 """
 
 import httpx
@@ -35,5 +36,8 @@ def should_retry_error(error: Exception, attempt: int, paid: bool) -> bool:
         return False
     if isinstance(error, NOT_SENT):
         return True
-    # A cheap call may also be repeated after a timeout or a dropped connection.
-    return not paid and isinstance(error, (httpx.TimeoutException, httpx.TransportError))
+    if isinstance(error, httpx.TimeoutException):
+        # A cheap call may also be repeated after a timeout.
+        return not paid
+    # The connection dropped before a complete answer arrived.
+    return isinstance(error, httpx.TransportError)
