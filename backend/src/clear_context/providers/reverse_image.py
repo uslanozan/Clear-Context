@@ -16,6 +16,7 @@ import httpx
 from PIL import Image, UnidentifiedImageError
 
 from clear_context.domain.investigation import ImageMatch, MediaOrigin
+from clear_context.domain.source_types import FACT_CHECK_HOSTS
 
 
 class ReverseImageFailure(RuntimeError):
@@ -155,24 +156,6 @@ def order_matches(matches: list[ImageMatch]) -> list[ImageMatch]:
 
 # Hints that a page is a fact check. They only set reading priority; they are not a judgment
 # of a source's reliability.
-FACT_CHECK_HOSTS = (
-    "dogrulukpayi.com",
-    "teyit.org",
-    "dogrula.org",
-    "malumatfurus.org",
-    "snopes.com",
-    "factcheck.afp.com",
-    "fullfact.org",
-    "politifact.com",
-    "factcheck.org",
-    "leadstories.com",
-    "boomlive.in",
-    "altnews.in",
-    "misbar.com",
-    "maldita.es",
-    "newtral.es",
-    "correctiv.org",
-)
 FACT_CHECK_WORDS = (
     "fact check",
     "fact-check",

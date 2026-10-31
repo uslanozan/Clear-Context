@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from clear_context.domain.source_types import SourceType, classify_source
+
 # Modes change search, reading and assessment budgets, never the methods.
 ResearchMode = Literal["fast", "balanced", "deep"]
 
@@ -93,6 +95,15 @@ class Source(Record):
     url: str
     title: str
     content: str
+    # Derived from the URL, so stored reports get it too; see domain/source_types.py.
+    source_type: SourceType | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def label_source(cls, data):
+        if isinstance(data, dict) and not data.get("source_type") and data.get("url"):
+            data = {**data, "source_type": classify_source(data["url"])}
+        return data
 
 
 class Evidence(Record):

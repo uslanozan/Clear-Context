@@ -17,8 +17,12 @@ produces an insufficient component without a model call. Exact quote validation
 does not establish semantic support, complete decomposition or source reliability.
 The standalone runner retains its existing default.
 
-`need_components_v4` (contract `components_v3`) is the application default, chosen with
-`RESEARCH_JUDGE_PROFILE`. V2 sent the planner's need as the claim; needs are often neutral
+`need_components_v5` (contract `components_v3`) is the application default, chosen with
+`RESEARCH_JUDGE_PROFILE`. It is V4 plus each passage's `source_type` (`fact_check`,
+`reference`, `social` or `web`, from a short domain list in `domain/source_types.py`) and
+one rule: a passage that only repeats the claim without an independent basis is not
+support, which matters when viral posts copy the claim being checked. The label is the
+kind of site, not a reliability score. V2 sent the planner's need as the claim; needs are often neutral
 questions ("Whether the letter proposed changing the clocks"), so a negated claim could be
 assessed with inverted polarity. V4 sends the claim as stated with the need as `focus`,
 writes components only for that focus, and requires each component's `claim_quote` to be

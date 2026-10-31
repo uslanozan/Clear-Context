@@ -3,6 +3,7 @@
 import json
 from copy import deepcopy
 
+from clear_context.domain.source_types import classify_source
 from clear_context.schemas.component_judgment import COMPONENT_CONTRACTS, parent_claim
 from clear_context.schemas.evidence_judgment import (
     JudgmentPacket,
@@ -103,7 +104,15 @@ def build_judgment_request(
         if len(packet.needs) != 1:
             raise ValueError("Component assessment requires exactly one research need per job.")
         aliases = {identity: alias for alias, identity in evidence_aliases(packet).items()}
-        evidence = [{"id": aliases[e.id], "text": e.quote} for e in packet.evidence]
+        evidence = [
+            {
+                "id": aliases[e.id],
+                "text": e.quote,
+                # Where the passage was published, so a repeated claim is not read as support.
+                "source_type": classify_source(e.source_url),
+            }
+            for e in packet.evidence
+        ]
         if response_contract == "components_v3":
             # The need may be a neutral question; statuses refer to the claim as stated.
             context = {

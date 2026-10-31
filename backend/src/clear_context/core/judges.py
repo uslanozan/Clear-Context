@@ -62,9 +62,8 @@ def load_judge(
     limits = catalog.limits
     if profile.max_completion_tokens is not None:
         limits = limits.model_copy(update={"max_completion_tokens": profile.max_completion_tokens})
-    return (
-        selected,
-        limits,
-        prompts.experiments[profile.prompt].system,
-        profile.response_contract,
-    )
+    entry = prompts.experiments[profile.prompt]
+    system = entry.system
+    if entry.extends:
+        system = prompts.experiments[entry.extends].system.rstrip("\n") + "\n" + system
+    return (selected, limits, system, profile.response_contract)

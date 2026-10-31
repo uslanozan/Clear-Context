@@ -1318,6 +1318,21 @@ experiments:
       Being present since a year does not by itself establish first entry in that exact year.
       Mark these inferences insufficient unless the provided passages explicitly close the gap.
 
+  evidence_component_experiment_v5:
+    # Extends v4 with the publishing site's type for each passage.
+    extends: evidence_component_experiment_v4
+    system: |-
+      Each evidence item has a source_type: fact_check (a fact-checking article), reference
+      (encyclopedia, archive, government or academic site), social (social media post, video
+      page, forum or personal blog) or web (any other site). A passage that only repeats or
+      asserts the claim, with no record, document, measurement, named witness or other
+      independent basis, is not support for it; a social passage like that is especially
+      likely to be a copy of the claim being checked. Without other support mark that component
+      insufficient and say the claim is only repeated. A social passage can still support what
+      was posted or said there. A fact_check passage reports the publisher's conclusion; rely on
+      the facts and reasons it states. Source type alone does not make a passage right or wrong;
+      apart from this rule, do not judge source reliability.
+
   evidence_component_legacy_adapted_v1:
     system: |-
       Assess the supplied evidence relative to the requested claim, not global truth.
