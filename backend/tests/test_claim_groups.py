@@ -124,8 +124,10 @@ def test_complete_mode_researches_batches_and_leaves_the_rest_for_a_continuation
     claims = [claim(f"Claim {i}.") for i in range(COMPLETE_MAX_CLAIMS + 5)]
     calls = []
 
-    async def research(self, investigation_id, batch, progress, budget, media, subject):
-        calls.append((len(batch), budget))
+    async def research(
+        self, investigation_id, batch, progress, budget, media, subject, case_suffix=""
+    ):
+        calls.append((len(batch), budget, case_suffix))
         return report_for(batch, summary=ResearchSummary(planned=len(batch)))
 
     async def no_language(*args, **kwargs):
@@ -143,7 +145,9 @@ def test_complete_mode_researches_batches_and_leaves_the_rest_for_a_continuation
     service = InvestigationResearch(settings, {"research": None}, tmp_path)
     service.models = {"research": type("M", (), {"api_model_id": "m"})()}
     report = service.run(uuid4(), claims, mode="complete")
-    assert [n for n, _ in calls] == [COMPLETE_BATCH_CLAIMS] * (
+    # Each batch is its own research case; the plan of one cannot collide with another.
+    assert len({suffix for _, _, suffix in calls}) == len(calls)
+    assert [n for n, _, _ in calls] == [COMPLETE_BATCH_CLAIMS] * (
         COMPLETE_MAX_CLAIMS // COMPLETE_BATCH_CLAIMS
     )
     assert calls[0][1] == batch_budget(COMPLETE_BATCH_CLAIMS)

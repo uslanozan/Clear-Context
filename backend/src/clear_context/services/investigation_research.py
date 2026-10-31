@@ -364,8 +364,9 @@ class InvestigationResearch:
                             batch_budget(len(batch)),
                             media,
                             subject,
+                            case_suffix=f":batch{index}" if index else "",
                         )
-                        for batch in batches
+                        for index, batch in enumerate(batches)
                     ],
                 )
             else:
@@ -379,7 +380,10 @@ class InvestigationResearch:
         report.model_usage[:0] = [u for u in (language.usage, grouping.usage) if u]
         return report
 
-    async def _research(self, investigation_id, claims, progress, budget, media, subject):
+    async def _research(
+        self, investigation_id, claims, progress, budget, media, subject, case_suffix=""
+    ):
+        """case_suffix keeps each batch of a complete run in its own research case."""
         meta = MetaStructuredProvider(self.settings)
         planning_claims = [
             PlanningClaim(
@@ -447,7 +451,7 @@ class InvestigationResearch:
                 )
         saved = SavedResearchPlan.model_validate(
             {
-                "case_id": str(investigation_id),
+                "case_id": f"{investigation_id}{case_suffix}",
                 "claims": [
                     {"id": c.id, "statement": c.statement, "quote": c.quote}
                     for c in planning_claims
