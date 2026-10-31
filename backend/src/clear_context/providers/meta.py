@@ -208,8 +208,10 @@ class MetaInvestigationProvider:
                 ensure_ascii=False,
             ),
             DirectResponse.model_json_schema(),
-            self.settings.meta_max_completion_tokens,
-            self.settings.meta_timeout_seconds,
+            # One call covers the whole text, so long inputs (such as linked articles) need
+            # the extraction output budget, not the per-call default; unused tokens cost nothing.
+            self.settings.extraction_max_output_tokens,
+            max(self.settings.meta_timeout_seconds, self.settings.extraction_max_seconds),
         )
         claims, notes = (
             [],
