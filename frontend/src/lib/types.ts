@@ -125,6 +125,8 @@ export interface Investigation {
   model_usage: ModelUsage[];
   parent_id?: string | null;
   relation?: 'rerun' | 'continue' | null;
+  // Investigations accepted earlier that still wait; only while this one is queued.
+  queue_position?: number | null;
 }
 export interface ResearchStep {
   name: string;

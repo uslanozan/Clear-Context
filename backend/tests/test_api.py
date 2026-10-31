@@ -109,17 +109,18 @@ def test_provider_failure_is_sanitized_and_persisted(settings):
         assert "private-provider-secret" not in client.get(location + "/steps").text
 
 
-def test_startup_marks_interrupted_jobs_failed(settings):
+def test_startup_fails_interrupted_jobs_and_resumes_waiting_ones(settings):
     app = create_app(settings)
     with TestClient(app):
         queued = app.state.repository.create("Queued input")
         running = app.state.repository.create("Running input")
         app.state.repository.transition(UUID(running.id), InvestigationStatus.RUNNING, "start")
     with TestClient(create_app(settings)) as client:
-        for investigation_id in (queued.id, running.id):
-            result = client.get(f"/api/investigations/{investigation_id}").json()
-            assert result["status"] == "failed"
-            assert result["error_code"] == "interrupted"
+        # A running job may have made paid calls; it is not repeated silently.
+        result = client.get(f"/api/investigations/{running.id}").json()
+        assert (result["status"], result["error_code"]) == ("failed", "interrupted")
+        # A job that never started runs now.
+        assert client.get(f"/api/investigations/{queued.id}").json()["status"] == "completed"
 
 
 def test_startup_requires_migration(tmp_path):

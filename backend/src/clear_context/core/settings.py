@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     meta_max_completion_tokens: int = Field(default=4096, ge=128, le=4096)
     meta_max_claims: int = Field(default=8, ge=1, le=12)
     graph_recursion_limit: int = Field(default=12, ge=4, le=100)
+    # Investigations running at once; the rest wait in order. 0 runs each right after its
+    # request, without a limit (used by tests).
+    max_concurrent_investigations: int = Field(default=2, ge=0, le=8)
     api_host: str = Field(default="127.0.0.1", min_length=1)
     api_port: int = Field(default=8000, ge=1, le=65535)
     log_level: Literal["critical", "error", "warning", "info", "debug", "trace"] = "info"

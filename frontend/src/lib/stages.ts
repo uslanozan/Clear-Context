@@ -66,6 +66,13 @@ export const FOLLOWUP_STAGE = {
 
 const ALL_STAGES = [...BASE_STAGES, ...RESEARCH_STAGES, MEDIA_STAGE, LINK_STAGE, FOLLOWUP_STAGE];
 
+/** What a queued investigation waits for; null once it runs. */
+export function queueMessage(status: string, position: number | null | undefined) {
+  if (status !== 'queued') return null;
+  if (!position) return 'Starting next: another investigation is finishing.';
+  return `Waiting for ${position} earlier ${position === 1 ? 'investigation' : 'investigations'} to finish.`;
+}
+
 /** The title for a recorded event, or null for events without one. */
 export function stageTitle(event: string): string | null {
   return ALL_STAGES.find((stage) => stage.event === event)?.title ?? null;

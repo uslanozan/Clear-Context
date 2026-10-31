@@ -19,6 +19,7 @@ import { SettingsPage } from './components/SettingsPage';
 import { Activity, ReportView } from './components/ReportView';
 import { Sidebar } from './components/Sidebar';
 import { api, ApiError, failureMessage } from './lib/api';
+import { queueMessage } from './lib/stages';
 import type { Investigation, ResearchMode } from './lib/types';
 
 export function App() {
@@ -269,9 +270,14 @@ function Workspace() {
               <Badge variant="light" color="ember">
                 INVESTIGATION IN PROGRESS
               </Badge>
-              <h1>Investigation running</h1>
+              <h1>
+                {investigation.data?.status === 'queued' ? 'In the queue' : 'Investigation running'}
+              </h1>
               <p>
-                We’re separating the claims and checking the report.
+                {queueMessage(
+                  investigation.data?.status ?? '',
+                  investigation.data?.queue_position,
+                ) ?? 'We’re separating the claims and checking the report.'}
                 <br />
                 You can return to this investigation from your history.
               </p>

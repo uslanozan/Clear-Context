@@ -3,7 +3,7 @@ import { Alert, Button, Checkbox, Loader, SegmentedControl, Textarea } from '@ma
 import { ArrowUpRight, Check, CircleAlert, LoaderCircle } from 'lucide-react';
 import { failureMessage } from '../../src/lib/api';
 import { RESEARCH_MODES } from '../../src/lib/modes';
-import { stageTitle } from '../../src/lib/stages';
+import { queueMessage, stageTitle } from '../../src/lib/stages';
 import type { Investigation, ResearchMode, ResearchStep } from '../../src/lib/types';
 import { MAX_TEXT, readablePage, submissionText, type PendingCapture } from './capture-model';
 import { ServerError, serverApi } from './server-api';
@@ -308,8 +308,13 @@ function Status({
           ? 'Report ready'
           : current.status === 'failed'
             ? 'The investigation stopped'
-            : 'Investigating'}
+            : current.status === 'queued'
+              ? 'In the queue'
+              : 'Investigating'}
       </h1>
+      {queueMessage(current.status, current.queue_position) && (
+        <p className="muted">{queueMessage(current.status, current.queue_position)}</p>
+      )}
       {current.status === 'failed' && <p>{failureMessage(current.error_code)}</p>}
       {summary && <SummaryView summary={summary} />}
       {/* Once the summary is in, it replaces the step list. */}

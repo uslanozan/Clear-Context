@@ -35,6 +35,8 @@ class InvestigationView(BaseModel):
     model_usage: list[ModelUsage]
     parent_id: UUID | None = None
     relation: Literal["rerun", "continue"] | None = None
+    # Queued investigations accepted earlier than this one; set only while it is queued.
+    queue_position: int | None = None
 
 
 class StepView(BaseModel):

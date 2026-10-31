@@ -13,6 +13,7 @@ from clear_context.repositories.investigation import InvestigationRepository
 from clear_context.repositories.settings import SettingsRepository
 from clear_context.services.app_settings import differs_from_env, effective_settings, env_values
 from clear_context.services.investigation import InvestigationService
+from clear_context.services.queue import InvestigationQueue
 from clear_context.services.runtime import build_runtime
 
 logger = logging.getLogger(__name__)
@@ -69,8 +70,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 media_dir=resolve_path(settings.media_dir),
             )
             app.state.media_dir = resolve_path(settings.media_dir)
+            app.state.queue = InvestigationQueue(
+                app.state.service.run, settings.max_concurrent_investigations
+            )
+            # Investigations still waiting when the server stopped run again, oldest first.
+            for investigation_id in repository.queued_ids():
+                app.state.queue.submit(investigation_id)
             yield
         finally:
+            queue = getattr(app.state, "queue", None)
+            if queue is not None:
+                queue.close()
             engine.dispose()
             service = getattr(app.state, "service", None)
             (service.runtime if service else runtime).retire()

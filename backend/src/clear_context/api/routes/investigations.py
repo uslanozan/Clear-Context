@@ -46,7 +46,7 @@ def create_investigation(
         mode=request.app.state.service.runtime.mode,
         research_mode=payload.research_mode or default_mode(request),
     )
-    background_tasks.add_task(request.app.state.service.run, UUID(row.id))
+    request.app.state.queue.submit(UUID(row.id), background_tasks)
     response.headers["Location"] = f"/api/investigations/{row.id}"
     return row
 
@@ -84,7 +84,7 @@ async def create_investigation_with_media(
         research_mode=research_mode or default_mode(request),
         media=stored,
     )
-    background_tasks.add_task(request.app.state.service.run, UUID(row.id))
+    request.app.state.queue.submit(UUID(row.id), background_tasks)
     response.headers["Location"] = f"/api/investigations/{row.id}"
     return row
 
@@ -112,7 +112,7 @@ def rerun_investigation(
         parent_id=parent.id,
         relation="rerun",
     )
-    background_tasks.add_task(request.app.state.service.run, UUID(row.id))
+    request.app.state.queue.submit(UUID(row.id), background_tasks)
     response.headers["Location"] = f"/api/investigations/{row.id}"
     return row
 
@@ -142,7 +142,7 @@ def continue_investigation(
         parent_id=parent.id,
         relation="continue",
     )
-    background_tasks.add_task(request.app.state.service.run, UUID(row.id))
+    request.app.state.queue.submit(UUID(row.id), background_tasks)
     response.headers["Location"] = f"/api/investigations/{row.id}"
     return row
 
@@ -165,7 +165,10 @@ def require_investigation(request: Request, investigation_id: UUID):
 
 @router.get("/investigations/{investigation_id}", response_model=InvestigationView)
 def get_investigation(request: Request, investigation_id: UUID):
-    return require_investigation(request, investigation_id)
+    row = require_investigation(request, investigation_id)
+    view = InvestigationView.model_validate(row)
+    view.queue_position = request.app.state.repository.queue_position(row)
+    return view
 
 
 @router.get("/investigations/{investigation_id}/steps", response_model=list[StepView])

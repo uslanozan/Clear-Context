@@ -170,9 +170,13 @@ class InvestigationRepository:
             )
 
     def fail_interrupted(self) -> None:
+        """Mark investigations that were running when the server stopped as failed.
+
+        Their paid calls may have been made, so they are not repeated silently.
+        """
         with self.sessions.begin() as session:
             rows = session.scalars(
-                select(InvestigationRow).where(InvestigationRow.status.in_(["queued", "running"]))
+                select(InvestigationRow).where(InvestigationRow.status == "running")
             )
             for row in rows:
                 row.status = InvestigationStatus.FAILED
@@ -186,6 +190,32 @@ class InvestigationRepository:
                         created_at=row.updated_at,
                     )
                 )
+
+    def queued_ids(self) -> list[UUID]:
+        """Investigations still waiting, oldest first."""
+        with self.sessions() as session:
+            return [
+                UUID(row_id)
+                for row_id in session.scalars(
+                    select(InvestigationRow.id)
+                    .where(InvestigationRow.status == "queued")
+                    .order_by(InvestigationRow.created_at)
+                )
+            ]
+
+    def queue_position(self, row: InvestigationRow) -> int | None:
+        """How many queued investigations were accepted before this one; None unless queued."""
+        if row.status != "queued":
+            return None
+        with self.sessions() as session:
+            return len(
+                session.scalars(
+                    select(InvestigationRow.id).where(
+                        InvestigationRow.status == "queued",
+                        InvestigationRow.created_at < row.created_at,
+                    )
+                ).all()
+            )
 
     def record_step(
         self, investigation_id: UUID, name: str, model_usage: list[ModelUsage] | None = None

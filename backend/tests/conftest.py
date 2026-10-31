@@ -36,6 +36,8 @@ def block_outbound_network(monkeypatch):
 def test_client_host(monkeypatch):
     # TestClient sends Host: testserver; real servers allow only local host names.
     monkeypatch.setenv("ALLOWED_HOSTS", '["testserver"]')
+    # Each investigation runs right after its request, so tests can read the report next.
+    monkeypatch.setenv("MAX_CONCURRENT_INVESTIGATIONS", "0")
 
 
 @pytest.fixture(autouse=True)
