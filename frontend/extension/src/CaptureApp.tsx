@@ -7,6 +7,8 @@ import { stageTitle } from '../../src/lib/stages';
 import type { Investigation, ResearchMode, ResearchStep } from '../../src/lib/types';
 import { MAX_TEXT, readablePage, submissionText, type PendingCapture } from './capture-model';
 import { ServerError, serverApi } from './server-api';
+import { summarize, type ReportSummary } from './summary';
+import { SummaryView } from './SummaryView';
 import { ServerLine, useServer, type Connection } from './ServerLine';
 import { clearPending, loadPending } from './storage';
 
@@ -86,8 +88,10 @@ function Preview({
 }) {
   const health = connection.state === 'ready' ? connection.health : null;
   const [text, setText] = useState(capture.text);
+  // A post's own link carries its text and pictures, so it is read by default; a whole page
+  // only for selected text.
   const [includePage, setIncludePage] = useState(
-    capture.kind === 'text' && readablePage(capture.pageUrl),
+    readablePage(capture.pageUrl) && (capture.kind === 'text' || !!capture.fromPost),
   );
   const [chosenMode, setMode] = useState<ResearchMode | null>(null);
   const [image, setImage] = useState(capture.image);
@@ -199,7 +203,7 @@ function Preview({
       />
       {readablePage(capture.pageUrl) && (
         <Checkbox
-          label="Also read this page"
+          label={capture.fromPost ? 'Also read this post' : 'Also read this page'}
           description={capture.pageTitle || new URL(capture.pageUrl).host}
           checked={includePage}
           onChange={(event) => setIncludePage(event.currentTarget.checked)}
@@ -264,7 +268,17 @@ function Status({
   const [current, setCurrent] = useState(investigation);
   const [steps, setSteps] = useState<ResearchStep[]>([]);
   const [offline, setOffline] = useState(false);
+  const [summary, setSummary] = useState<ReportSummary | null>(null);
   const done = current.status === 'completed' || current.status === 'failed';
+
+  // One read of the finished report for the summary; no further polling.
+  useEffect(() => {
+    if (current.status !== 'completed') return;
+    serverApi
+      .report(server, investigation.id)
+      .then((report) => setSummary(summarize(report)))
+      .catch(() => setSummary(null));
+  }, [current.status, server, investigation.id]);
 
   useEffect(() => {
     if (done) return;
@@ -299,18 +313,22 @@ function Status({
             : 'Investigating'}
       </h1>
       {current.status === 'failed' && <p>{failureMessage(current.error_code)}</p>}
-      <ol className="ext-steps">
-        {titles.map((title, index) => {
-          const active = !done && index === titles.length - 1;
-          return (
-            <li key={title} className={active ? 'active' : ''}>
-              {active ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />}
-              {title}
-            </li>
-          );
-        })}
-        {!titles.length && !done && <li className="muted">Waiting for the first step…</li>}
-      </ol>
+      {summary && <SummaryView summary={summary} />}
+      {/* Once the summary is in, it replaces the step list. */}
+      {!summary && (
+        <ol className="ext-steps">
+          {titles.map((title, index) => {
+            const active = !done && index === titles.length - 1;
+            return (
+              <li key={title} className={active ? 'active' : ''}>
+                {active ? <LoaderCircle size={15} className="spin" /> : <Check size={15} />}
+                {title}
+              </li>
+            );
+          })}
+          {!titles.length && !done && <li className="muted">Waiting for the first step…</li>}
+        </ol>
+      )}
       {offline && (
         <p className="muted small">Status is unavailable right now; the investigation continues.</p>
       )}

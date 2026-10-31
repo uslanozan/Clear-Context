@@ -89,6 +89,14 @@ it('sends the capture only on Investigate, then shows recorded steps and opens t
         posts.push({ url: input, body: JSON.parse(String(init.body)) });
         return json(investigation, 202);
       }
+      if (input.endsWith('/report')) {
+        return json({
+          claims: [{ id: 'c1', text: 'Roofs blew off in Izmir.' }],
+          findings: [{ claim_id: 'c1', components: [{ status: 'contradicted' }] }],
+          media: [],
+          links: [],
+        });
+      }
       if (input.endsWith('/steps')) {
         return json([{ id: 1, name: 'graph_started', status: 'completed', created_at: '' }]);
       }
@@ -109,7 +117,9 @@ it('sends the capture only on Investigate, then shows recorded steps and opens t
   // The capture is removed once the server accepted it, so it is never sent twice.
   expect(session.pending).toBeUndefined();
   expect(await screen.findByText('Report ready', {}, { timeout: 6000 })).toBeInTheDocument();
-  expect(screen.getByText('Receive input')).toBeInTheDocument();
+  // The summary replaces the step list once the report is read.
+  expect(await screen.findByText('Roofs blew off in Izmir.')).toBeInTheDocument();
+  expect(screen.getByText('1 contradicted')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /Open report/ }));
   expect(opened).toEqual(['http://clearcontext.localhost/investigations/inv-1']);
 }, 10000);

@@ -13,6 +13,8 @@ export interface PendingCapture {
   // The page's own address of a right-clicked image, for an optional copy of the original file.
   sourceUrl: string | null;
   capturedAt: number;
+  // pageUrl is the post the content came from (a feed item's own link), not the feed page.
+  fromPost?: boolean;
   // Set when the capture itself failed, so the window can say why instead of staying silent.
   error?: string;
 }

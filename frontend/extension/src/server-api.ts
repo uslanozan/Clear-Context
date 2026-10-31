@@ -1,4 +1,10 @@
-import type { Health, Investigation, ResearchMode, ResearchStep } from '../../src/lib/types';
+import type {
+  Health,
+  Investigation,
+  Report,
+  ResearchMode,
+  ResearchStep,
+} from '../../src/lib/types';
 import { dataUrlToBlob } from './capture-model';
 
 export class ServerError extends Error {
@@ -31,6 +37,8 @@ export const serverApi = {
   health: (server: string, signal?: AbortSignal) => request<Health>(server, '/health', { signal }),
   investigation: (server: string, id: string) =>
     request<Investigation>(server, `/investigations/${encodeURIComponent(id)}`),
+  report: (server: string, id: string) =>
+    request<Report>(server, `/investigations/${encodeURIComponent(id)}/report`),
   steps: (server: string, id: string) =>
     request<ResearchStep[]>(server, `/investigations/${encodeURIComponent(id)}/steps`),
   /** Start a paid investigation; called only from the Investigate button, never retried. */

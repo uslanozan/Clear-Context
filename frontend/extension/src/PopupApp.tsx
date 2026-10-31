@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button } from '@mantine/core';
 import { ArrowUpRight, Crop, TextSelect } from 'lucide-react';
+import { probePage, type Probe } from './page-probe';
 import { ServerLine, useServer } from './ServerLine';
 import { loadPending, openCaptureWindow, savePending } from './storage';
 
@@ -51,10 +52,17 @@ export function PopupApp() {
         setError('Select some text on the page first.');
         return;
       }
+      const [found] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id! },
+        func: probePage,
+        args: [null],
+      });
+      const post = (found?.result as Probe | undefined)?.post ?? null;
       await savePending({
         kind: 'text',
         text: selection.text,
-        pageUrl: selection.url,
+        pageUrl: post ?? selection.url,
+        fromPost: !!post,
         pageTitle: selection.title,
         image: null,
         sourceUrl: null,

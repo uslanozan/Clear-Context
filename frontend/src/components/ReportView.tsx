@@ -19,6 +19,7 @@ import { BudgetNotice } from './BudgetNotice';
 import { LinkFindings } from './LinkFindings';
 import { MediaFindings } from './MediaFindings';
 import { EvidenceExcerpt, SourceTypeLabel, sourceDisplayName } from './EvidenceExcerpt';
+import { COMPONENT_STATUS } from '../lib/labels';
 import { modeLabel } from '../lib/modes';
 import type { Assessment, Investigation, Report, ResearchStep } from '../lib/types';
 
@@ -310,26 +311,10 @@ export function ReportView({
                           )}
                           <Badge
                             variant="light"
-                            color={
-                              {
-                                supported: 'teal',
-                                contradicted: 'red',
-                                conflicting: 'orange',
-                                insufficient: 'yellow',
-                                not_assessed: 'gray',
-                              }[component.status]
-                            }
+                            color={COMPONENT_STATUS[component.status].color}
                             tt="none"
                           >
-                            {
-                              {
-                                supported: 'Supported',
-                                contradicted: 'Contradicted',
-                                conflicting: 'Sources disagree',
-                                insufficient: 'Insufficient evidence',
-                                not_assessed: 'Not assessed',
-                              }[component.status]
-                            }
+                            {COMPONENT_STATUS[component.status].label}
                           </Badge>
                           <p dir="auto">{component.explanation}</p>
                           <EvidenceGroups
