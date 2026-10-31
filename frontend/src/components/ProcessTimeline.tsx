@@ -54,6 +54,12 @@ const MEDIA_STAGE = {
   detail: 'Read visible text and describe attached images.',
 };
 
+const LINK_STAGE = {
+  event: 'fetch_links',
+  title: 'Read links',
+  detail: 'Open linked pages and take their text and main image.',
+};
+
 const FOLLOWUP_STAGE = {
   event: 'followup_research',
   title: 'Search again',
@@ -80,10 +86,11 @@ export function ProcessTimeline({
   const researchStages = steps.some((step) => step.name === FOLLOWUP_STAGE.event)
     ? [...RESEARCH_STAGES, FOLLOWUP_STAGE]
     : RESEARCH_STAGES;
-  // Media reading only runs when files were attached.
-  const baseStages = steps.some((step) => step.name === MEDIA_STAGE.event)
-    ? [BASE_STAGES[0], MEDIA_STAGE, ...BASE_STAGES.slice(1)]
-    : BASE_STAGES;
+  // Link and media reading only run when links or files were given.
+  const optional = [LINK_STAGE, MEDIA_STAGE].filter((stage) =>
+    steps.some((step) => step.name === stage.event),
+  );
+  const baseStages = [BASE_STAGES[0], ...optional, ...BASE_STAGES.slice(1)];
   const extract = baseStages.findIndex((stage) => stage.event === 'extract_claims') + 1;
   const STAGES = researchActive
     ? [...baseStages.slice(0, extract), ...researchStages, ...baseStages.slice(extract)]

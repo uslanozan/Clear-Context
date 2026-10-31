@@ -226,6 +226,15 @@ export function MediaFindings({ media }: { media: MediaFinding[] }) {
                   {status.label}
                 </Badge>
               </div>
+              {item.source_url && safeUrl(item.source_url) && (
+                <p className="muted small">
+                  Main image of{' '}
+                  <a href={safeUrl(item.source_url)!} target="_blank" rel="noopener noreferrer">
+                    {new URL(item.source_url).hostname.replace(/^www\./, '')}
+                  </a>
+                  ; it may be a stock or file photo, so it is checked on its own.
+                </p>
+              )}
               {item.analysis.note && <p className="muted">{item.analysis.note}</p>}
               {item.analysis.visible_text && (
                 <div>

@@ -43,6 +43,17 @@ export interface PriorFactCheck {
   claim_text: string | null;
   matched_by?: 'image' | 'text';
 }
+export interface LinkFinding {
+  url: string;
+  status: 'read' | 'not_read' | 'failed';
+  title: string | null;
+  site: string | null;
+  published_on: string | null;
+  text_chars: number;
+  truncated: boolean;
+  media_ids: string[];
+  reason: string | null;
+}
 export interface MediaFinding {
   id: string;
   kind: 'image' | 'video';
@@ -59,6 +70,8 @@ export interface MediaFinding {
     caption_checks?: CaptionCheck[];
     note: string | null;
   };
+  // Set when the image came from a linked page.
+  source_url?: string | null;
   // Absent in reports saved before fact check search.
   prior_checks?: {
     status: 'not_checked' | 'found' | 'none' | 'failed';
@@ -132,6 +145,7 @@ export interface Report {
   model_usage: ModelUsage[];
   analyzed_text?: string | null;
   media?: MediaFinding[];
+  links?: LinkFinding[];
   extraction_coverage?: {
     status: 'processed' | 'partial';
     model_calls: number;

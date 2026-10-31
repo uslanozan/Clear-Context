@@ -826,6 +826,30 @@ h3 {
   line-height: 1.8;
   margin-bottom: 20px;
 }
+.link-findings {
+  margin-bottom: 8px;
+}
+.link-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.link-card p {
+  margin: 4px 0 0;
+}
+.link-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
 .media-findings {
   margin-bottom: 8px;
 }

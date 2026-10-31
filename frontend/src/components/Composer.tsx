@@ -120,7 +120,7 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
               ref={textarea}
               aria-label="Passage to investigate"
               aria-describedby="input-description"
-              placeholder="Paste a claim, add a screenshot, or drop a video..."
+              placeholder="Paste a claim or a link, add a screenshot, or drop a video..."
               value={text}
               onChange={(event) => {
                 setText(event.currentTarget.value);
@@ -250,7 +250,7 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
           <p className="privacy-note">
             {health?.mode === 'meta'
               ? health.research_enabled
-                ? 'Text and attached images are sent to Meta; generated search queries and source URLs are sent to Tavily. Saved reports stay on your server.'
+                ? 'Text and attached images are sent to Meta; links in your text, generated search queries and source URLs are sent to Tavily. Saved reports stay on your server.'
                 : 'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.'
               : health?.mode === 'mock'
                 ? 'Preview mode. No model calls or credits used.'
