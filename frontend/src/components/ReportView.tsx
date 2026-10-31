@@ -19,7 +19,7 @@ import { BudgetNotice } from './BudgetNotice';
 import { LinkFindings } from './LinkFindings';
 import { MediaFindings } from './MediaFindings';
 import { EvidenceExcerpt, SourceTypeLabel, sourceDisplayName } from './EvidenceExcerpt';
-import { RESEARCH_MODES } from '../lib/modes';
+import { modeLabel } from '../lib/modes';
 import type { Assessment, Investigation, Report, ResearchStep } from '../lib/types';
 
 const ASSESSMENTS: Record<Assessment, { label: string; color: string }> = {
@@ -100,8 +100,7 @@ export function ReportView({
   const evidenceMissing = report.sources.length === 0;
   // Only label the mode when source research actually ran for this report.
   const researchModeLabel = steps.some((step) => step.name === 'plan_queries')
-    ? RESEARCH_MODES.find((mode) => mode.value === (investigation.research_mode ?? 'balanced'))
-        ?.label
+    ? modeLabel(investigation.research_mode ?? 'balanced')
     : undefined;
   const usageGroups = [...new Set(report.model_usage.map((usage) => usage.model_id))].map(
     (modelId) => {

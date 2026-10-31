@@ -89,3 +89,29 @@ it('offers only a continuation in Deep and links a continuation to its parent', 
     '/investigations/p0',
   );
 });
+
+it('researches every remaining claim only after a confirmation with an estimate', async () => {
+  const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(JSON.stringify({ ...investigation, id: 'child', relation: 'continue' }), {
+      status: 202,
+      headers: { 'Content-Type': 'application/json' },
+    }),
+  );
+  const many = {
+    ...report,
+    research_summary: {
+      ...report.research_summary!,
+      budget_limited_claim_ids: Array.from({ length: 45 }, (_, i) => `c${i}`),
+    },
+  } as Report;
+  renderNotice({ investigation, report: many });
+  fireEvent.click(screen.getByRole('button', { name: 'Research every remaining claim' }));
+  expect(await screen.findByText(/40 claims will be researched/)).toBeInTheDocument();
+  expect(screen.getByText(/5 more claims stay for another run/)).toBeInTheDocument();
+  expect(fetchMock).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Start research' }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  const [url, init] = fetchMock.mock.calls[0];
+  expect(String(url)).toContain('/investigations/parent/continue');
+  expect(JSON.parse(String((init as RequestInit).body))).toEqual({ research_mode: 'complete' });
+});

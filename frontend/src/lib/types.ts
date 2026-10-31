@@ -26,7 +26,8 @@ export interface ExtractedClaim {
   context_spans?: TextSpan[];
   context_status?: 'standalone' | 'context_linked' | 'ambiguous' | null;
 }
-export type ResearchMode = 'fast' | 'balanced' | 'deep';
+// complete is started only from a report, after a confirmation; it is not a default.
+export type ResearchMode = 'fast' | 'balanced' | 'deep' | 'complete';
 export type SourceType = 'fact_check' | 'reference' | 'social' | 'web';
 export interface CaptionCheck {
   caption_detail: string;
@@ -207,7 +208,7 @@ export interface AppSettings {
   paid_calls: boolean;
   models: Record<ModelTask, string>;
   model_options: { alias: string; name: string }[];
-  default_research_mode: ResearchMode;
+  default_research_mode: Exclude<ResearchMode, 'complete'>;
   reverse_image_search: boolean;
   fact_check_search: boolean;
   link_reading: boolean;

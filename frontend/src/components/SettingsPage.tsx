@@ -14,7 +14,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronRight, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import { RESEARCH_MODES } from '../lib/modes';
-import type { AppSettings, KeyName, ModelTask, ResearchMode, SettingsUpdate } from '../lib/types';
+import type { AppSettings, KeyName, ModelTask, SettingsUpdate } from '../lib/types';
 
 const KEYS: { name: KeyName; label: string; detail: string }[] = [
   {
@@ -364,7 +364,7 @@ function SettingsForm({
               onChange={(value) =>
                 setAdvanced((current) => ({
                   ...current,
-                  default_research_mode: value as ResearchMode,
+                  default_research_mode: value as AppSettings['default_research_mode'],
                 }))
               }
               data={RESEARCH_MODES.map(({ value, label }) => ({ value, label }))}
