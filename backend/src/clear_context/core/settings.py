@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     research_enabled: bool = False
     # Judge profile from config/judges.yaml used by application research.
     research_judge_profile: str = "need_components_v5"
+    # Search results with a provider relevance score below this are not read. Measured on
+    # 119 pages: below 0.30 only unrelated pages; primary sources scored 0.45 and up.
+    search_min_score: float = Field(default=0.30, ge=0, le=1)
     meta_timeout_seconds: float = Field(default=60, gt=0, le=120)
     meta_max_completion_tokens: int = Field(default=4096, ge=128, le=4096)
     meta_max_claims: int = Field(default=8, ge=1, le=12)

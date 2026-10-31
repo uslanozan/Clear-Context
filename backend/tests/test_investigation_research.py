@@ -524,3 +524,35 @@ def test_text_only_research_keeps_the_selected_planner(monkeypatch, tmp_path):
     )
     assert "image_context" not in requests[0]["messages"][0]["content"]
     assert "image_context" not in json.loads(requests[0]["messages"][1]["content"])
+
+
+def test_low_scored_search_results_are_not_read():
+    from clear_context.schemas.retrieval import ResearchQuery, SearchRequest
+
+    class Session:
+        def __init__(self):
+            self.read = []
+
+        def search(self, case_id, query_id):
+            return {
+                "results": [
+                    {"url": "https://example.org/unrelated", "score": 0.04},
+                    {"url": "https://example.org/primary", "score": 0.45},
+                    {"url": "https://example.org/unscored"},
+                ]
+            }
+
+        def read_source(self, source):
+            self.read.append(source)
+            return f"page-{len(self.read)}"
+
+    session, limitations = Session(), []
+    query = ResearchQuery(
+        id="q1", request=SearchRequest(query="bridge", language="en"), need_ids=["n1"]
+    )
+    complete = InvestigationResearch._search(
+        session, None, "case", [query], {}, {}, {}, 10, limitations, min_score=0.30
+    )
+    # The unrelated result is skipped; a primary source at 0.45 and an unscored result are read.
+    assert complete and len(session.read) == 2
+    assert limitations == ["1 search result(s) scored below 0.30 for relevance were not read."]

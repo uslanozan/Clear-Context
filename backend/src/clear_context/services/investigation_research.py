@@ -268,6 +268,7 @@ class InvestigationResearch:
                 hits,
                 budget.max_source_reads + match_reads,
                 limitations,
+                min_score=self.settings.search_min_score,
             )
             if progress and search_complete:
                 progress("retrieve_sources")
@@ -417,8 +418,14 @@ class InvestigationResearch:
         hits,
         source_limit,
         limitations,
+        min_score=0.0,
     ):
-        """Run queries and read new sources up to source_limit; False if search stopped."""
+        """Run queries and read new sources up to source_limit; False if search stopped.
+
+        Results scored below min_score by the search provider are not read: in measured runs
+        they were unrelated pages, while useful primary sources scored well above it.
+        """
+        skipped = set()
         for query in queries:
             try:
                 response = session.search(case_id, query.id)
@@ -429,6 +436,10 @@ class InvestigationResearch:
             for need_id in query.need_ids:
                 hits[need_id] = hits.get(need_id, 0) + len(results)
             for hit in results:
+                score = hit.get("score")
+                if isinstance(score, int | float) and score < min_score:
+                    skipped.add(hit.get("url"))
+                    continue
                 try:
                     source = identity("s_", canonical_source_url(hit["url"]))
                     if source not in read_sources:
@@ -447,6 +458,11 @@ class InvestigationResearch:
                 except (RetrievalFailure, ValueError, KeyError) as error:
                     code = getattr(error, "code", "invalid_source")
                     limitations.append(f"A source could not be read ({code}).")
+        if skipped:
+            limitations.append(
+                f"{len(skipped)} search result(s) scored below {min_score:.2f} "
+                "for relevance were not read."
+            )
         return True
 
     async def _select(self, research, case_id, page_needs, max_calls):
@@ -587,6 +603,7 @@ class InvestigationResearch:
             hits,
             budget.max_source_reads + budget.followup_source_reads + match_reads,
             limitations,
+            min_score=self.settings.search_min_score,
         )
         # Only new page/need pairs need selection; earlier pairs keep their receipts.
         new_pairs = {
