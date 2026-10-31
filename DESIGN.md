@@ -3,29 +3,28 @@ name: Clear Context
 description: Self-hosted fact-checking workspace; evidence for each detail of a claim.
 colors:
   meta-blue: "#0064e0"
-  meta-blue-deep: "#0050b5"
-  meta-blue-wash: "#e5eefc"
-  muse-blue: "#3b81e0"
-  rail-navy: "#0f2742"
-  rail-hover: "#19395d"
-  rail-line: "#27445f"
+  meta-blue-bright: "#0b74ff"
+  link-blue: "#5aa2ff"
+  link-blue-soft: "#8dbdff"
+  blue-wash: "#0f2442"
+  rail-navy: "#0a1322"
+  rail-hover: "#14233a"
   rail-ink: "#e8eef7"
-  rail-muted: "#a3b5ca"
   jolly-cream: "#f3e6d6"
-  jolly-cream-soft: "#fbf5ee"
-  quote-highlight: "#f7dfc0"
-  page: "#f4f7fb"
-  surface: "#ffffff"
-  ink: "#1c2b33"
-  muted: "#536372"
-  line: "#d8e1eb"
-  line-strong: "#b0bfcf"
-  success: "#1b6b45"
-  success-soft: "#e2f1e8"
-  warning-ink: "#6e4a00"
-  warning-soft: "#fbf1df"
-  danger: "#b42318"
-  danger-soft: "#fdecea"
+  on-highlight: "#0b1626"
+  page: "#060b14"
+  surface: "#0d1726"
+  ink: "#e8eef7"
+  muted: "#98a9bf"
+  line: "#1b2a42"
+  line-strong: "#2d4264"
+  success: "#5fd39a"
+  success-soft: "#0f2a1f"
+  warning-ink: "#f1c470"
+  warning-soft: "#2a2110"
+  danger: "#ff8f84"
+  danger-soft: "#2e1411"
+
 typography:
   headline:
     fontFamily: "Onest Variable, Segoe UI, sans-serif"
@@ -68,22 +67,22 @@ spacing:
 components:
   button-primary:
     backgroundColor: "{colors.meta-blue}"
-    textColor: "{colors.surface}"
+    textColor: "#ffffff"
     rounded: "{rounded.sm}"
     height: "42px"
   button-primary-hover:
-    backgroundColor: "{colors.meta-blue-deep}"
+    backgroundColor: "{colors.meta-blue-bright}"
   rail-item-active:
     backgroundColor: "{colors.jolly-cream}"
     textColor: "{colors.rail-navy}"
     rounded: "{rounded.sm}"
   quote-mark:
-    backgroundColor: "{colors.quote-highlight}"
-    textColor: "{colors.ink}"
+    backgroundColor: "{colors.jolly-cream}"
+    textColor: "{colors.on-highlight}"
     rounded: "{rounded.xs}"
   stage-glyph-tile:
-    backgroundColor: "{colors.meta-blue-wash}"
-    textColor: "{colors.meta-blue}"
+    backgroundColor: "{colors.blue-wash}"
+    textColor: "{colors.link-blue}"
     rounded: "{rounded.tile}"
     size: "88px"
 ---
@@ -94,40 +93,35 @@ components:
 
 **Creative North Star: "The Annotated Source"**
 
-The workspace is a reading desk for evidence. A deep navy rail holds navigation and history; the work area is a cool white page where claims, sources and quoted passages are read closely. Meta blue marks every action and link. The cream of Muse's mascot appears only twice: on the brand mark and the active rail item, and as the highlighter over quoted source text, so warmth always means "this is the passage that matters".
+A dark reading desk for evidence. Near-black navy holds the page, slightly lifted navy holds cards and the navigation rail, and cream appears only where a source passage is highlighted. Meta blue marks actions and links. Nothing glows for decoration: light on this screen means "this is the passage that matters".
 
-Density is that of a working tool: compact rows, clear grouping, no marketing hero inside the app. Motion is reserved for real work in progress: each recorded investigation stage has its own drawn glyph that moves only while that stage runs.
+Density is that of a working tool. Motion is reserved for real work in progress: each recorded investigation stage has its own drawn glyph that moves only while that stage runs, and it stays still under reduced motion.
 
 **Key Characteristics:**
-- Navy rail, white work surface, one blue for actions.
-- Cream is a highlighter, never a background.
-- Status color only where it carries a verdict on evidence.
-- Stage glyphs instead of spinners; still under reduced motion.
+- Dark by default (page, rail, report); no light mode.
+- One action blue; links use a lighter blue for contrast on dark.
+- Cream is a highlighter and the mark, never a panel color.
+- Verdict colors only from the state palette; blue never means "true".
 
 ## Colors
 
-A restrained blue system with one warm accent.
-
 ### Primary
-- **Meta Blue** (#0064e0): primary buttons, links, focus rings, the running stage. 5:1 on white.
-- **Meta Blue Deep** (#0050b5): hover and pressed states.
-- **Muse Blue** (#3b81e0): the upper letter of the mark only.
+- **Meta Blue** (#0064e0): filled buttons, white text. **Bright** (#0b74ff) on hover.
+- **Link Blue** (#5aa2ff, soft #8dbdff): links, focus rings, the running stage.
 
 ### Secondary
-- **Jolly Cream** (#f3e6d6): the active rail item and the mark on dark grounds.
-- **Quote Highlight** (#f7dfc0): `<mark>` over the exact source excerpt and text selection.
+- **Jolly Cream** (#f3e6d6): the active rail item, the logo, and highlighted source quotes (dark text #0b1626 on it).
 
 ### Neutral
-- **Rail Navy** (#0f2742) with **Rail Ink** (#e8eef7) and **Rail Muted** (#a3b5ca): the navigation rail.
-- **Page** (#f4f7fb), **Surface** (#ffffff): work area and cards.
-- **Ink** (#1c2b33), **Muted** (#536372): text. **Line** (#d8e1eb), **Line Strong** (#b0bfcf): dividers and input borders.
+- **Page** (#060b14), **Surface** (#0d1726), **Rail** (#0a1322, hover #14233a).
+- **Ink** (#e8eef7), **Muted** (#98a9bf), **Line** (#1b2a42), **Line Strong** (#2d4264).
 
 ### States
-Supported uses **Success** (#1b6b45 on #e2f1e8), contradicted uses **Danger** (#b42318 on #fdecea), unsettled details use the warning pair (#6e4a00 on #fbf1df). Mantine badges map these through `teal`, `red`, `orange`, `yellow` and `gray`.
+Supported #5fd39a on #0f2a1f; contradicted #ff8f84 on #2e1411; unsettled #f1c470 on #2a2110.
 
-**The Highlighter Rule.** Cream marks the passage a finding rests on. Do not use it for panels, page backgrounds or decoration.
+**The Highlighter Rule.** Cream marks the passage a finding rests on. Do not use it for panels or decoration.
 
-**The One Blue Rule.** Blue never means "true". Verdict colors come only from the state palette.
+**The One Blue Rule.** Blue never means true.
 
 ## Typography
 
@@ -149,7 +143,7 @@ A 244px fixed rail and a fluid work area (max 1160px for intake, report with a 2
 
 ## Elevation & Depth
 
-Flat. Cards are separated by a 1px line on a tinted page; there are no decorative shadows. Depth on the rail comes from tone (navy, hover navy, cream for active).
+Flat. Cards are one tone lighter than the page with a 1px line; no decorative shadows or glows. Depth comes from tone.
 
 ## Shapes
 
@@ -165,7 +159,7 @@ Inputs and cards use 10–14px radii; buttons 6px; stage glyph tiles 16px. Pills
 ## Do's and Don'ts
 
 - Do derive progress from recorded backend events.
-- Do keep the official Meta wordmark and Jolly image unaltered, as attribution only.
+- Do keep the official Meta wordmark and Jolly image unaltered, as attribution only; the wordmark sits on a light chip because its lettering is dark.
 - Don't add pulsing dots, eyebrows, period-ended headings, italic accent words, gradient text, glow or glass.
 - Don't add colored side borders thicker than 1px to callouts.
 - Don't animate anything that is not actual work in progress.

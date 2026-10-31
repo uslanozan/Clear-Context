@@ -12,7 +12,7 @@ import './extension.css';
 export function mount(page: React.ReactNode) {
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-      <MantineProvider theme={theme} forceColorScheme="light">
+      <MantineProvider theme={theme} forceColorScheme="dark">
         {page}
       </MantineProvider>
     </React.StrictMode>,

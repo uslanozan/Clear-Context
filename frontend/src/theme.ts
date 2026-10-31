@@ -3,8 +3,21 @@ import { Button, createTheme, Paper, Textarea } from '@mantine/core';
 // Keep in step with the CSS tokens in styles.css.
 export const theme = createTheme({
   primaryColor: 'brand',
-  primaryShade: 7,
+  primaryShade: { light: 7, dark: 7 },
   colors: {
+    // Mantine's dark scale, mapped to the page, surface and line tokens in styles.css.
+    dark: [
+      '#e8eef7',
+      '#c9d5e5',
+      '#98a9bf',
+      '#6f819a',
+      '#2d4264',
+      '#1b2a42',
+      '#0d1726',
+      '#0a1322',
+      '#060b14',
+      '#03060c',
+    ],
     // Meta blue; shade 7 (#0064e0) is the action color and passes AA on white.
     brand: [
       '#eaf2ff',
@@ -32,7 +45,7 @@ export const theme = createTheme({
       '#54412d',
     ],
   },
-  black: '#1c2b33',
+  black: '#060b14',
   fontFamily: 'Onest Variable, Segoe UI, sans-serif',
   fontFamilyMonospace: 'JetBrains Mono Variable, ui-monospace, Consolas, monospace',
   headings: { fontFamily: 'Onest Variable, Segoe UI, sans-serif', fontWeight: '600' },

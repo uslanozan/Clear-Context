@@ -1,36 +1,40 @@
 :root {
-  /* Surfaces: a cool page tinted toward Meta blue, white work areas. */
-  --page: #f4f7fb;
-  --surface: #ffffff;
-  --ink: #1c2b33;
-  --muted: #536372;
-  --line: #d8e1eb;
-  --line-strong: #b0bfcf;
+  /* Dark theme: near-black navy page, slightly lifted surfaces. */
+  --page: #060b14;
+  --surface: #0d1726;
+  --ink: #e8eef7;
+  --muted: #98a9bf;
+  --line: #1b2a42;
+  --line-strong: #2d4264;
   /* Navigation rail. */
-  --sidebar: #0f2742;
+  --sidebar: #0a1322;
   --sidebar-ink: #e8eef7;
-  --sidebar-muted: #a3b5ca;
-  --sidebar-hover: #19395d;
-  --sidebar-line: #27445f;
-  /* Meta blue for actions, links and focus. */
-  --accent: #0064e0;
-  --accent-strong: #0050b5;
-  --accent-soft: #e5eefc;
-  /* Jolly cream: the brand mark on the rail and highlighted source quotes only. */
+  --sidebar-muted: #98a9bf;
+  --sidebar-hover: #14233a;
+  --sidebar-line: #1b2a42;
+  /* Meta blue: --action fills buttons (white text), --accent colors links and focus on dark. */
+  --action: #0064e0;
+  --action-strong: #0b74ff;
+  --accent: #5aa2ff;
+  --accent-strong: #8dbdff;
+  --accent-soft: #0f2442;
+  /* Jolly cream: the brand mark, the active rail item and highlighted source quotes only. */
   --cream: #f3e6d6;
-  --cream-soft: #fbf5ee;
-  --highlight: #f7dfc0;
+  --cream-soft: #14233a;
+  --highlight: #f3e6d6;
+  --on-highlight: #0b1626;
   /* States. */
-  --active: #e5eefc;
-  --success: #1b6b45;
-  --success-soft: #e2f1e8;
-  --warning-ink: #6e4a00;
-  --warning-soft: #fbf1df;
-  --warning-line: #e6cc98;
-  --danger: #b42318;
-  --danger-soft: #fdecea;
+  --active: #0f2442;
+  --success: #5fd39a;
+  --success-soft: #0f2a1f;
+  --warning-ink: #f1c470;
+  --warning-soft: #2a2110;
+  --warning-line: #5c4718;
+  --danger: #ff8f84;
+  --danger-soft: #2e1411;
   --font-sans: 'Onest Variable', 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, Consolas, monospace;
+  color-scheme: dark;
   color: var(--ink);
   background: var(--page);
   font-synthesis: none;
@@ -113,7 +117,7 @@ h3 {
   scrollbar-color: var(--sidebar-line) transparent;
 }
 .sidebar ::selection {
-  background: var(--accent);
+  background: var(--action);
   color: #fff;
 }
 .sidebar :focus-visible {
@@ -145,11 +149,11 @@ h3 {
 .sidebar .new-button {
   margin: 28px 0 18px;
   height: 42px;
-  background: var(--accent);
+  background: var(--action);
   color: #fff;
 }
 .sidebar .new-button:hover {
-  background: var(--accent-strong);
+  background: var(--action-strong);
 }
 .sidebar-section-label {
   display: flex;
@@ -600,9 +604,14 @@ h3 {
   gap: 12px;
   padding: 16px 0 0;
 }
+/* The official wordmark has dark lettering, so it sits on a light chip and stays unaltered. */
 .muse-reference > div img {
   width: 68px;
   height: auto;
+  box-sizing: content-box;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #fff;
 }
 .muse-reference span {
   font-size: 12px;
@@ -868,7 +877,7 @@ h3 {
 }
 .source-context mark {
   background: var(--highlight);
-  color: var(--ink);
+  color: var(--on-highlight);
   padding: 1px 2px;
 }
 .claim-explanation {
@@ -1113,7 +1122,7 @@ h3 {
 }
 .evidence-excerpt mark {
   background: var(--highlight);
-  color: var(--ink);
+  color: var(--on-highlight);
   padding: 1px 2px;
   border-radius: 2px;
 }
@@ -1663,7 +1672,7 @@ h3 {
 }
 .evaluation-passage mark {
   background: var(--highlight);
-  color: inherit;
+  color: var(--on-highlight);
 }
 .evaluation-caveat {
   margin: 22px 0;

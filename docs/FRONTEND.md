@@ -19,7 +19,7 @@ Restart Vite after changing these settings. The **Settings** page (`/settings`) 
 
 - `src/theme.ts`: Mantine palette, fonts, radii, and component defaults.
 - `src/styles.css`: shared surface/text tokens, layout, reusable domain classes, responsive rules, focus, and reduced-motion styles.
-- A navy navigation rail, cool white work surfaces, Meta blue for actions and a cream highlighter for quoted evidence. Onest for text and JetBrains Mono for timestamps and counts; both are bundled locally.
+- A dark theme: near-black navy page, lifted navy surfaces and rail, Meta blue for actions and a cream highlighter for quoted evidence. Onest for text and JetBrains Mono for timestamps and counts; both are bundled locally.
 - `components/StepGlyph.tsx` draws one glyph per recorded stage; it moves only while that stage runs and stays still under reduced motion. `components/Logo.tsx` holds the Clear Context mark (also in `public/brand/`).
 - `Composer`, `Sidebar`, and `ReportView` share this system. Use Mantine controls for forms, dialogs, alerts, and disclosure rather than introducing a second component library.
 
