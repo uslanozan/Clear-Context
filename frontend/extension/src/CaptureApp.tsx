@@ -5,7 +5,7 @@ import { failureMessage } from '../../src/lib/api';
 import { RESEARCH_MODES } from '../../src/lib/modes';
 import { queueMessage, stageTitle } from '../../src/lib/stages';
 import type { Investigation, ResearchMode, ResearchStep } from '../../src/lib/types';
-import { MAX_TEXT, type PendingCapture } from './capture-model';
+import { isTextKind, MAX_TEXT, type PendingCapture } from './capture-model';
 import { ServerError, serverApi } from './server-api';
 import { summarize, type ReportSummary } from './summary';
 import { SummaryView } from './SummaryView';
@@ -14,6 +14,8 @@ import { clearPending, loadPending } from './storage';
 
 const KIND_LABEL: Record<PendingCapture['kind'], string> = {
   text: 'Selected text',
+  pasted: 'Pasted text or link',
+  link: 'Link from the page',
   image: 'Image from the page',
   video: 'Video frame from the page',
   area: 'Selected area of the page',
@@ -185,14 +187,16 @@ function Preview({
         </figure>
       )}
       <Textarea
-        label={capture.kind === 'text' ? 'Text to check' : 'Caption or post text'}
+        label={isTextKind(capture.kind) ? 'Text to check' : 'Caption or post text'}
         description={
-          capture.kind === 'text'
-            ? 'You can edit it before sending.'
-            : 'Optional: what the post says about this picture.'
+          capture.kind === 'link'
+            ? 'The server reads this link. You can add what the post says.'
+            : isTextKind(capture.kind)
+              ? 'You can edit it before sending.'
+              : 'Optional: what the post says about this picture.'
         }
         autosize
-        minRows={capture.kind === 'text' ? 5 : 3}
+        minRows={isTextKind(capture.kind) ? 5 : 3}
         maxRows={12}
         value={text}
         onChange={(event) => setText(event.currentTarget.value)}

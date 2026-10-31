@@ -157,11 +157,12 @@ npm ci
 npm run build:extension
 ```
 
-Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select `frontend/dist-extension`. Three ways to capture:
+Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select `frontend/dist-extension`. Ways to capture:
 
 - **Selected text:** select text, right-click and choose **Check with Clear Context** (or use **Use selected text** from the toolbar button). Only the text in the box is sent; to have a post or article read, paste its link into the text.
 - **An image or a video frame:** right-click it and choose **Check with Clear Context**. The picture is cut from a screenshot of what you see, so it works on pages that need a login. For an image, **Use the original image file** fetches the file the page published, after you grant access to that one site; reverse image search matches it better than an enlarged screenshot.
 - **An area:** toolbar button, **Capture an area**, then drag over anything on screen, such as a post or a paused video.
+- **A link:** right-click a link and choose **Check this link with Clear Context**, or paste text or a link (for example a post's address copied from the address bar) into **Paste text or a link** in the toolbar button and press **Continue**. The link appears in the box as text; the server reads it like a link typed into the web app.
 
 A window then shows what was captured, lets you edit the text, choose the research depth and press **Investigate**; nothing is sent before that, and a failed request keeps the capture. It then shows the steps the server records and, when the report is ready, a short summary: each claim with the count of its supported, contradicted and unsettled details, and for a picture the earliest page found with the same picture and caption details it does not fit. The evidence itself stays in the web report (**Open report**). The extension finds the server itself: it tries `http://clearcontext.localhost` (Docker) and `http://clearcontext.localhost:5173` (development) and uses the first that answers. **Change** sets another address, for example a different port; local addresses are allowed by the manifest, while any other address, and original image files, ask for permission when used. The API key stays on the server. Videos on platforms such as YouTube or X are not downloaded; capture a frame or an area instead.
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button } from '@mantine/core';
+import { Alert, Button, Textarea } from '@mantine/core';
 import { ArrowUpRight, Crop, TextSelect } from 'lucide-react';
+import { MAX_TEXT } from './capture-model';
 import { ServerLine, useServer } from './ServerLine';
 import { loadPending, openCaptureWindow, savePending } from './storage';
 
@@ -22,6 +23,7 @@ async function activeTab() {
 export function PopupApp() {
   const [hasPending, setHasPending] = useState(false);
   const [error, setError] = useState('');
+  const [pasted, setPasted] = useState('');
   const { server: found, connection, choose } = useServer();
   const server = found?.origin ?? null;
 
@@ -67,6 +69,20 @@ export function PopupApp() {
     }
   }
 
+  async function usePasted() {
+    await savePending({
+      kind: 'pasted',
+      text: pasted,
+      pageUrl: null,
+      pageTitle: null,
+      image: null,
+      sourceUrl: null,
+      capturedAt: Date.now(),
+    });
+    await openCaptureWindow();
+    window.close();
+  }
+
   return (
     <main className="ext-popup">
       <header className="ext-header">
@@ -96,6 +112,27 @@ export function PopupApp() {
       >
         Use selected text
       </Button>
+      <form
+        className="ext-paste"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (pasted.trim()) void usePasted();
+        }}
+      >
+        <Textarea
+          label="Paste text or a link"
+          description="For example a post's address copied from the address bar."
+          autosize
+          minRows={2}
+          maxRows={5}
+          maxLength={MAX_TEXT}
+          value={pasted}
+          onChange={(event) => setPasted(event.currentTarget.value)}
+        />
+        <Button type="submit" fullWidth variant="default" disabled={!pasted.trim()}>
+          Continue
+        </Button>
+      </form>
       {hasPending && (
         <Button fullWidth variant="subtle" onClick={() => void openCaptureWindow()}>
           Review the last capture
@@ -106,7 +143,7 @@ export function PopupApp() {
           {error}
         </Alert>
       )}
-      <p className="muted small">Or right-click selected text, an image or a video.</p>
+      <p className="muted small">Or right-click selected text, a link, an image or a video.</p>
       {server && (
         <button
           type="button"

@@ -10,6 +10,7 @@ import { openCaptureWindow, savePending } from './storage';
 
 const TEXT_MENU = 'clear-context-text';
 const MEDIA_MENU = 'clear-context-media';
+const LINK_MENU = 'clear-context-link';
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -21,6 +22,11 @@ chrome.runtime.onInstalled.addListener(() => {
     id: MEDIA_MENU,
     title: 'Check with Clear Context',
     contexts: ['image', 'video'],
+  });
+  chrome.contextMenus.create({
+    id: LINK_MENU,
+    title: 'Check this link with Clear Context',
+    contexts: ['link'],
   });
 });
 
@@ -110,6 +116,20 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     await savePending({
       kind: 'text',
       text: info.selectionText ?? '',
+      pageUrl: info.pageUrl ?? tab.url ?? null,
+      pageTitle: tab.title ?? null,
+      image: null,
+      sourceUrl: null,
+      capturedAt: Date.now(),
+    });
+    await openCaptureWindow();
+    return;
+  }
+  if (info.menuItemId === LINK_MENU && info.linkUrl) {
+    // Only the right-clicked link goes into the box; the user sees it before sending.
+    await savePending({
+      kind: 'link',
+      text: info.linkUrl,
       pageUrl: info.pageUrl ?? tab.url ?? null,
       pageTitle: tab.title ?? null,
       image: null,

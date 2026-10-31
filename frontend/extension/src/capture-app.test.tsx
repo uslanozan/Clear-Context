@@ -192,3 +192,28 @@ it('uses an address the user picked without probing the known ones', async () =>
   expect(await screen.findByText(/192.168.1.5:8080 · Connected/)).toBeInTheDocument();
   expect(probed.every((url) => url.startsWith('http://192.168.1.5:8080'))).toBe(true);
 });
+
+it('shows a right-clicked link in the box and sends only what the box holds', async () => {
+  const link = { ...capture, kind: 'link' as const, text: 'https://social.example/post/42' };
+  installChrome(link);
+  const posts: unknown[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: string, init?: RequestInit) => {
+      if (input.endsWith('/health')) {
+        return json({ status: 'ok', mode: 'meta', research_enabled: false });
+      }
+      if (init?.method === 'POST') posts.push(JSON.parse(String(init.body)));
+      return json(investigation, 202);
+    }),
+  );
+  renderApp();
+  expect(await screen.findByText('Link from the page')).toBeInTheDocument();
+  const box = screen.getByLabelText('Text to check');
+  expect(box).toHaveValue('https://social.example/post/42');
+  fireEvent.change(box, { target: { value: 'Is this real? https://social.example/post/42' } });
+  await screen.findByText(/Connected/);
+  fireEvent.click(screen.getByRole('button', { name: 'Investigate' }));
+  await waitFor(() => expect(posts).toHaveLength(1));
+  expect(posts[0]).toEqual({ text: 'Is this real? https://social.example/post/42' });
+});

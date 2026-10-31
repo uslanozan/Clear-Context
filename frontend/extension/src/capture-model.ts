@@ -1,10 +1,15 @@
 /** What the extension captured and how it becomes an investigation request. */
 
-export type CaptureKind = 'text' | 'image' | 'video' | 'area';
+export type CaptureKind = 'text' | 'pasted' | 'link' | 'image' | 'video' | 'area';
+
+/** Captures made of text only: selected, pasted, or a right-clicked link's address. */
+export function isTextKind(kind: CaptureKind) {
+  return kind === 'text' || kind === 'pasted' || kind === 'link';
+}
 
 export interface PendingCapture {
   kind: CaptureKind;
-  // Selected text; empty for image, video and area captures.
+  // Selected or pasted text, or a link's address; empty for image, video and area captures.
   text: string;
   pageUrl: string | null;
   pageTitle: string | null;
