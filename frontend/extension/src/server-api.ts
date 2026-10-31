@@ -28,7 +28,7 @@ async function request<T>(server: string, path: string, init?: RequestInit): Pro
 }
 
 export const serverApi = {
-  health: (server: string) => request<Health>(server, '/health'),
+  health: (server: string, signal?: AbortSignal) => request<Health>(server, '/health', { signal }),
   investigation: (server: string, id: string) =>
     request<Investigation>(server, `/investigations/${encodeURIComponent(id)}`),
   steps: (server: string, id: string) =>

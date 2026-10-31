@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button } from '@mantine/core';
 import { ArrowUpRight, Crop, TextSelect } from 'lucide-react';
-import { ServerLine, useConnection } from './ServerLine';
-import { loadPending, loadServer, openCaptureWindow, savePending } from './storage';
+import { ServerLine, useServer } from './ServerLine';
+import { loadPending, openCaptureWindow, savePending } from './storage';
 
 /** Selected text of the page; runs in the page. */
 function readSelection() {
@@ -20,13 +20,12 @@ async function activeTab() {
 
 /** Toolbar popup: start a capture in the current tab or open the last one. */
 export function PopupApp() {
-  const [server, setServer] = useState<string | null>(null);
   const [hasPending, setHasPending] = useState(false);
   const [error, setError] = useState('');
-  const connection = useConnection(server);
+  const { server: found, connection, choose } = useServer();
+  const server = found?.origin ?? null;
 
   useEffect(() => {
-    void loadServer().then(setServer);
     void loadPending().then((pending) => setHasPending(!!pending));
   }, []);
 
@@ -76,7 +75,14 @@ export function PopupApp() {
         </span>
         <div>
           <strong>Clear Context</strong>
-          {server && <ServerLine server={server} connection={connection} onChange={setServer} />}
+          {found && (
+            <ServerLine
+              server={found.origin}
+              chosen={found.chosen}
+              connection={connection}
+              onChoose={(origin) => void choose(origin)}
+            />
+          )}
         </div>
       </header>
       <Button fullWidth leftSection={<Crop size={16} />} onClick={() => void captureArea()}>

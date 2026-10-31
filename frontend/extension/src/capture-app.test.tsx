@@ -15,7 +15,7 @@ const capture: PendingCapture = {
   capturedAt: 0,
 };
 
-function installChrome(pending: PendingCapture | null) {
+function installChrome(pending: PendingCapture | null, sync: Record<string, unknown> = {}) {
   const session: Record<string, unknown> = pending ? { pending } : {};
   const opened: string[] = [];
   vi.stubGlobal('chrome', {
@@ -25,7 +25,11 @@ function installChrome(pending: PendingCapture | null) {
         set: vi.fn(async (items: Record<string, unknown>) => Object.assign(session, items)),
         remove: vi.fn(async (key: string) => delete session[key]),
       },
-      sync: { get: vi.fn(async () => ({})), set: vi.fn() },
+      sync: {
+        get: vi.fn(async (key: string) => (key in sync ? { [key]: sync[key] } : {})),
+        set: vi.fn(async (items: Record<string, unknown>) => Object.assign(sync, items)),
+        remove: vi.fn(async (key: string) => delete sync[key]),
+      },
     },
     tabs: { create: vi.fn(async ({ url }: { url: string }) => opened.push(url)) },
     permissions: { request: vi.fn(async () => true) },
@@ -142,5 +146,38 @@ it('says what to do when nothing was captured or the server is down', async () =
   );
   renderApp();
   expect(await screen.findByText('Nothing captured yet')).toBeInTheDocument();
-  expect(await screen.findByText(/Not reachable/)).toBeInTheDocument();
+  expect(await screen.findByText(/Not running: start Clear Context/)).toBeInTheDocument();
+});
+
+it('finds the development server when Docker is not running', async () => {
+  installChrome(capture);
+  const probed: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: string) => {
+      probed.push(input);
+      if (input === 'http://clearcontext.localhost:5173/api/health') {
+        return json({ status: 'ok', mode: 'meta', research_enabled: true });
+      }
+      throw new TypeError('Failed to fetch');
+    }),
+  );
+  renderApp();
+  expect(await screen.findByText(/clearcontext.localhost:5173 · Connected/)).toBeInTheDocument();
+  expect(probed).toContain('http://clearcontext.localhost/api/health');
+});
+
+it('uses an address the user picked without probing the known ones', async () => {
+  installChrome(capture, { serverChoice: 'http://192.168.1.5:8080' });
+  const probed: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: string) => {
+      probed.push(input);
+      return json({ status: 'ok', mode: 'meta', research_enabled: true });
+    }),
+  );
+  renderApp();
+  expect(await screen.findByText(/192.168.1.5:8080 · Connected/)).toBeInTheDocument();
+  expect(probed.every((url) => url.startsWith('http://192.168.1.5:8080'))).toBe(true);
 });

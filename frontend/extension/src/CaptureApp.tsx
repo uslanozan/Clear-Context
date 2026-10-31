@@ -7,8 +7,8 @@ import { stageTitle } from '../../src/lib/stages';
 import type { Investigation, ResearchMode, ResearchStep } from '../../src/lib/types';
 import { MAX_TEXT, readablePage, submissionText, type PendingCapture } from './capture-model';
 import { ServerError, serverApi } from './server-api';
-import { ServerLine, useConnection, type Connection } from './ServerLine';
-import { clearPending, loadPending, loadServer } from './storage';
+import { ServerLine, useServer, type Connection } from './ServerLine';
+import { clearPending, loadPending } from './storage';
 
 const KIND_LABEL: Record<PendingCapture['kind'], string> = {
   text: 'Selected text',
@@ -19,15 +19,12 @@ const KIND_LABEL: Record<PendingCapture['kind'], string> = {
 
 export function CaptureApp() {
   const [capture, setCapture] = useState<PendingCapture | null | undefined>(undefined);
-  const [server, setServer] = useState<string | null>(null);
-  const connection = useConnection(server);
+  const { server: found, connection, choose } = useServer();
+  const server = found?.origin ?? null;
   const [started, setStarted] = useState<Investigation | null>(null);
 
   useEffect(() => {
-    void Promise.all([loadPending(), loadServer()]).then(([pending, origin]) => {
-      setCapture(pending);
-      setServer(origin);
-    });
+    void loadPending().then(setCapture);
   }, []);
 
   return (
@@ -38,11 +35,12 @@ export function CaptureApp() {
         </span>
         <div>
           <strong>Clear Context</strong>
-          {server && (
+          {found && (
             <ServerLine
-              server={server}
+              server={found.origin}
+              chosen={found.chosen}
               connection={connection}
-              onChange={(origin) => setServer(origin)}
+              onChoose={(origin) => void choose(origin)}
             />
           )}
         </div>

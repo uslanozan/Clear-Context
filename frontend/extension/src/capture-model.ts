@@ -18,6 +18,9 @@ export interface PendingCapture {
 }
 
 export const DEFAULT_SERVER = 'http://clearcontext.localhost';
+// Where this codebase serves the app: Docker (compose.yaml, port 80) first, then the Vite
+// development server (WEB_PORT 5173). The first that answers is used.
+export const KNOWN_SERVERS = [DEFAULT_SERVER, 'http://clearcontext.localhost:5173'];
 export const MAX_TEXT = 20000;
 
 export interface Rect {

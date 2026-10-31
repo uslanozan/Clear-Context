@@ -1,18 +1,45 @@
 import { useEffect, useState } from 'react';
 import { Button, TextInput } from '@mantine/core';
 import type { Health } from '../../src/lib/types';
-import { DEFAULT_SERVER, isLocalServer, normalizeServer } from './capture-model';
-
+import { KNOWN_SERVERS, isLocalServer, normalizeServer } from './capture-model';
 import { serverApi } from './server-api';
-import { saveServer } from './storage';
-
-// The web app's development server; the default address is the Docker one.
-const DEV_SERVER = 'http://clearcontext.localhost:5173';
+import { loadChosenServer, saveServer } from './storage';
 
 export type Connection =
   | { state: 'checking' }
   | { state: 'ready'; health: Health }
   | { state: 'unreachable'; message: string };
+
+/** The address the user picked, or the first known address that answers. */
+export async function findServer(): Promise<{ origin: string; chosen: boolean }> {
+  const chosen = await loadChosenServer();
+  if (chosen) return { origin: chosen, chosen: true };
+  const answers = await Promise.all(
+    KNOWN_SERVERS.map((origin) =>
+      serverApi.health(origin, AbortSignal.timeout(2000)).then(
+        () => true,
+        () => false,
+      ),
+    ),
+  );
+  const found = answers.indexOf(true);
+  return { origin: KNOWN_SERVERS[Math.max(found, 0)], chosen: false };
+}
+
+/** The server to use and whether it answers; the user can pick another or go back to auto. */
+export function useServer() {
+  const [server, setServer] = useState<{ origin: string; chosen: boolean } | null>(null);
+  const connection = useConnection(server?.origin ?? null);
+  useEffect(() => {
+    void findServer().then(setServer);
+  }, []);
+  async function choose(origin: string | null) {
+    await saveServer(origin);
+    setServer(origin ? { origin, chosen: true } : null);
+    if (!origin) setServer(await findServer());
+  }
+  return { server, connection, choose };
+}
 
 /** Whether the server answers its health check; rechecked when the address changes. */
 export function useConnection(server: string | null): Connection {
@@ -28,15 +55,17 @@ export function useConnection(server: string | null): Connection {
   return connection;
 }
 
-/** The server address, its status and a way to change it. */
+/** The server address and its status, with a way to pick another for custom setups. */
 export function ServerLine({
   server,
+  chosen,
   connection,
-  onChange,
+  onChoose,
 }: {
   server: string;
+  chosen: boolean;
   connection: Connection;
-  onChange: (origin: string) => void;
+  onChoose: (origin: string | null) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(server);
@@ -49,7 +78,7 @@ export function ServerLine({
           event.preventDefault();
           const origin = normalizeServer(value);
           if (!origin) {
-            setError('Enter an address such as http://clearcontext.localhost');
+            setError('Enter an address such as http://clearcontext.localhost:8080');
             return;
           }
           // Local addresses are allowed by the manifest; others need the user's permission.
@@ -60,10 +89,9 @@ export function ServerLine({
               return;
             }
           }
-          await saveServer(origin);
           setEditing(false);
           setError('');
-          onChange(origin);
+          onChoose(origin);
         }}
       >
         <TextInput
@@ -76,14 +104,26 @@ export function ServerLine({
         <Button size="xs" type="submit">
           Save
         </Button>
+        <Button
+          size="xs"
+          variant="subtle"
+          onClick={() => {
+            setEditing(false);
+            onChoose(null);
+          }}
+        >
+          Detect automatically
+        </Button>
       </form>
     );
   }
   const status =
     connection.state === 'checking'
-      ? 'Checking…'
+      ? 'Connecting…'
       : connection.state === 'unreachable'
-        ? 'Not reachable'
+        ? chosen
+          ? 'Not reachable'
+          : 'Not running: start Clear Context'
         : connection.health.mode === 'mock'
           ? 'Preview mode: no model calls'
           : 'Connected';
@@ -96,19 +136,6 @@ export function ServerLine({
       <button type="button" className="text-button" onClick={() => setEditing(true)}>
         Change
       </button>
-      {/* The default is the Docker address; while developing, the app runs on port 5173. */}
-      {connection.state === 'unreachable' && server === DEFAULT_SERVER && (
-        <button
-          type="button"
-          className="text-button"
-          onClick={async () => {
-            await saveServer(DEV_SERVER);
-            onChange(DEV_SERVER);
-          }}
-        >
-          Use :5173
-        </button>
-      )}
     </p>
   );
 }
