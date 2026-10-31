@@ -30,6 +30,8 @@ export default defineConfig(({ mode }) => {
       host: env.WEB_HOST || '127.0.0.1',
       port,
       strictPort: true,
+      // clearcontext.localhost resolves to this machine without DNS or hosts-file setup.
+      allowedHosts: ['.localhost'],
       proxy: { '/api': { target: apiTarget, changeOrigin: true } },
     },
   };
