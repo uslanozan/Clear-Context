@@ -34,12 +34,20 @@ class MediaDescription(BaseModel):
     caption_checks: list[CaptionCheckOutput] = Field(max_length=8)
 
 
+def is_statement(part: str) -> bool:
+    """A statement has at least two words and some letters; a bare date or code is a detail."""
+    return len(part.split()) >= 2 and any(ch.isalpha() for ch in part)
+
+
 def to_analysis(description: MediaDescription) -> MediaAnalysis:
-    """Keep only claim text copied verbatim from the transcription; drop the rest with a note."""
-    claim_text = [
-        part for part in description.claim_text if part.strip() and part in description.visible_text
-    ]
-    dropped = len([p for p in description.claim_text if p.strip()]) - len(claim_text)
+    """Keep only claim text copied verbatim from the transcription; drop the rest with a note.
+
+    Bare dates, numbers and single words are dropped silently: the model sometimes marks
+    a date stamp such as "1996" as a statement.
+    """
+    candidates = [part for part in description.claim_text if is_statement(part)]
+    claim_text = [part for part in candidates if part in description.visible_text]
+    dropped = len(candidates) - len(claim_text)
     return MediaAnalysis(
         status="analyzed",
         content_type=description.content_type,

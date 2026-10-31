@@ -151,7 +151,7 @@ def test_meta_media_request_sends_the_image_inline_and_reads_the_schema(settings
                     "message": {
                         "content": '{"content_type": "post_screenshot", '
                         '"visible_text": "Trains in Konya\\nJE-779", '
-                        '"claim_text": ["Trains in Konya", "Trains in Ankara"], '
+                        '"claim_text": ["Trains in Konya", "Trains in Ankara", "1996", "JE-779"], '
                         '"observations": ["A street."], "context_cues": [], '
                         '"caption_checks": [{"caption_detail": "Konya", '
                         '"assessment": "inconsistent", '

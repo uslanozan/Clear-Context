@@ -3,6 +3,7 @@
 import asyncio
 import time
 from dataclasses import dataclass
+from itertools import zip_longest
 from uuid import NAMESPACE_URL, uuid5
 
 from clear_context.core.judges import load_judge
@@ -20,7 +21,7 @@ from clear_context.domain.investigation import (
 )
 from clear_context.providers.meta_passages import MetaPassageProvider
 from clear_context.providers.meta_structured import MetaStructuredProvider, ModelResponseFailure
-from clear_context.providers.reverse_image import readable_matches
+from clear_context.providers.reverse_image import looks_like_fact_check, readable_matches
 from clear_context.providers.tavily import RetrievalFailure, TavilyClient
 from clear_context.repositories.judgment import JudgmentRepository
 from clear_context.repositories.retrieval import RetrievalRepository, identity
@@ -328,17 +329,19 @@ class InvestigationResearch:
     def _read_image_matches(
         session, research, saved, media, limit, read_sources, page_needs, limitations
     ):
-        """Read published fact checks of the attached image, then pages where it appears.
+        """Read published fact checks of the attached image and pages where it appears.
 
-        Pages are read for every planned need; returns the number of pages read.
+        Fact checks and other pages alternate, so an early copy of the image is read even
+        when several fact checks exist. Pages are read for every planned need; returns the
+        number of pages read.
         """
         planned = [need.id for need in saved.needs if need.status == "planned"]
         if not planned or limit <= 0:
             return 0
-        results = []
+        # The review date and the provider's displayed date become the page date.
+        checks, pages = [], []
         for finding in media:
-            # The review date and the provider's displayed date become the page date.
-            results.extend(
+            checks.extend(
                 {
                     "title": review.title or review.url,
                     "url": review.url,
@@ -349,9 +352,11 @@ class InvestigationResearch:
                 }
                 for review in finding.prior_checks.reviews[:limit]
             )
-        for finding in media:
             if finding.origin.status == "matches_found":
-                results.extend(
+                matches = readable_matches(finding.origin, 3 * limit)
+                ordered = [m for m in matches if not looks_like_fact_check(m)]
+                ordered += [m for m in matches if looks_like_fact_check(m)]
+                pages.extend(
                     {
                         "title": match.page_title or match.page_url,
                         "url": match.page_url,
@@ -360,8 +365,9 @@ class InvestigationResearch:
                         if match.published_on
                         else None,
                     }
-                    for match in readable_matches(finding.origin, limit)
+                    for match in ordered[:limit]
                 )
+        results = [item for pair in zip_longest(checks, pages) for item in pair if item is not None]
         unique = {}
         for result in results:
             try:
