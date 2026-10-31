@@ -20,23 +20,25 @@ def build_selection_request(
     effort: str = "low",
     max_completion_tokens: int = 4096,
     response_contract: str = "legacy_v1",
+    media_match: str | None = None,
 ) -> dict:
+    context = {
+        "source_url": page["url"],
+        "needs": needs,
+        "claims": claims,
+        "allowed_paragraph_ids_by_need": allowed,
+        "paragraphs": [{"id": p.id, "text": p.text} for p in items],
+    }
+    if media_match:
+        # Only pages found by reverse image search carry this; other requests are unchanged.
+        context["media_match"] = media_match
     return {
         "model": model,
         "messages": [
             {"role": "system", "content": system},
             {
                 "role": "user",
-                "content": json.dumps(
-                    {
-                        "source_url": page["url"],
-                        "needs": needs,
-                        "claims": claims,
-                        "allowed_paragraph_ids_by_need": allowed,
-                        "paragraphs": [{"id": p.id, "text": p.text} for p in items],
-                    },
-                    ensure_ascii=False,
-                ),
+                "content": json.dumps(context, ensure_ascii=False),
             },
         ],
         "response_format": {

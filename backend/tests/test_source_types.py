@@ -32,7 +32,7 @@ def test_default_judge_appends_the_source_rule_to_v4():
         PROJECT_ROOT / "config/prompts.yaml",
         method=settings.research_judge_profile,
     )
-    assert (method, contract) == ("need_components_v5", "components_v3")
+    assert (method, contract) == ("need_components_v6", "components_v3")
     assert system.startswith("The claim field is the claim exactly as stated.")
     assert "only repeats or" in system and "source_type" in system
 
@@ -49,6 +49,7 @@ def test_judge_request_carries_each_passage_source_type():
     class Evidence:
         id, quote = "e_1", "In 1895 Ohio had only two cars."
         source_url = "https://www.facebook.com/page/videos/1"
+        media_relation, reported_publication_dates = None, []
 
     class Packet:
         needs, claims, evidence = [Need], [Claim], [Evidence]
@@ -68,5 +69,31 @@ def test_judge_request_carries_each_passage_source_type():
     finally:
         meta_judgment.evidence_aliases = original
         meta_judgment.parent_claim = original_parent
-    evidence = json.loads(request["messages"][1]["content"])["evidence"]
-    assert evidence == [{"id": "E1", "text": Evidence.quote, "source_type": "social"}]
+    context = json.loads(request["messages"][1]["content"])
+    assert context["evidence"] == [{"id": "E1", "text": Evidence.quote, "source_type": "social"}]
+    # Without reverse image matches the request has no check date, so cached judgments hold.
+    assert "checked_on" not in context
+
+    # A page found by reverse image search carries its relation and displayed date.
+    Evidence.media_relation, Evidence.reported_publication_dates = "same_image", ["2018-09-15"]
+    meta_judgment.evidence_aliases = lambda packet: {"E1": "e_1"}
+    meta_judgment.parent_claim = lambda packet: Claim.statement
+    try:
+        request = build_judgment_request(
+            "system",
+            Packet,
+            "muse-spark-1.3",
+            "low",
+            100,
+            "components_v3",
+            checked_on="2026-11-01",
+        )
+    finally:
+        meta_judgment.evidence_aliases = original
+        meta_judgment.parent_claim = original_parent
+    context = json.loads(request["messages"][1]["content"])
+    assert context["evidence"][0]["media_match"] == {
+        "relation": "same_image",
+        "page_date": "2018-09-15",
+    }
+    assert context["checked_on"] == "2026-11-01"

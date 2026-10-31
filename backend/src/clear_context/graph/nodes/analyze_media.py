@@ -23,7 +23,12 @@ def compose_analyzed_text(text: str, findings: list[MediaFinding]) -> str:
     Only claim text (post text, headlines, captions shown in a video) and speech are joined;
     signs, labels and date stamps remain observations, so they are not extracted as claims.
     """
-    parts = [text.strip()] if text.strip() else []
+    # The label tells extraction and planning that the text describes the attached files, so
+    # a caption such as "images from the 2023 earthquake" is read as a statement about them.
+    # Unread files (preview mode) leave the text unchanged.
+    read = any(finding.analysis.status == "analyzed" for finding in findings)
+    label = "[Text the user sent with the attached media]\n" if read else ""
+    parts = [label + text.strip()] if text.strip() else []
     for index, finding in enumerate(findings, 1):
         kind = finding.kind
         statements = "\n".join(part.strip() for part in finding.analysis.claim_text if part.strip())

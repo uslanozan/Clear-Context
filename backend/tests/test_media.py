@@ -132,7 +132,9 @@ def test_analyzed_text_skips_images_without_statements():
     blank = SimpleNamespace(
         kind="image", analysis=MediaAnalysis(status="analyzed", claim_text=["  "])
     )
-    assert compose_analyzed_text("Caption.", [stamp, blank]) == "Caption."
+    assert compose_analyzed_text("Caption.", [stamp, blank]) == (
+        "[Text the user sent with the attached media]\nCaption."
+    )
 
 
 def test_meta_media_request_sends_the_image_inline_and_reads_the_schema(settings, monkeypatch):

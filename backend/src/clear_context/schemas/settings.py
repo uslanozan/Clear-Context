@@ -2,10 +2,10 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
-from clear_context.domain.investigation import ResearchMode
-
 # Printable characters without spaces, so a key cannot carry a header break.
 ApiKey = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^[!-~]{8,500}$")]
+# complete mode is started only from a report, after a confirmation; never a default.
+DefaultMode = Literal["fast", "balanced", "deep"]
 ModelAlias = Annotated[str, StringConstraints(pattern=r"^[a-z0-9_]{1,60}$")]
 
 
@@ -23,7 +23,7 @@ class SettingsUpdate(BaseModel):
     model_research: ModelAlias | None = None
     model_judge: ModelAlias | None = None
     paid_calls: bool | None = None
-    default_research_mode: ResearchMode | None = None
+    default_research_mode: DefaultMode | None = None
     reverse_image_search: bool | None = None
     fact_check_search: bool | None = None
     link_reading: bool | None = None
@@ -51,7 +51,7 @@ class SettingsView(BaseModel):
     paid_calls: bool
     models: dict[str, str]
     model_options: list[ModelOption]
-    default_research_mode: ResearchMode
+    default_research_mode: DefaultMode
     reverse_image_search: bool
     fact_check_search: bool
     link_reading: bool

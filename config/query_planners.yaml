@@ -1,5 +1,5 @@
 schema_version: 1
-selected: v7
+selected: v8
 planners:
   v1:
     implementation: structured_llm
@@ -36,5 +36,11 @@ planners:
   v7:
     implementation: structured_llm
     prompt: query_planning_v7
+    status: candidate
+    response_schema: mapped_component
+  # v7 plus claims about what attached images or videos show.
+  v8:
+    implementation: structured_llm
+    prompt: query_planning_v8
     status: candidate
     response_schema: mapped_component

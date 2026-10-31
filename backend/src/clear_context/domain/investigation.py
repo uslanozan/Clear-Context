@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from clear_context.domain.source_types import SourceType, classify_source
 
 # Modes change search, reading and assessment budgets, never the methods.
-ResearchMode = Literal["fast", "balanced", "deep"]
+ResearchMode = Literal["fast", "balanced", "deep", "complete"]
 
 
 class InvestigationStatus(StrEnum):

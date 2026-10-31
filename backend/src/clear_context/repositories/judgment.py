@@ -53,13 +53,20 @@ class JudgmentRepository:
                     or {(c["need_id"], c["paragraph_id"]) for c in windows} != selected
                 ):
                     raise ValueError("Selection context does not match its selected paragraphs.")
-                source_hits = connection.execute(
-                    select(hits.c.result).where(
-                        hits.c.case_id == case_id, hits.c.source_id == page["source_id"]
-                    )
-                ).scalars()
-                dates = sorted(
-                    {d for raw in source_hits if (d := json.loads(raw).get("published_date"))}
+                source_hits = [
+                    json.loads(raw)
+                    for raw in connection.execute(
+                        select(hits.c.result).where(
+                            hits.c.case_id == case_id, hits.c.source_id == page["source_id"]
+                        )
+                    ).scalars()
+                ]
+                dates = sorted({d for hit in source_hits if (d := hit.get("published_date"))})
+                relations = {hit.get("media_relation") for hit in source_hits}
+                # The closest relation wins when a page was found more than one way.
+                media_relation = next(
+                    (r for r in ("fact_check", "same_image", "similar_image") if r in relations),
+                    None,
                 )
                 for window in windows:
                     if window["need_id"] not in need_ids:
@@ -98,6 +105,7 @@ class JudgmentRepository:
                             fetched_at=float(page["fetched_at"]),
                             reported_publication_dates=dates,
                             publication_context=publication_context(dates),
+                            media_relation=media_relation,
                             selected_start=core_start,
                             selected_end=core_end,
                             start=start,

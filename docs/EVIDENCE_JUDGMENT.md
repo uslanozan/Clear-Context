@@ -17,8 +17,15 @@ produces an insufficient component without a model call. Exact quote validation
 does not establish semantic support, complete decomposition or source reliability.
 The standalone runner retains its existing default.
 
-`need_components_v5` (contract `components_v3`) is the application default, chosen with
-`RESEARCH_JUDGE_PROFILE`. It is V4 plus each passage's `source_type` (`fact_check`,
+`need_components_v6` (contract `components_v3`) is the application default, chosen with
+`RESEARCH_JUDGE_PROFILE`. It is V5 plus `media_match` on passages from pages that reverse
+image search found for the user's image or video: `relation` is `same_image` (the page
+shows the same picture or frame), `similar_image` (a look-alike that says nothing about
+the attachment) or `fact_check`, with the `page_date` the provider displayed; requests with
+such passages also carry `checked_on`, the date of the check, so 'yesterday' in a claim
+can be compared with an older page date. A same-image page that places the picture
+elsewhere, or a page date clearly before the claimed time, contradicts a claim about what
+the attachment shows. Requests without such passages are unchanged. V5 is V4 plus each passage's `source_type` (`fact_check`,
 `reference`, `social` or `web`, from a short domain list in `domain/source_types.py`) and
 one rule: a passage that only repeats the claim without an independent basis is not
 support, which matters when viral posts copy the claim being checked. The label is the

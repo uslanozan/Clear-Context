@@ -195,6 +195,20 @@ class RetrievalRepository:
                     )
                     seen.add(source_id)
 
+    def media_relation(self, case_id, source_id) -> str | None:
+        """How reverse image search linked this source to the user's media, if it did."""
+        with self.engine.connect() as conn:
+            rows = conn.execute(
+                select(hits.c.result).where(
+                    hits.c.case_id == case_id, hits.c.source_id == source_id
+                )
+            ).scalars()
+            relations = {json.loads(raw).get("media_relation") for raw in rows}
+        # The closest relation wins when a page was found more than one way.
+        return next(
+            (r for r in ("fact_check", "same_image", "similar_image") if r in relations), None
+        )
+
     def source_url(self, source_id):
         with self.engine.connect() as conn:
             url = conn.scalar(select(sources.c.url).where(sources.c.id == source_id))

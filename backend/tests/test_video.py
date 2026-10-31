@@ -274,7 +274,8 @@ def test_speech_and_on_screen_statements_join_the_analyzed_text():
         ),
     )
     assert compose_analyzed_text("Is it true?", [finding]) == (
-        "Is it true?\n\n[Text read from video 1]\nFlood closes the old bridge"
+        "[Text the user sent with the attached media]\nIs it true?"
+        "\n\n[Text read from video 1]\nFlood closes the old bridge"
         "\n\n[Speech in video 1, 1:05-1:12]\nThe bridge is closed."
     )
 

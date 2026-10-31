@@ -6,8 +6,11 @@ from dataclasses import dataclass
 from itertools import zip_longest
 from uuid import NAMESPACE_URL, UUID, uuid5
 
+import yaml
+
 from clear_context.core.judges import load_judge
 from clear_context.core.passage_selectors import load_selector
+from clear_context.core.prompts import experiment_system
 from clear_context.core.query_catalog import build_planner_request, parse_planner_response
 from clear_context.core.settings import PROJECT_ROOT
 from clear_context.domain.investigation import (
@@ -32,6 +35,7 @@ from clear_context.schemas.retrieval import (
     SearchRequest,
     canonical_source_url,
 )
+from clear_context.services.claim_groups import group_claims
 from clear_context.services.evidence_judgment import EvidenceJudgmentService, JudgmentJob
 from clear_context.services.followup_queries import (
     ResearchGap,
@@ -52,6 +56,9 @@ class Subject:
 
     sources: frozenset[str] = frozenset()
     published_on: object = None
+    # Text the user sent with attached files; the planner needs it to tell which claims
+    # describe the files, since it sees claims, not the full text.
+    user_text: str = ""
 
 
 @dataclass(frozen=True)
@@ -102,6 +109,108 @@ RESEARCH_MODES = {
 }
 
 
+# "complete" mode researches every claim, up to this many per run, in batches small enough
+# for one planning call each; the rest are left for a continuation.
+COMPLETE_MAX_CLAIMS = 40
+COMPLETE_BATCH_CLAIMS = 8
+
+
+def batch_budget(claims: int) -> ResearchBudget:
+    """A budget that reaches every need of a batch: about two queries and three judgments
+    per claim, every page found read, and a follow-up round."""
+    queries = min(2 * claims + 2, 40)
+    followup = max(2, claims // 2)
+    return ResearchBudget(
+        max_queries=queries,
+        max_source_reads=3 * queries,
+        max_selection_calls=3 * queries,
+        max_judgment_calls=3 * claims,
+        followup_queries=followup,
+        followup_source_reads=3 * followup,
+        followup_selection_calls=3 * followup,
+        followup_judgment_calls=followup,
+        image_match_reads=3,
+    )
+
+
+def merge_reports(investigation_id, reports: list[InvestigationReport]) -> InvestigationReport:
+    """One report from batch reports; a page cited by two batches is listed once."""
+    summaries = [r.research_summary for r in reports if r.research_summary]
+    summary = None
+    if summaries:
+        summary = ResearchSummary(
+            **{
+                field: sum(getattr(s, field) for s in summaries)
+                for field in (
+                    "planned",
+                    "assessed",
+                    "budget_limited",
+                    "needs_context",
+                    "not_checkable",
+                    "failed",
+                )
+            },
+            budget_limited_claim_ids=[i for s in summaries for i in s.budget_limited_claim_ids],
+        )
+    return InvestigationReport(
+        investigation_id=investigation_id,
+        mode="meta",
+        claims=[c for r in reports for c in r.claims],
+        sources=list({s.id: s for r in reports for s in r.sources}.values()),
+        evidence=list({e.id: e for r in reports for e in r.evidence}.values()),
+        findings=[f for r in reports for f in r.findings],
+        limitations=list(dict.fromkeys(item for r in reports for item in r.limitations)),
+        model_usage=[u for r in reports for u in r.model_usage],
+        research_summary=summary,
+    )
+
+
+def add_unresearched(report, claims, duplicates: dict, held: list) -> InvestigationReport:
+    """Put every claim back in text order: duplicates point to the claim researched in their
+    place, and claims beyond the run's limit are left for a continuation."""
+    by_id = {str(c.id): c for c in claims}
+    findings = {str(f.claim_id): f for f in report.findings}
+    for claim in claims:
+        key = str(claim.id)
+        if key in findings:
+            continue
+        statement = claim.statement or claim.text
+        if key in duplicates:
+            kept = by_id[duplicates[key]]
+            text = report_text("duplicate_claim", statement, original=kept.statement or kept.text)
+        else:
+            text = report_text("budget_deferred", statement)
+        findings[key] = Finding(
+            id=stable_uuid("finding", key),
+            claim_id=claim.id,
+            assessment=Assessment.UNRESOLVED,
+            explanation=text,
+            components=[
+                FindingComponent(
+                    description=statement, status="not_assessed", explanation=text, evidence_ids=[]
+                )
+            ],
+        )
+    summary = report.research_summary
+    if held:
+        summary = (summary or ResearchSummary()).model_copy(
+            update={
+                "budget_limited": (summary.budget_limited if summary else 0) + len(held),
+                "budget_limited_claim_ids": [
+                    *(summary.budget_limited_claim_ids if summary else []),
+                    *(c.id for c in held),
+                ],
+            }
+        )
+    return report.model_copy(
+        update={
+            "claims": list(claims),
+            "findings": [findings[str(c.id)] for c in claims],
+            "research_summary": summary,
+        }
+    )
+
+
 def research_not_run(investigation_id, claims, code: str) -> InvestigationReport:
     return InvestigationReport(
         investigation_id=investigation_id,
@@ -148,7 +257,7 @@ def summarize(plan, judgments) -> ResearchSummary:
     )
 
 
-def image_context(media) -> list[dict]:
+def image_context(media, user_text: str = "") -> list[dict]:
     """Planner context from analyzed images; untrusted descriptions, not claims or evidence."""
     context = []
     for index, finding in enumerate(media or [], 1):
@@ -158,6 +267,8 @@ def image_context(media) -> list[dict]:
         context.append(
             {
                 "image": index,
+                "kind": finding.kind,
+                "sent_with": user_text.strip()[:1000] or None,
                 "content_type": analysis.content_type,
                 "observations": analysis.observations,
                 "context_cues": analysis.context_cues,
@@ -201,13 +312,16 @@ class InvestigationResearch:
         media=None,
         subject_urls=(),
         published_on=None,
+        user_text="",
     ):
         """Research claims. subject_urls are the pages being checked, never read as evidence;
         published_on is when the checked page was published, if a search index reported it."""
-        budget = RESEARCH_MODES[mode] if mode else self.budget
+        # complete mode sizes its budget from the claims after grouping.
+        budget = None if mode == "complete" else RESEARCH_MODES[mode] if mode else self.budget
         subject = Subject(
             sources=frozenset(identity("s_", canonical_source_url(url)) for url in subject_urls),
             published_on=published_on,
+            user_text=user_text,
         )
         return asyncio.run(
             self._run(investigation_id, claims, progress, budget, media or [], subject)
@@ -223,12 +337,46 @@ class InvestigationResearch:
             self.models["research"].api_model_id,
             PROJECT_ROOT / "config/prompts.yaml",
         )
+        meta = MetaStructuredProvider(self.settings)
+        grouping = await group_claims(
+            [(str(c.id), c.statement or c.text) for c in claims],
+            meta,
+            self.models["research"].api_model_id,
+            PROJECT_ROOT / "config/prompts.yaml",
+        )
+        kept = [c for c in claims if str(c.id) not in grouping.duplicates]
+        held = []
         with report_language(language.code):
-            report = await self._research(
-                investigation_id, claims, progress, budget, media, subject
-            )
-        if language.usage:
-            report.model_usage.insert(0, language.usage)
+            if budget is None:
+                held = kept[COMPLETE_MAX_CLAIMS:]
+                kept = kept[:COMPLETE_MAX_CLAIMS]
+                batches = [
+                    kept[i : i + COMPLETE_BATCH_CLAIMS]
+                    for i in range(0, len(kept), COMPLETE_BATCH_CLAIMS)
+                ] or [[]]
+                report = merge_reports(
+                    investigation_id,
+                    [
+                        await self._research(
+                            investigation_id,
+                            batch,
+                            progress,
+                            batch_budget(len(batch)),
+                            media,
+                            subject,
+                        )
+                        for batch in batches
+                    ],
+                )
+            else:
+                report = await self._research(
+                    investigation_id, kept, progress, budget, media, subject
+                )
+            if grouping.duplicates or held:
+                report = add_unresearched(report, claims, grouping.duplicates, held)
+        if grouping.failed:
+            report.limitations.append("Repeated claims could not be grouped; each was researched.")
+        report.model_usage[:0] = [u for u in (language.usage, grouping.usage) if u]
         return report
 
     async def _research(self, investigation_id, claims, progress, budget, media, subject):
@@ -249,7 +397,7 @@ class InvestigationResearch:
                 findings=[],
                 limitations=["No claims were available for research."],
             )
-        images = image_context(media)
+        images = image_context(media, subject.user_text)
         request, profile = build_planner_request(
             planning_claims,
             planners_path=PROJECT_ROOT / "config/query_planners.yaml",
@@ -436,6 +584,7 @@ class InvestigationResearch:
                     "published_date": review.review_date.isoformat()
                     if review.review_date
                     else None,
+                    "media_relation": "fact_check",
                 }
                 for review in finding.prior_checks.reviews[:limit]
             )
@@ -451,6 +600,10 @@ class InvestigationResearch:
                         "published_date": match.published_on.isoformat()
                         if match.published_on
                         else None,
+                        # Tells the judge the page shows the attached picture itself.
+                        "media_relation": "similar_image"
+                        if match.match == "similar"
+                        else "same_image",
                     }
                     for match in ordered[:limit]
                 )
@@ -563,6 +716,12 @@ class InvestigationResearch:
             selector_limits.model_copy(update={"max_model_calls": max_calls}),
             system,
             self.models["research"],
+            media_rule=experiment_system(
+                yaml.safe_load(
+                    (PROJECT_ROOT / "config/prompts.yaml").read_text(encoding="utf-8-sig")
+                )["experiments"],
+                "passage_selection_media_v1",
+            ),
         )
         return await service.select_pages(
             [

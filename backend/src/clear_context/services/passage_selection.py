@@ -38,10 +38,12 @@ class PassageSelectionService:
         system: str,
         model: ModelSelection,
         clock=time.time,
+        media_rule: str = "",
     ):
         self.repository, self.provider = repository, provider
         self.method, self.profile, self.limits = method, profile, limits
         self.system, self.model, self.clock = system, model, clock
+        self.media_rule = media_rule
         self.calls = 0
         self.halted = False
         self.active = 0
@@ -58,8 +60,12 @@ class PassageSelectionService:
         claim_ids = {n["claim_id"] for n in needs}
         claims = [dict(sorted(c.model_dump().items())) for c in plan.claims if c.id in claim_ids]
         allowed = {n["id"]: [u.id for u in units] for n in needs}
+        relation = self.repository.media_relation(job.case_id, page["source_id"])
+        system = self.system
+        if relation in {"same_image", "fact_check"}:
+            system = f"{system}\n{self.media_rule}"
         payload = build_selection_request(
-            self.system,
+            system,
             {"url": self.repository.source_url(page["source_id"])},
             needs,
             claims,
@@ -69,6 +75,7 @@ class PassageSelectionService:
             effort=self.limits.effort,
             max_completion_tokens=self.limits.max_completion_tokens,
             response_contract=self.profile.response_contract,
+            media_match=relation,
         )
         key = identity(
             "selection_",

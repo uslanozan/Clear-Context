@@ -40,6 +40,10 @@ MESSAGES = {
         "en": "Source research could not run for this claim ({code}); it was not evaluated.",
         "tr": "Bu iddia için kaynak araştırması çalışamadı ({code}); değerlendirilmedi.",
     },
+    "duplicate_claim": {
+        "en": 'Not researched separately: it states the same fact as "{original}"; see that claim.',
+        "tr": 'Ayrıca araştırılmadı: "{original}" ile aynı olguyu söylüyor; o iddiaya bakın.',
+    },
     "claim_wide_unresolved": {
         "en": "Claim-wide coverage is not established; review each detail below.",
         "tr": "İddianın tamamı için kapsam doğrulanmadı; aşağıdaki detayları tek tek inceleyin.",

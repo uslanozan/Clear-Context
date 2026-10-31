@@ -39,6 +39,8 @@ class EvidenceContext(BaseModel):
     fetched_at: float
     reported_publication_dates: list[str]
     publication_context: PublicationContext = Field(default_factory=PublicationContext)
+    # Set when reverse image search found this page for the user's image or video.
+    media_relation: Literal["same_image", "similar_image", "fact_check"] | None = None
     selected_start: int
     selected_end: int
     start: int

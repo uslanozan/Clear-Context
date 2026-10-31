@@ -2,6 +2,7 @@
 
 import json
 from copy import deepcopy
+from datetime import date
 
 from clear_context.domain.source_types import classify_source
 from clear_context.schemas.component_judgment import COMPONENT_CONTRACTS, parent_claim
@@ -99,20 +100,29 @@ def build_judgment_request(
     effort: str,
     tokens: int,
     response_contract: str = "legacy_v1",
+    checked_on: str | None = None,
 ):
     if response_contract in COMPONENT_CONTRACTS:
         if len(packet.needs) != 1:
             raise ValueError("Component assessment requires exactly one research need per job.")
         aliases = {identity: alias for alias, identity in evidence_aliases(packet).items()}
-        evidence = [
-            {
+        evidence = []
+        for e in packet.evidence:
+            item = {
                 "id": aliases[e.id],
                 "text": e.quote,
                 # Where the passage was published, so a repeated claim is not read as support.
                 "source_type": classify_source(e.source_url),
             }
-            for e in packet.evidence
-        ]
+            if e.media_relation:
+                # The page shows the user's picture; its date is the one the provider displays.
+                item["media_match"] = {
+                    "relation": e.media_relation,
+                    "page_date": e.reported_publication_dates[0]
+                    if e.reported_publication_dates
+                    else None,
+                }
+            evidence.append(item)
         if response_contract == "components_v3":
             # The need may be a neutral question; statuses refer to the claim as stated.
             context = {
@@ -126,6 +136,10 @@ def build_judgment_request(
                 "parent_claim": parent_claim(packet),
                 "evidence": evidence,
             }
+        if any("media_match" in item for item in evidence):
+            # The date of the check, so a page date can be compared with "yesterday" or
+            # "today" in the claim; it is not a publication date.
+            context["checked_on"] = checked_on or date.today().isoformat()
         return {
             "model": model,
             "messages": [

@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     allow_paid_api_calls: bool = False
     research_enabled: bool = False
     # Judge profile from config/judges.yaml used by application research.
-    research_judge_profile: str = "need_components_v5"
+    research_judge_profile: str = "need_components_v6"
     # Search results with a provider relevance score below this are not read. Measured on
     # 119 pages: below 0.30 only unrelated pages; primary sources scored 0.45 and up.
     search_min_score: float = Field(default=0.30, ge=0, le=1)
