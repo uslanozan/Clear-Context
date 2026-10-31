@@ -168,7 +168,7 @@ function Preview({
           <img src={image} alt="Captured picture to check" />
           <figcaption className="muted small">
             {fullSize === 'done'
-              ? 'Full-size image from the page.'
+              ? 'The original image file from the page.'
               : 'Cropped from what was on screen.'}{' '}
             {capture.sourceUrl && fullSize !== 'done' && (
               <button
@@ -177,10 +177,10 @@ function Preview({
                 disabled={fullSize === 'loading'}
                 onClick={() => void useFullSize()}
               >
-                {fullSize === 'loading' ? 'Loading…' : 'Use the full-size image'}
+                {fullSize === 'loading' ? 'Loading…' : 'Use the original image file'}
               </button>
             )}
-            {fullSize === 'failed' && ' The full-size image could not be loaded.'}
+            {fullSize === 'failed' && ' The original image file could not be loaded.'}
           </figcaption>
         </figure>
       )}

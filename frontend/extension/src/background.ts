@@ -2,7 +2,7 @@
  * Service worker: context menus, screenshots of the visible tab and cropping.
  *
  * Images are cut from a screenshot of what the user sees, which works on pages that need a
- * login and needs no access to the image's server. A full-size copy can be fetched later from
+ * login and needs no access to the image's server. The original file can be fetched later from
  * the capture window, after the user grants access to that site.
  */
 import { cropBox, type CaptureKind, type Rect } from './capture-model';

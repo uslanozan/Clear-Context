@@ -10,7 +10,7 @@ export interface PendingCapture {
   pageTitle: string | null;
   // JPEG data URL of the captured picture, cropped from the visible tab.
   image: string | null;
-  // The page's own address of a right-clicked image, for an optional full-size copy.
+  // The page's own address of a right-clicked image, for an optional copy of the original file.
   sourceUrl: string | null;
   capturedAt: number;
   // Set when the capture itself failed, so the window can say why instead of staying silent.
