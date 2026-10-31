@@ -145,11 +145,24 @@ class TavilyLinkReader:
         return body
 
     def read(self, url: str) -> LinkPage:
+        """Read with basic extraction, then once with Tavily's advanced extraction if needed.
+
+        Measured: Reddit posts failed basic extraction but read with advanced; Facebook and
+        Instagram posts failed both. Advanced costs more credits, so it runs only on failure.
+        """
+        try:
+            return self._read(url, "basic")
+        except LinkFailure as error:
+            if error.code not in {"unreadable", "invalid_response"}:
+                raise
+            return self._read(url, "advanced")
+
+    def _read(self, url: str, depth: str) -> LinkPage:
         body = self._post(
             EXTRACT_ENDPOINT,
             {
                 "urls": [url],
-                "extract_depth": "basic",
+                "extract_depth": depth,
                 "format": "markdown",
                 "include_images": True,
             },

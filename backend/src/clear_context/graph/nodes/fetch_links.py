@@ -1,6 +1,8 @@
+import io
 from uuid import UUID
 
 from langgraph.runtime import Runtime
+from PIL import Image, UnidentifiedImageError
 
 from clear_context.domain.investigation import LinkFinding
 from clear_context.graph.state import InvestigationContext, InvestigationState
@@ -9,6 +11,10 @@ from clear_context.services.media import store
 
 # One main image per page; later images are usually logos, ads or related stories.
 MAX_IMAGES_PER_LINK = 1
+# Pages often list an icon or avatar first (Reddit: community icon); try a few candidates and
+# skip images too small to be the post's picture.
+IMAGE_CANDIDATES = 4
+MIN_IMAGE_SIDE = 200
 UNREADABLE = (
     "This link could not be read. Paste the post's text or attach a screenshot to check it."
 )
@@ -19,6 +25,14 @@ def compose_link_text(text: str, pages: list[tuple[int, str]]) -> str:
     parts = [text.strip()] if text.strip() else []
     parts += [f"[Text read from link {index}]\n{body}" for index, body in pages]
     return "\n\n".join(parts)
+
+
+def too_small(data: bytes) -> bool:
+    try:
+        width, height = Image.open(io.BytesIO(data)).size
+    except (UnidentifiedImageError, OSError):
+        return True
+    return max(width, height) < MIN_IMAGE_SIDE
 
 
 def fetch_links(state: InvestigationState, runtime: Runtime[InvestigationContext]) -> dict:
@@ -48,11 +62,16 @@ def fetch_links(state: InvestigationState, runtime: Runtime[InvestigationContext
         page.published_on = reader.published_on(page)
         pages.append((index, page.text))
         media_ids, notes = [], []
-        for image_url in page.images[:MAX_IMAGES_PER_LINK]:
+        failures = []
+        for image_url in page.images[:IMAGE_CANDIDATES]:
+            if len(media_ids) >= MAX_IMAGES_PER_LINK:
+                break
             try:
                 mime_type, data = reader.download_image(image_url)
             except LinkFailure as error:
-                notes.append(f"The page image could not be downloaded ({error.code}).")
+                failures.append(error.code)
+                continue
+            if too_small(data):
                 continue
             stored = store(
                 runtime.context.media_dir, f"link-{index}-image", "image", mime_type, data
@@ -71,6 +90,8 @@ def fetch_links(state: InvestigationState, runtime: Runtime[InvestigationContext
                     "caption": " ".join(filter(None, [page.title, page.text[:600]])),
                 }
             )
+        if not media_ids and failures:
+            notes.append(f"The page image could not be downloaded ({failures[0]}).")
         findings.append(
             LinkFinding(
                 url=url,

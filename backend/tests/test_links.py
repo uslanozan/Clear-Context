@@ -17,6 +17,20 @@ from clear_context.providers.link_reader import (
 JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 64
 
 
+def real_jpeg(width: int, height: int) -> bytes:
+    import io
+
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (width, height), "white").save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+PHOTO = real_jpeg(640, 480)
+ICON = real_jpeg(96, 96)
+
+
 def test_links_are_found_in_text_without_trailing_punctuation():
     text = (
         "Bu doğru mu? https://news.example/a/b?id=1). Ayrıca (https://other.example/x), "
@@ -154,14 +168,15 @@ class Reader:
             title="Bakanlık izin verdi",
             text="Tarım Bakanlığı domuz eti satışına izin verdi.",
             truncated=False,
-            images=["https://cdn.example/a.jpg"],
+            images=["https://cdn.example/icon.png", "https://cdn.example/a.jpg"],
         )
 
     def published_on(self, page):
         return date(2024, 4, 18)
 
     def download_image(self, url):
-        return "image/jpeg", JPEG
+        # Pages often list an icon first; the post's picture comes after it.
+        return "image/jpeg", ICON if "icon" in url else PHOTO
 
 
 def run_node(text, link_reader, tmp_path):
@@ -196,7 +211,9 @@ def test_fetch_links_adds_page_text_and_image_and_reports_unreadable_links(tmp_p
     assert image["caption"].startswith("Bakanlık izin verdi")
     assert UUID(str(image["id"])) == read.media_ids[0]
     assert attached[0][1] == "https://news.example/a"
-    assert (tmp_path / attached[0][0]).read_bytes() == JPEG
+    # The 96 px icon was skipped; the post's picture was kept.
+    assert len(attached) == 1
+    assert (tmp_path / attached[0][0]).read_bytes() == PHOTO
 
 
 def test_preview_mode_does_not_open_links(tmp_path):
@@ -243,3 +260,36 @@ def test_preview_report_lists_links_and_persists_them(settings):
     with TestClient(create_app(settings)) as client:
         again = client.get(f"/api/investigations/{created['id']}/report").json()
     assert again["links"] == report["links"]
+
+
+def test_reader_retries_once_with_advanced_extraction():
+    depths = []
+
+    def handler(request):
+        import json
+
+        depth = json.loads(request.content)["extract_depth"]
+        depths.append(depth)
+        if depth == "basic":
+            return httpx.Response(200, json={"results": [], "failed_results": [{"url": "x"}]})
+        return httpx.Response(
+            200,
+            json={"results": [{"url": "https://www.reddit.com/r/a/", "raw_content": "Post text"}]},
+        )
+
+    link_reader = reader(handler)
+    assert link_reader.read("https://www.reddit.com/r/a/").text == "Post text"
+    assert depths == ["basic", "advanced"]
+    # A page that fails both is reported unreadable after exactly two attempts.
+    depths.clear()
+    failing = reader(
+        lambda request: (
+            depths.append(1)
+            or httpx.Response(200, json={"results": [], "failed_results": [{"url": "x"}]})
+        )
+    )
+    with pytest.raises(LinkFailure, match="unreadable"):
+        failing.read("https://www.facebook.com/a")
+    assert len(depths) == 2
+    link_reader.close()
+    failing.close()
