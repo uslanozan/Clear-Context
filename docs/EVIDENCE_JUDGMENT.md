@@ -33,6 +33,12 @@ not evaluated. Passages listed as context under an `insufficient` detail were
 reviewed for the same research need; the model did not cite them for that detail.
 For a standalone run, pass `--method need_components_v2` to the evaluation runner.
 
+System-written explanations (for example "Not researched …") use the input language,
+detected once per investigation with langdetect from all claim quotes. Short or
+low-confidence text (under 20 letters or 0.90 probability) goes to one `minimal`-effort
+model call with a strict one-field schema; a failed or malformed answer keeps the local
+guess, and languages without system messages fall back to English.
+
 Human-readable vocabulary is centralized in `config/judgment_labels.yaml`.
 It separates evidence relations, coverage, need results and execution states.
 Loading a judge validates this catalog against typed Python label sets: unknown,

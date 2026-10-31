@@ -1,13 +1,17 @@
-"""System-written report text in the claim's language.
+"""System-written report text in the input's language.
 
-Clear Context has no language detection yet. Turkish-specific letters are a narrow
-heuristic for choosing Turkish system text; any other claim gets English. Model-written
-explanations are unaffected.
+Research detects the input language once (services/language.py) and sets it for the
+investigation. Without it, Turkish-specific letters in the claim are a narrow fallback;
+any language without messages here gets English. Model-written explanations are unaffected.
 """
 
 import re
+from contextlib import contextmanager
+from contextvars import ContextVar
 
 TURKISH_LETTERS = re.compile("[çğıöşüÇĞİÖŞÜ]")
+# Set per investigation; async tasks started inside the research run inherit it.
+REPORT_LANGUAGE: ContextVar[str | None] = ContextVar("report_language", default=None)
 
 MESSAGES = {
     "no_evidence": {
@@ -34,7 +38,19 @@ MESSAGES = {
 
 
 def claim_language(claim: str) -> str:
+    detected = REPORT_LANGUAGE.get()
+    if detected:
+        return detected if detected in MESSAGES["no_evidence"] else "en"
     return "tr" if TURKISH_LETTERS.search(claim) else "en"
+
+
+@contextmanager
+def report_language(code: str | None):
+    token = REPORT_LANGUAGE.set(code)
+    try:
+        yield
+    finally:
+        REPORT_LANGUAGE.reset(token)
 
 
 def report_text(key: str, claim: str, **values) -> str:

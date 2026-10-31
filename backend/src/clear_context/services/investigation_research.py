@@ -37,9 +37,10 @@ from clear_context.services.followup_queries import (
     classify_gap,
     parse_followup_response,
 )
+from clear_context.services.language import detect_language
 from clear_context.services.passage_selection import PassageSelectionService, SelectionJob
 from clear_context.services.query_planning import PlanningClaim
-from clear_context.services.report_text import report_text
+from clear_context.services.report_text import report_language, report_text
 from clear_context.services.retrieval import RetrievalSession, load_retrieval_policy
 
 
@@ -137,6 +138,21 @@ class InvestigationResearch:
         return asyncio.run(self._run(investigation_id, claims, progress, budget, media or []))
 
     async def _run(self, investigation_id, claims, progress, budget, media):
+        # Decide system text language once from all claims; one short claim misleads detection.
+        text = "\n".join(dict.fromkeys(c.text for c in claims))
+        language = await detect_language(
+            text,
+            MetaStructuredProvider(self.settings),
+            self.models["research"].api_model_id,
+            PROJECT_ROOT / "config/prompts.yaml",
+        )
+        with report_language(language.code):
+            report = await self._research(investigation_id, claims, progress, budget, media)
+        if language.usage:
+            report.model_usage.insert(0, language.usage)
+        return report
+
+    async def _research(self, investigation_id, claims, progress, budget, media):
         meta = MetaStructuredProvider(self.settings)
         planning_claims = [
             PlanningClaim(

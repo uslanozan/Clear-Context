@@ -153,4 +153,4 @@ Public GitHub repository and a three-minute demo submitted through Cerebral Vall
 
 ## License
 
-Clear Context is released under the [MIT License](LICENSE). Third-party dependencies keep their own licenses. The Meta wordmark and Muse artwork in `frontend/public/brand/` are third-party trademarks and artwork, not covered by this license; see [brand asset notes](frontend/public/brand/README.md).
+Clear Context is released under the [MIT License](LICENSE). Third-party dependencies keep their own licenses; for example, language detection uses [langdetect](https://github.com/Mimino666/langdetect) (a port of Google's language-detection library) and image resizing uses [Pillow](https://python-pillow.org/). The Meta wordmark and Muse artwork in `frontend/public/brand/` are third-party trademarks and artwork, not covered by this license; see [brand asset notes](frontend/public/brand/README.md).
