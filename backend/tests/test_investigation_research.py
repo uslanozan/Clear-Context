@@ -642,3 +642,84 @@ def test_failed_planning_keeps_the_claims_and_says_research_did_not_run(monkeypa
     assert report.limitations == [
         "Research planning did not complete (rate_limited); claims were not researched."
     ]
+
+
+def test_an_invalid_plan_is_requested_once_more(monkeypatch, tmp_path):
+    from clear_context.services import investigation_research as module
+
+    answers = []
+
+    class Planner:
+        def __init__(self, settings):
+            pass
+
+        async def complete(self, payload, timeout):
+            answers.append(payload["response_format"]["json_schema"]["name"])
+            # Every plan breaks the schema: research is not run after the second try.
+            return completion({"needs": "not a list"})
+
+    monkeypatch.setattr(module, "MetaStructuredProvider", Planner)
+    model = ModelSelection(alias="spark", api_model_id="muse-spark-1.3", training_use=False)
+    claim = Claim(id=uuid4(), text="The bridge opened in 2017.")
+    research = InvestigationResearch(
+        Settings(_env_file=None), {"research": model, "judge": model}, tmp_path / "r.sqlite"
+    )
+    report = research.run(uuid4(), [claim])
+    assert [name for name in answers if name == "query_plan"] == ["query_plan"] * 2
+    assert "invalid_plan" in report.findings[0].explanation
+    assert [u.task for u in report.model_usage].count("query_planning") == 2
+
+
+def test_a_second_valid_plan_lets_research_continue(monkeypatch, tmp_path):
+    from clear_context.services import investigation_research as module
+
+    original = module.parse_planner_response
+    attempts = []
+
+    def flaky(*args, **kwargs):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise ValueError("Plan references an unknown claim.")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(module, "parse_planner_response", flaky)
+    claim, report = run_research(monkeypatch, tmp_path, [PLANNED_NEED], TWO_COMPONENTS)
+    assert len(attempts) == 2
+    # The second plan was used: research ran and assessed the planned need.
+    assert report.findings[0].components[0].status in {"supported", "contradicted"}
+    assert not any("did not complete" in item for item in report.limitations)
+
+
+def test_the_users_description_of_media_is_never_grouped(monkeypatch, tmp_path):
+    from clear_context.services import investigation_research as module
+    from clear_context.services.claim_groups import Grouping
+    from clear_context.services.language import LanguageDecision
+
+    seen = []
+
+    async def record_groups(claims, *args):
+        seen.extend(text for _, text in claims)
+        return Grouping({})
+
+    async def language(*args, **kwargs):
+        return LanguageDecision("en", 1.0, "langdetect")
+
+    async def research(self, investigation_id, claims, *args, **kwargs):
+        return module.research_not_run(investigation_id, claims, "test")
+
+    monkeypatch.setattr(module, "group_claims", record_groups)
+    monkeypatch.setattr(module, "detect_language", language)
+    monkeypatch.setattr(InvestigationResearch, "_research", research)
+    caption = "The governor warned of dramatic flooding"
+    claims = [
+        Claim(id=uuid4(), text=caption),
+        Claim(id=uuid4(), text="our primary concern remains dramatic flooding"),
+        Claim(id=uuid4(), text="20 inches of rain fell"),
+    ]
+    settings = Settings(
+        _env_file=None, app_mode="meta", allow_paid_api_calls=True, meta_api_key="k"
+    )
+    model = ModelSelection(alias="spark", api_model_id="muse-spark-1.3", training_use=False)
+    service = InvestigationResearch(settings, {"research": model, "judge": model}, tmp_path / "r")
+    service.run(uuid4(), claims, user_text=f"{caption}.")
+    assert caption not in seen and len(seen) == 2

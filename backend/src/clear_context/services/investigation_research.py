@@ -109,6 +109,8 @@ RESEARCH_MODES = {
 }
 
 
+# Planning calls per research run when the answer fails validation.
+PLANNING_ATTEMPTS = 2
 # "complete" mode researches every claim, up to this many per run, in batches small enough
 # for one planning call each; the rest are left for a continuation.
 COMPLETE_MAX_CLAIMS = 40
@@ -338,8 +340,15 @@ class InvestigationResearch:
             PROJECT_ROOT / "config/prompts.yaml",
         )
         meta = MetaStructuredProvider(self.settings)
+        # The user's own description of attached files is never grouped: it asks what the
+        # media shows, which differs from a speaker saying something similar in it.
+        user_text = subject.user_text if subject else ""
         grouping = await group_claims(
-            [(str(c.id), c.statement or c.text) for c in claims],
+            [
+                (str(c.id), c.statement or c.text)
+                for c in claims
+                if not (user_text and c.text and c.text in user_text)
+            ],
             meta,
             self.models["research"].api_model_id,
             PROJECT_ROOT / "config/prompts.yaml",
@@ -413,22 +422,34 @@ class InvestigationResearch:
             # The selected planner (v7) handles text and image context alike.
             image_context=images or None,
         )
-        try:
-            body = await meta.complete(request, self.settings.meta_timeout_seconds)
-            plan = parse_planner_response(
-                body["choices"][0]["message"]["content"],
-                planning_claims,
-                budget.max_queries,
-                profile,
-            )
-        except (ModelResponseFailure, ValueError, KeyError, IndexError, TypeError) as error:
-            # Keep the extracted claims; the report says research did not run.
-            return research_not_run(
-                investigation_id, claims, getattr(error, "code", "invalid_plan")
-            )
-        usage = [
-            usage_record("query_planning", self.models["research"].api_model_id, body.get("usage"))
-        ]
+        usage = []
+        # A plan that fails validation is asked for once more: in testing about one planning
+        # call in twenty broke the schema, and without a plan no claim is researched.
+        for attempt in range(PLANNING_ATTEMPTS):
+            try:
+                body = await meta.complete(request, self.settings.meta_timeout_seconds)
+                usage.append(
+                    usage_record(
+                        "query_planning", self.models["research"].api_model_id, body.get("usage")
+                    )
+                )
+                plan = parse_planner_response(
+                    body["choices"][0]["message"]["content"],
+                    planning_claims,
+                    budget.max_queries,
+                    profile,
+                )
+                break
+            except (ModelResponseFailure, ValueError, KeyError, IndexError, TypeError) as error:
+                invalid = not isinstance(error, ModelResponseFailure)
+                if invalid and attempt + 1 < PLANNING_ATTEMPTS:
+                    continue
+                # Keep the extracted claims; the report says research did not run.
+                report = research_not_run(
+                    investigation_id, claims, getattr(error, "code", "invalid_plan")
+                )
+                report.model_usage = usage
+                return report
         if progress:
             progress("plan_queries")
         needs = [
