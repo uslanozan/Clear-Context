@@ -221,15 +221,17 @@ export function ReportView({
             <strong>
               {report.claims.length
                 ? 'Claims extracted; evidence is still missing'
-                : 'No factual claims were extracted'}
+                : 'No claims to check were found'}
             </strong>
             <p>
               {report.claims.length
                 ? 'These statements haven’t been verified. No source evidence is available in this report.'
-                : 'Check extraction coverage before treating an empty result as a passage without factual claims.'}
+                : coverage?.status === 'partial'
+                  ? 'Part of the input was not processed, so a claim may have been missed.'
+                  : 'Nothing in the input states a fact that sources could settle.'}
             </p>
           </div>
-          <span className="notice-tag">NEEDS EVIDENCE</span>
+          {!!report.claims.length && <span className="notice-tag">NEEDS EVIDENCE</span>}
         </div>
       )}
       <div className="report-grid">

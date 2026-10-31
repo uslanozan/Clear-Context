@@ -50,7 +50,7 @@ Start with `python -m clear_context` to apply `.env` host, port, and logging set
 | `MAX_CONCURRENT_INVESTIGATIONS` | `2` | Investigations running at once (1-8); the rest wait in order as `queued`, and `GET /api/investigations/{id}` gives `queue_position` (how many queued ones were accepted earlier). `0` runs each right after its request, without a limit, for tests |
 | `CORS_ALLOWED_ORIGINS` | `[]` | JSON array of explicit allowed HTTP(S) browser origins |
 | `ALLOWED_HOSTS` | `["localhost","127.0.0.1","*.localhost"]` | JSON array of `Host` names the API answers to; other names get 400, which blocks DNS rebinding |
-| `LINK_READING` | `true` | Read links found in the text (live mode only) |
+| `LINK_READING` | `true` | Read links found in the text (live mode only); links to this computer or a private network are reported as not read and never sent to a research service |
 | `DEFAULT_RESEARCH_MODE` | `balanced` | Research mode for requests that do not choose one |
 | `DATABASE_PATH` | `.local/clear-context.db` | SQLite file; shared by server and migrations |
 | `MODEL_CATALOG_PATH` | `config/models.yaml` | Model catalog |

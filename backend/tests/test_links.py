@@ -298,3 +298,38 @@ def test_reader_retries_once_with_advanced_extraction():
     assert len(depths) == 2
     link_reader.close()
     failing.close()
+
+
+def test_local_addresses_are_never_sent_to_the_reader(tmp_path):
+    from clear_context.providers.link_reader import local_address
+
+    for url in (
+        "http://clearcontext.localhost:5173/",
+        "http://localhost:8000/api",
+        "http://127.0.0.1/",
+        "http://192.168.1.5:8080/",
+        "http://[::1]/",
+        "http://printer.local/",
+        "http://router/",
+    ):
+        assert local_address(url), url
+    for url in ("https://news.example/a", "https://93.184.216.34/", "https://x.com/u/status/1"):
+        assert not local_address(url), url
+
+    class Recording(Reader):
+        def __init__(self):
+            super().__init__()
+            self.read_urls = []
+
+        def read(self, url):
+            self.read_urls.append(url)
+            return super().read(url)
+
+    reader = Recording()
+    result, _ = run_node(
+        "Is this true? http://clearcontext.localhost:5173/ https://news.example/a", reader, tmp_path
+    )
+    local, public = result["link_findings"]
+    assert (local.status, public.status) == ("not_read", "read")
+    assert "your own computer" in local.reason
+    assert reader.read_urls == ["https://news.example/a"]

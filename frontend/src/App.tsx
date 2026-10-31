@@ -268,7 +268,7 @@ function Workspace() {
                 <span />
               </div>
               <Badge variant="light" color="ember">
-                INVESTIGATION IN PROGRESS
+                {investigation.data?.status === 'queued' ? 'QUEUED' : 'INVESTIGATION IN PROGRESS'}
               </Badge>
               <h1>
                 {investigation.data?.status === 'queued' ? 'In the queue' : 'Investigation running'}
@@ -282,7 +282,12 @@ function Workspace() {
                 You can return to this investigation from your history.
               </p>
               <div className="progress-activity">
-                <Activity steps={steps.data || []} isRunning hasError={steps.isError} />
+                {/* A queued investigation has not started: no step is shown as running. */}
+                <Activity
+                  steps={steps.data || []}
+                  isRunning={investigation.data?.status === 'running'}
+                  hasError={steps.isError}
+                />
               </div>
             </div>
           ) : report.isError ? (

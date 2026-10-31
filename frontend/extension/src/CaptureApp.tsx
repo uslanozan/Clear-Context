@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Checkbox, Loader, SegmentedControl, Textarea } from '@mantine/core';
+import { Alert, Button, Loader, SegmentedControl, Textarea } from '@mantine/core';
 import { ArrowUpRight, Check, CircleAlert, LoaderCircle } from 'lucide-react';
 import { failureMessage } from '../../src/lib/api';
 import { RESEARCH_MODES } from '../../src/lib/modes';
 import { queueMessage, stageTitle } from '../../src/lib/stages';
 import type { Investigation, ResearchMode, ResearchStep } from '../../src/lib/types';
-import { MAX_TEXT, readablePage, submissionText, type PendingCapture } from './capture-model';
+import { MAX_TEXT, type PendingCapture } from './capture-model';
 import { ServerError, serverApi } from './server-api';
 import { summarize, type ReportSummary } from './summary';
 import { SummaryView } from './SummaryView';
@@ -88,16 +88,14 @@ function Preview({
 }) {
   const health = connection.state === 'ready' ? connection.health : null;
   const [text, setText] = useState(capture.text);
-  const [includePage, setIncludePage] = useState(
-    capture.kind === 'text' && readablePage(capture.pageUrl),
-  );
   const [chosenMode, setMode] = useState<ResearchMode | null>(null);
   const [image, setImage] = useState(capture.image);
   const [fullSize, setFullSize] = useState<'idle' | 'loading' | 'done' | 'failed'>('idle');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const mode = chosenMode ?? health?.default_research_mode ?? 'balanced';
-  const body = submissionText(text, capture.pageUrl, includePage);
+  // Only what the user sees in the box is sent; a link is read only when they add it.
+  const body = text.trim();
 
   async function useFullSize() {
     if (!capture.sourceUrl) return;
@@ -199,14 +197,6 @@ function Preview({
         value={text}
         onChange={(event) => setText(event.currentTarget.value)}
       />
-      {readablePage(capture.pageUrl) && (
-        <Checkbox
-          label="Also read this page"
-          description={capture.pageTitle || new URL(capture.pageUrl).host}
-          checked={includePage}
-          onChange={(event) => setIncludePage(event.currentTarget.checked)}
-        />
-      )}
       {health?.research_enabled && (
         <div>
           <span className="settings-label" id="ext-mode-label">
@@ -329,7 +319,9 @@ function Status({
               </li>
             );
           })}
-          {!titles.length && !done && <li className="muted">Waiting for the first step…</li>}
+          {!titles.length && current.status === 'running' && (
+            <li className="muted">Waiting for the first step…</li>
+          )}
         </ol>
       )}
       {offline && (

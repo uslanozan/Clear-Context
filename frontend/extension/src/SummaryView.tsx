@@ -21,9 +21,13 @@ export function SummaryView({ summary }: { summary: ReportSummary }) {
           ))}
         </div>
       ))}
-      <p className="muted small">
-        No overall verdict: each detail of a claim is assessed on its own.
-      </p>
+      {summary.claims.length ? (
+        <p className="muted small">
+          No overall verdict: each detail of a claim is assessed on its own.
+        </p>
+      ) : (
+        <p>No claims to check were found: nothing here states a fact that sources could settle.</p>
+      )}
       <ol className="ext-summary-claims">
         {summary.claims.map((claim, index) => (
           <li key={index}>

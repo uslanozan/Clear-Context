@@ -6,7 +6,12 @@ from PIL import Image, UnidentifiedImageError
 
 from clear_context.domain.investigation import LinkFinding
 from clear_context.graph.state import InvestigationContext, InvestigationState
-from clear_context.providers.link_reader import LinkFailure, find_links, host_label
+from clear_context.providers.link_reader import (
+    LinkFailure,
+    find_links,
+    host_label,
+    local_address,
+)
 from clear_context.services.media import store
 
 # One main image per page; later images are usually logos, ads or related stories.
@@ -15,6 +20,7 @@ MAX_IMAGES_PER_LINK = 1
 # skip images too small to be the post's picture.
 IMAGE_CANDIDATES = 4
 MIN_IMAGE_SIDE = 200
+LOCAL_ADDRESS = "This address is on your own computer or network; research services cannot open it."
 UNREADABLE = (
     "This link could not be read. Paste the post's text or attach a screenshot to check it."
 )
@@ -47,6 +53,16 @@ def fetch_links(state: InvestigationState, runtime: Runtime[InvestigationContext
                     site=site,
                     status="not_read",
                     reason=runtime.context.unread_link_reason,
+                )
+            )
+            continue
+        if local_address(url):
+            findings.append(
+                LinkFinding(
+                    url=url,
+                    site=site,
+                    status="not_read",
+                    reason=LOCAL_ADDRESS,
                 )
             )
             continue

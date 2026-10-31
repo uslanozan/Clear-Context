@@ -49,18 +49,6 @@ export function cropBox(
   return { x, y, width: Math.max(0, right - x), height: Math.max(0, bottom - y) };
 }
 
-/** Only http(s) pages are worth reading as links; chrome:// and file pages are not. */
-export function readablePage(url: string | null): url is string {
-  return !!url && /^https?:\/\//i.test(url);
-}
-
-/** The text sent to the server: the user's text, then the page link when it should be read. */
-export function submissionText(text: string, pageUrl: string | null, includePage: boolean) {
-  const body = text.trim();
-  if (!includePage || !readablePage(pageUrl) || body.includes(pageUrl)) return body;
-  return body ? `${body}\n\n${pageUrl}` : pageUrl;
-}
-
 /** A server address the extension accepts: http(s), no credentials, path or query. */
 export function normalizeServer(value: string): string | null {
   try {

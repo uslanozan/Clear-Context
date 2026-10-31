@@ -159,7 +159,7 @@ npm run build:extension
 
 Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select `frontend/dist-extension`. Three ways to capture:
 
-- **Selected text:** select text, right-click and choose **Check with Clear Context** (or use **Use selected text** from the toolbar button). The page address is added so the server reads the page too; you can untick that.
+- **Selected text:** select text, right-click and choose **Check with Clear Context** (or use **Use selected text** from the toolbar button). Only the text in the box is sent; to have a post or article read, paste its link into the text.
 - **An image or a video frame:** right-click it and choose **Check with Clear Context**. The picture is cut from a screenshot of what you see, so it works on pages that need a login. For an image, **Use the original image file** fetches the file the page published, after you grant access to that one site; reverse image search matches it better than an enlarged screenshot.
 - **An area:** toolbar button, **Capture an area**, then drag over anything on screen, such as a post or a paused video.
 

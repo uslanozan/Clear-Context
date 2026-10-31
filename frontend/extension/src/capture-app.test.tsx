@@ -111,7 +111,8 @@ it('sends the capture only on Investigate, then shows recorded steps and opens t
   await waitFor(() => expect(posts).toHaveLength(1));
   expect(posts[0].url).toBe('http://clearcontext.localhost/api/investigations');
   expect(posts[0].body).toEqual({
-    text: `${capture.text}\n\nhttps://news.example/storm`,
+    // The page address is not added; only the text the user saw is sent.
+    text: capture.text,
     research_mode: 'fast',
   });
   // The capture is removed once the server accepted it, so it is never sent twice.

@@ -88,6 +88,22 @@ def parse_published(value) -> date | None:
         return None
 
 
+def local_address(url: str) -> bool:
+    """Whether the link points to this computer or a private network.
+
+    Research services fetch pages from their own servers and cannot open such addresses, so
+    sending them only wastes a call. Names are judged as written, without a DNS lookup.
+    """
+    host = (urlsplit(url).hostname or "").lower().rstrip(".")
+    if host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".lan")):
+        return True
+    try:
+        return not ipaddress.ip_address(host).is_global
+    except ValueError:
+        # A name without a dot, such as "router", only resolves inside a local network.
+        return "." not in host
+
+
 def public_address(host: str) -> str | None:
     """One address of the host when every address it resolves to is public, else None."""
     try:

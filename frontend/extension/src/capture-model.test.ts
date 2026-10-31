@@ -1,10 +1,4 @@
-import {
-  cropBox,
-  dataUrlToBlob,
-  isLocalServer,
-  normalizeServer,
-  submissionText,
-} from './capture-model';
+import { cropBox, dataUrlToBlob, isLocalServer, normalizeServer } from './capture-model';
 
 it('crops in screenshot pixels and stays inside the screenshot', () => {
   // A 2x screen: the 1000 px wide viewport is 2000 px in the screenshot.
@@ -20,15 +14,6 @@ it('crops in screenshot pixels and stays inside the screenshot', () => {
     width: 50,
     height: 10,
   });
-});
-
-it('adds the page link only when it should be read and is not already there', () => {
-  const page = 'https://news.example/a';
-  expect(submissionText('  Claim.  ', page, true)).toBe('Claim.\n\nhttps://news.example/a');
-  expect(submissionText('Claim.', page, false)).toBe('Claim.');
-  expect(submissionText(`Claim ${page}`, page, true)).toBe(`Claim ${page}`);
-  expect(submissionText('', page, true)).toBe(page);
-  expect(submissionText('Claim.', 'chrome://newtab', true)).toBe('Claim.');
 });
 
 it('accepts plain http(s) server origins and knows which are local', () => {
