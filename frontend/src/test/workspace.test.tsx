@@ -163,8 +163,8 @@ describe('Investigation workspace', () => {
     mount(`/investigations/${id}`);
     await screen.findByText('Investigation report');
     expect(posts).toHaveLength(0);
-    // The original passage starts open.
-    expect(screen.getByRole('button', { name: /Original passage/ })).toHaveAttribute(
+    // The input starts open.
+    expect(screen.getByRole('button', { name: /Your input/ })).toHaveAttribute(
       'aria-expanded',
       'true',
     );

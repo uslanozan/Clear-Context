@@ -802,11 +802,6 @@ h3 {
 .original-passage .mantine-Accordion-control {
   font-size: 13px;
 }
-.original-label {
-  color: var(--muted);
-  font-size: 12px;
-  margin-left: 10px;
-}
 .original-text {
   font-size: 14px;
   line-height: 1.8;
@@ -1493,8 +1488,7 @@ h3 {
     align-items: start;
     padding: 16px;
   }
-  .notice-tag,
-  .original-label {
+  .notice-tag {
     display: none;
   }
   .claim-card {
@@ -2708,4 +2702,197 @@ h2,
 .report-main .budget-notice,
 .report-main .original-passage .mantine-Accordion-item {
   background: rgb(12 12 14 / 0.84);
+}
+
+/* Verdict tags: one icon and color per outcome, shared by the report and the help guide. */
+.verdict-tag {
+  --tone: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--tone) 38%, transparent);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  color: var(--tone);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.verdict-sm {
+  font-size: 12px;
+  padding: 3px 10px 3px 7px;
+}
+.verdict-lg {
+  font-size: 13.5px;
+  padding: 6px 14px 6px 10px;
+}
+.verdict-supported {
+  --tone: var(--success);
+}
+.verdict-contradicted {
+  --tone: var(--danger);
+}
+.verdict-conflicting {
+  --tone: #f5a65b;
+}
+.verdict-open {
+  --tone: #b8c3d6;
+  border-style: dashed;
+}
+.verdict-muted {
+  --tone: var(--muted);
+}
+.claim-verdict {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+  max-width: 220px;
+  margin-top: 2px;
+}
+.claim-verdict-summary {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: right;
+}
+
+/* Each detail of a claim is its own card: result, the detail, a short note, then the quotes. */
+.component-assessments h4 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.detail-card {
+  margin: 12px 0 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.035);
+}
+.detail-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.detail-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.detail-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.evidence-group {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.evidence-group-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.detail-card .evidence-excerpt:last-child {
+  margin-bottom: 0;
+}
+.detail-card blockquote {
+  border-left: 2px solid var(--line-strong);
+}
+@media (max-width: 640px) {
+  .detail-card {
+    padding: 14px;
+  }
+  .claim-topline {
+    flex-wrap: wrap;
+  }
+  .claim-verdict {
+    order: 3;
+    width: 100%;
+    max-width: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .claim-verdict-summary {
+    text-align: left;
+  }
+}
+
+/* Help guide: the four steps, then what each result means. */
+.help-content > .help-guide {
+  display: block;
+  margin: 0;
+}
+.help-steps {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 18px;
+}
+.help-steps li {
+  display: flex;
+  gap: 16px;
+}
+.help-step-number {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding-top: 3px;
+}
+.help-steps h3 {
+  margin: 0 0 4px;
+}
+.help-steps p {
+  margin: 0;
+}
+.help-results {
+  margin: 26px 0 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.help-results-intro {
+  margin: 0 0 14px;
+}
+.help-results dl {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+.help-results dl > div {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+.help-results dt {
+  margin: 0;
+}
+.help-results dd {
+  margin: 0;
+  padding-top: 2px;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.help-claim-row {
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+@media (max-width: 640px) {
+  .help-results dl > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
 }

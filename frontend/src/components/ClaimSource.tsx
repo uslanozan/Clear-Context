@@ -9,7 +9,7 @@ export function ClaimSource({ claim, input }: { claim: ExtractedClaim; input: st
 
   return (
     <details className="claim-provenance">
-      <summary>Inspect source passage</summary>
+      <summary>Highlight in your input</summary>
       <p className="source-location">
         Original characters {span.start + 1}–{span.end}
       </p>

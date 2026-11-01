@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Accordion, Alert, Badge, Button } from '@mantine/core';
+import { Accordion, Alert, Button } from '@mantine/core';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -21,16 +21,10 @@ import { BudgetNotice } from './BudgetNotice';
 import { LinkFindings } from './LinkFindings';
 import { MediaFindings } from './MediaFindings';
 import { EvidenceExcerpt, SourceTypeLabel, sourceDisplayName } from './EvidenceExcerpt';
-import { COMPONENT_STATUS } from '../lib/labels';
+import { ClaimVerdict, DetailTag } from './VerdictTag';
+import { COMPONENT_STATUS, STATUS_ORDER } from '../lib/labels';
 import { modeLabel } from '../lib/modes';
-import type { Assessment, Investigation, Report, ResearchStep } from '../lib/types';
-
-const ASSESSMENTS: Record<Assessment, { label: string; color: string }> = {
-  supported: { label: 'Supported', color: 'teal' },
-  contradicted: { label: 'Contradicted', color: 'red' },
-  mixed: { label: 'Mixed evidence', color: 'orange' },
-  unresolved: { label: 'Unresolved', color: 'yellow' },
-};
+import type { Investigation, Report, ResearchStep } from '../lib/types';
 
 /** Lists excerpts under one label per source, so repeated excerpts do not repeat the source. */
 function EvidenceGroups({
@@ -57,8 +51,8 @@ function EvidenceGroups({
   return (
     <>
       {groups.map((group) => (
-        <div key={group.key}>
-          <span className="muted">{group.label}</span>
+        <div className="evidence-group" key={group.key}>
+          <span className="evidence-group-label">{group.label}</span>
           {group.items.map((item, index) => (
             <EvidenceExcerpt
               key={item.id}
@@ -71,6 +65,16 @@ function EvidenceGroups({
       ))}
     </>
   );
+}
+
+/** Counts of detail results, settled outcomes first, e.g. "1 supported · 2 insufficient evidence". */
+function detailSummary(components: NonNullable<Report['findings'][number]['components']>) {
+  return STATUS_ORDER.map((status) => {
+    const count = components.filter((component) => component.status === status).length;
+    return count ? `${count} ${COMPONENT_STATUS[status].label.toLowerCase()}` : null;
+  })
+    .filter(Boolean)
+    .join(' · ');
 }
 
 function normalizeText(text: string): string {
@@ -240,9 +244,7 @@ export function ReportView({
             defaultValue="original"
           >
             <Accordion.Item value="original">
-              <Accordion.Control icon={<FileSearch size={17} />}>
-                Original passage<span className="original-label">Your starting point</span>
-              </Accordion.Control>
+              <Accordion.Control icon={<FileSearch size={17} />}>Your input</Accordion.Control>
               <Accordion.Panel>
                 <p className="original-text">
                   {investigation.text ||
@@ -251,7 +253,6 @@ export function ReportView({
               </Accordion.Panel>
             </Accordion.Item>
           </Accordion>
-          <BudgetNotice investigation={investigation} report={report} />
           {!!report.links?.length && <LinkFindings links={report.links} />}
           {!!report.media?.length && <MediaFindings media={report.media} />}
           <div className="section-heading">
@@ -265,13 +266,6 @@ export function ReportView({
               const finding = report.findings.find((item) => item.claim_id === claim.id);
               const hasComponents = !!finding?.components?.length;
               const claimStatement = claim.statement || claim.text;
-              const assessment = finding ? ASSESSMENTS[finding.assessment] : null;
-              // With per-detail results, an unresolved claim means "no overall verdict",
-              // not "nothing was found".
-              const assessmentLabel =
-                hasComponents && finding?.assessment === 'unresolved'
-                  ? 'No overall verdict'
-                  : assessment?.label;
               // A single component that repeats the claim needs no second heading.
               const singleRedundantComponent =
                 finding?.components?.length === 1 &&
@@ -286,16 +280,15 @@ export function ReportView({
                       {index + 1}
                     </span>
                     <h3 dir="auto">{claim.statement || claim.text}</h3>
-                    {assessment && (
-                      <Badge
-                        color={assessment.color}
-                        variant="light"
-                        leftSection={<CircleHelp size={11} />}
-                        tt="none"
-                        fw={550}
-                      >
-                        {assessmentLabel}
-                      </Badge>
+                    {finding && (
+                      <div className="claim-verdict">
+                        <ClaimVerdict assessment={finding.assessment} perDetail={hasComponents} />
+                        {hasComponents && (
+                          <span className="claim-verdict-summary">
+                            {detailSummary(finding.components ?? [])}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                   {claim.context_status === 'ambiguous' && (
@@ -309,20 +302,21 @@ export function ReportView({
                     <div className="component-assessments">
                       <h4>{singleRedundantComponent ? 'Evidence' : 'Evidence by detail'}</h4>
                       {finding.components.map((component, componentIndex) => (
-                        <section key={`${component.description}-${componentIndex}`}>
-                          {!singleRedundantComponent && (
-                            <>
-                              <strong dir="auto">{component.description}</strong>{' '}
-                            </>
-                          )}
-                          <Badge
-                            variant="light"
-                            color={COMPONENT_STATUS[component.status].color}
-                            tt="none"
-                          >
-                            {COMPONENT_STATUS[component.status].label}
-                          </Badge>
-                          <p dir="auto">{component.explanation}</p>
+                        <section
+                          className="detail-card"
+                          key={`${component.description}-${componentIndex}`}
+                        >
+                          <header className="detail-head">
+                            <DetailTag status={component.status} />
+                            {!singleRedundantComponent && (
+                              <strong className="detail-title" dir="auto">
+                                {component.description}
+                              </strong>
+                            )}
+                          </header>
+                          <p className="detail-note" dir="auto">
+                            {component.explanation}
+                          </p>
                           <EvidenceGroups
                             ids={component.evidence_ids}
                             evidence={evidence}
@@ -365,6 +359,7 @@ export function ReportView({
               );
             })}
           </div>
+          <BudgetNotice investigation={investigation} report={report} />
           {coverage && coverage.status !== 'partial' && (
             <div className="coverage-note">
               <p>Processing all input ranges does not guarantee that every claim was identified.</p>

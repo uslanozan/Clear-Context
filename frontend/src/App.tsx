@@ -20,6 +20,7 @@ import { runningStage } from './components/ProcessTimeline';
 import { Activity, ReportView } from './components/ReportView';
 import { StepGlyph } from './components/StepGlyph';
 import { Sidebar } from './components/Sidebar';
+import { HelpGuide } from './components/HelpGuide';
 import { api, ApiError, failureMessage } from './lib/api';
 import { queueMessage } from './lib/stages';
 import type { Investigation, ResearchMode } from './lib/types';
@@ -384,39 +385,10 @@ function Workspace() {
         classNames={{ title: 'help-title' }}
       >
         <div className="help-content">
-          <div>
-            <span>01</span>
-            <section>
-              <h3>Start with the words</h3>
-              <p>
-                Paste a statement or passage. Clear Context separates it into claims, keeping their
-                original wording.
-              </p>
-            </section>
-          </div>
-          <div>
-            <span>02</span>
-            <section>
-              <h3>Look for the evidence</h3>
-              <p>
-                Source research is the next stage. It isn’t connected yet. Extracted claims stay
-                unresolved until there’s evidence to assess.
-              </p>
-            </section>
-          </div>
-          <div>
-            <span>03</span>
-            <section>
-              <h3>Keep the context</h3>
-              <p>
-                Open an investigation from your history, inspect each claim, and export the report.
-                Your server stores the history; Meta processes your text when Meta mode is enabled.
-              </p>
-            </section>
-          </div>
+          <HelpGuide />
           <div className="help-footnote">
-            <Check size={15} /> Selecting an example or opening a saved report never starts a model
-            call.
+            <Check size={15} /> Opening a saved report never starts a model call. Your server keeps
+            the history; Meta processes your input when Meta mode is enabled.
           </div>
           <Button
             fullWidth
@@ -435,7 +407,7 @@ function AccordionPassage({ text }: { text: string }) {
   return (
     <details className="failed-passage">
       <summary>
-        <BookOpenText size={15} /> Original passage
+        <BookOpenText size={15} /> Your input
       </summary>
       <p>{text || 'No text was entered; this investigation started from images.'}</p>
     </details>

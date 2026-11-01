@@ -23,7 +23,7 @@ describe('Claim provenance', () => {
         }}
       />,
     );
-    fireEvent.click(screen.getByText('Inspect source passage'));
+    fireEvent.click(screen.getByText('Highlight in your input'));
     expect(screen.getByText('She won in 1911.').tagName).toBe('MARK');
     expect(screen.getByText('Marie Curie.')).toBeInTheDocument();
   });
@@ -40,7 +40,7 @@ describe('Claim provenance', () => {
       />,
     );
     expect(screen.getByText('The saved source location could not be matched.')).toBeInTheDocument();
-    expect(screen.queryByText('Inspect source passage')).not.toBeInTheDocument();
+    expect(screen.queryByText('Highlight in your input')).not.toBeInTheDocument();
   });
 
   it('shows partial extraction separately from factual uncertainty', () => {
