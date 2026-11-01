@@ -18,6 +18,7 @@ from clear_context.domain.investigation import (
     InvestigationStatus,
     ResearchMode,
 )
+from clear_context.repositories.investigation import InvestigationBusy
 from clear_context.repositories.retrieval import RetrievalRepository
 from clear_context.schemas.investigation import (
     InvestigationCreate,
@@ -27,6 +28,7 @@ from clear_context.schemas.investigation import (
     StepView,
 )
 from clear_context.services import media as media_service
+from clear_context.services.playable_video import copy_path
 
 router = APIRouter()
 
@@ -191,6 +193,35 @@ def get_research(request: Request, investigation_id: UUID):
         return research.overview(str(investigation_id))
     finally:
         research.close()
+
+
+@router.delete("/investigations/{investigation_id}", status_code=204)
+def delete_investigation(request: Request, investigation_id: UUID):
+    """Delete a finished investigation, its research records and files nothing else uses."""
+    try:
+        orphaned = request.app.state.repository.delete(investigation_id)
+    except InvestigationBusy:
+        raise HTTPException(
+            status_code=409, detail="Wait until the investigation finishes before deleting it."
+        ) from None
+    if orphaned is None:
+        raise HTTPException(status_code=404, detail="Investigation not found.")
+    workspace = request.app.state.research_workspace
+    if workspace.exists():
+        research = RetrievalRepository(workspace)
+        try:
+            research.delete_cases(str(investigation_id))
+        finally:
+            research.close()
+    media_dir = request.app.state.media_dir.resolve()
+    for name in orphaned:
+        stored = (media_dir / name).resolve()
+        # Names come from the database; still, never touch a path outside the media folder.
+        if stored.parent != media_dir:
+            continue
+        stored.unlink(missing_ok=True)
+        copy_path(stored).unlink(missing_ok=True)
+    return Response(status_code=204)
 
 
 @router.get("/investigations/{investigation_id}/report", response_model=InvestigationReport)

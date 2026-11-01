@@ -10,6 +10,7 @@ import {
   Plus,
   RefreshCw,
   Settings,
+  Trash2,
 } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import type { HistoryGroup, Investigation } from '../lib/types';
@@ -30,6 +31,7 @@ interface Props {
   onRenameGroup: (id: string, name: string) => void;
   onDeleteGroup: (id: string) => void;
   onAssign: (investigationId: string, groupId: string | null) => void;
+  onDelete: (item: Investigation) => void;
 }
 
 // Finished investigations need no label; only the exceptions are named.
@@ -100,12 +102,14 @@ function HistoryItem({
   groups,
   onNavigate,
   onAssign,
+  onDelete,
   onDragChange,
 }: {
   item: Investigation;
   groups: HistoryGroup[];
   onNavigate: () => void;
   onAssign: Props['onAssign'];
+  onDelete: Props['onDelete'];
   onDragChange: (id: string | null) => void;
 }) {
   return (
@@ -135,30 +139,43 @@ function HistoryItem({
           <span className={`history-state ${item.status}`}>{HISTORY_STATE[item.status]}</span>
         )}
       </NavLink>
-      {groups.length > 0 && (
-        <Menu position="right-start" withinPortal shadow="md" width={200}>
-          <Menu.Target>
-            <button type="button" className="history-menu" aria-label="Move to a group">
-              <Ellipsis size={15} />
-            </button>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Label>Move to group</Menu.Label>
-            {groups.map((group) => (
-              <Menu.Item
-                key={group.id}
-                disabled={item.group_id === group.id}
-                onClick={() => onAssign(item.id, group.id)}
-              >
-                {group.name}
-              </Menu.Item>
-            ))}
-            {item.group_id && (
-              <Menu.Item onClick={() => onAssign(item.id, null)}>Remove from group</Menu.Item>
-            )}
-          </Menu.Dropdown>
-        </Menu>
-      )}
+      <Menu position="right-start" withinPortal shadow="md" width={200}>
+        <Menu.Target>
+          <button type="button" className="history-menu" aria-label="Investigation actions">
+            <Ellipsis size={15} />
+          </button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {groups.length > 0 && (
+            <>
+              <Menu.Label>Move to group</Menu.Label>
+              {groups.map((group) => (
+                <Menu.Item
+                  key={group.id}
+                  disabled={item.group_id === group.id}
+                  onClick={() => onAssign(item.id, group.id)}
+                >
+                  {group.name}
+                </Menu.Item>
+              ))}
+              {item.group_id && (
+                <Menu.Item onClick={() => onAssign(item.id, null)}>Remove from group</Menu.Item>
+              )}
+              <Menu.Divider />
+            </>
+          )}
+          <Menu.Item
+            color="red"
+            leftSection={<Trash2 size={14} />}
+            disabled={item.status === 'queued' || item.status === 'running'}
+            onClick={() => onDelete(item)}
+          >
+            {item.status === 'queued' || item.status === 'running'
+              ? 'Delete after it finishes'
+              : 'Delete…'}
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
     </div>
   );
 }
@@ -208,6 +225,7 @@ export function Sidebar(props: Props) {
       groups={props.groups}
       onNavigate={props.onNavigate}
       onAssign={props.onAssign}
+      onDelete={props.onDelete}
       onDragChange={(id) => {
         setDragging(id);
         if (!id) setOver(null);

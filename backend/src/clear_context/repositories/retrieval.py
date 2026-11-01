@@ -14,6 +14,8 @@ from clear_context.models.retrieval_cache import (
     claims,
     events,
     hits,
+    judgment_selections,
+    judgments,
     metadata,
     needs,
     pages,
@@ -50,6 +52,45 @@ class RetrievalRepository:
 
     def close(self):
         self.engine.dispose()
+
+    def delete_cases(self, investigation_id: str) -> None:
+        """Remove one investigation's research records; the shared search and page cache stays."""
+        with self.engine.begin() as conn:
+            case_ids = list(
+                conn.scalars(
+                    select(cases.c.id).where(
+                        or_(
+                            cases.c.id == investigation_id,
+                            cases.c.id.like(f"{investigation_id}:batch%"),
+                        )
+                    )
+                )
+            )
+            if not case_ids:
+                return
+            judgment_ids = select(judgments.c.id).where(judgments.c.case_id.in_(case_ids))
+            selection_ids = select(selections.c.id).where(selections.c.case_id.in_(case_ids))
+            conn.execute(
+                delete(judgment_selections).where(
+                    or_(
+                        judgment_selections.c.judgment_id.in_(judgment_ids),
+                        judgment_selections.c.selection_id.in_(selection_ids),
+                    )
+                )
+            )
+            conn.execute(delete(judgments).where(judgments.c.case_id.in_(case_ids)))
+            conn.execute(
+                delete(selection_passages).where(
+                    or_(
+                        selection_passages.c.case_id.in_(case_ids),
+                        selection_passages.c.selection_id.in_(selection_ids),
+                    )
+                )
+            )
+            # Child tables first: foreign keys are enforced in this workspace.
+            for table in (selections, passage_needs, hits, query_needs, queries, needs, claims):
+                conn.execute(delete(table).where(table.c.case_id.in_(case_ids)))
+            conn.execute(delete(cases).where(cases.c.id.in_(case_ids)))
 
     def overview(self, investigation_id: str) -> dict:
         """What research recorded for one investigation: plans, searches, results, selections.

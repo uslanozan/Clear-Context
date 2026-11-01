@@ -85,6 +85,8 @@ export const api = {
       body: JSON.stringify({ name }),
     }),
   deleteGroup: (id: string) => request<void>(`/groups/${id}`, { method: 'DELETE' }),
+  deleteInvestigation: (id: string) =>
+    request<void>(`/investigations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   assignGroup: (id: string, groupId: string | null) =>
     request<void>(`/investigations/${id}/group`, {
       method: 'PUT',

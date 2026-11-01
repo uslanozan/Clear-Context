@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import and_, literal_column, or_, select
+from sqlalchemy import and_, delete, literal_column, or_, select, update
 
 from clear_context.domain.investigation import (
     Claim,
@@ -30,6 +30,18 @@ from clear_context.models import (
 
 def utc_now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+class InvestigationBusy(RuntimeError):
+    """The investigation, or a continuation of it, is still queued or running."""
+
+
+def stored_names(media: MediaRow) -> set[str]:
+    """Files on disk that belong to a media row: the upload and any video frames."""
+    frames = (media.finding or {}).get("frames") or []
+    return {media.storage_name} | {
+        str(frame["storage_name"]) for frame in frames if frame.get("storage_name")
+    }
 
 
 class InvestigationRepository:
@@ -119,6 +131,47 @@ class InvestigationRepository:
     def media(self, media_id: UUID) -> MediaRow | None:
         with self.sessions() as session:
             return session.get(MediaRow, str(media_id))
+
+    def delete(self, investigation_id: UUID) -> list[str] | None:
+        """Delete an investigation and its records; returns files no other record uses.
+
+        Returns None when it does not exist. Reports that continued it keep their own
+        records and lose only the link back to it.
+        """
+        key = str(investigation_id)
+        busy = {InvestigationStatus.QUEUED.value, InvestigationStatus.RUNNING.value}
+        with self.sessions.begin() as session:
+            row = session.get(InvestigationRow, key)
+            if row is None:
+                return None
+            children_busy = session.scalar(
+                select(InvestigationRow.id).where(
+                    InvestigationRow.parent_id == key, InvestigationRow.status.in_(busy)
+                )
+            )
+            if row.status in busy or children_busy:
+                raise InvestigationBusy("The investigation is still running.")
+            media = list(session.scalars(select(MediaRow).where(MediaRow.investigation_id == key)))
+            candidates = set().union(*(stored_names(item) for item in media))
+            claim_ids = select(ClaimRow.id).where(ClaimRow.investigation_id == key)
+            finding_ids = select(FindingRow.id).where(FindingRow.claim_id.in_(claim_ids))
+            session.execute(
+                delete(FindingEvidenceRow).where(FindingEvidenceRow.finding_id.in_(finding_ids))
+            )
+            session.execute(delete(FindingRow).where(FindingRow.claim_id.in_(claim_ids)))
+            session.execute(delete(EvidenceRow).where(EvidenceRow.claim_id.in_(claim_ids)))
+            for model in (ClaimRow, SourceRow, LinkRow, MediaRow, ResearchStepRow):
+                session.execute(delete(model).where(model.investigation_id == key))
+            session.execute(
+                update(InvestigationRow)
+                .where(InvestigationRow.parent_id == key)
+                .values(parent_id=None, relation=None)
+            )
+            session.delete(row)
+            session.flush()
+            remaining = session.scalars(select(MediaRow))
+            still_used = set().union(*(stored_names(item) for item in remaining))
+        return sorted(candidates - still_used)
 
     def get(self, investigation_id: UUID) -> InvestigationRow | None:
         with self.sessions() as session:

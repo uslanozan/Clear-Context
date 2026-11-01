@@ -13,10 +13,13 @@ Local development only, single process. Mock mode is the default. Meta mode supp
 | GET | `/api/investigations/{id}` | Persisted status and input |
 | GET | `/api/investigations/{id}/steps` | Recorded processing steps |
 | GET | `/api/investigations/{id}/report` | Completed report; 409 until available |
+| GET | `/api/investigations/{id}/research` | Recorded research needs, searches (reverse image lookups have no query text) and counts of results, distinct pages and passage selections; read-only, empty when research did not run |
+| DELETE | `/api/investigations/{id}` | Delete an investigation: its records, its research workspace rows and uploaded files no other investigation uses; 204, 404 when missing, 409 while it or a continuation of it is queued or running. Continuations keep their own records and lose only `parent_id` |
 | POST | `/api/investigations/upload` | Multipart: `files` (1-4), optional `text` caption and `research_mode`; return 202 and Location |
 | POST | `/api/investigations/{id}/rerun` | Accept `{ "research_mode": "deep" }`; start a new investigation with the same text and uploaded files, linked by `parent_id` and `relation: rerun` |
 | POST | `/api/investigations/{id}/continue` | Accept `{ "research_mode": "deep" }`; research again only the claims the report's budget did not reach; 409 when there are none |
 | GET | `/api/media/{id}` | An uploaded file with its detected content type |
+| GET | `/api/media/{id}/playable` | A video the browser can show: the upload itself when its codecs are H.264, VP8, VP9 or AV1, otherwise a WebM (VP9 and Opus, at most 720p) copy made with PyAV on first request and kept next to the upload; 404 for images |
 | GET | `/api/groups` | History groups in display order. Groups only organize the history list; they never change a report |
 | POST | `/api/groups` | Create a group from `{ "name": "..." }` (1-60 characters after whitespace is collapsed; 409 after 40 groups) |
 | PATCH | `/api/groups/{id}` | Rename a group |
@@ -100,6 +103,8 @@ SQLite stores investigations, claims, sources, evidence, findings, finding/evide
 Apply migrations before starting: `python -m alembic -c backend/alembic.ini upgrade head`. Do not replace migrations with runtime `create_all`. Normal upgrades retain data; downgrading the initial migration drops its tables and data.
 
 State transitions: `queued -> running -> completed/failed`. Work runs in an in-process background task after the response, using LangGraph nodes `extract_claims -> evaluate_evidence -> validate_report`. Opt-in research records completed planning, retrieval, selection and assessment steps as they occur, plus `followup_research` when a follow-up search round ran. On restart, unfinished jobs are marked `failed` with `interrupted`, not silently resumed. No graph checkpointer is configured yet. Provider failures expose a generic `processing_failed` code without raw error messages. Run **one worker / one server instance per database**; this is not a durable queue and has no retry/resume guarantee.
+
+Deleting an investigation removes its rows in one transaction, then its research workspace rows (the shared search and page cache stays), then upload files, video frames and playable copies that no remaining investigation references.
 
 Bind to loopback for this slice. Network-accessible self-hosting, HTTPS, and access protection will be addressed before public deployment. Docker Compose stores SQLite in a named volume and publishes only the web container on loopback; server-side uploads do not exist yet and will need the same volume.
 

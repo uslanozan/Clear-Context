@@ -44,6 +44,7 @@ let uploads: { url: string; form: FormData }[];
 let researchEnabled: boolean;
 let failPost: boolean;
 let healthOffline: boolean;
+let deletes: string[];
 
 beforeEach(() => {
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:local-test');
@@ -54,6 +55,7 @@ beforeEach(() => {
   researchEnabled = false;
   failPost = false;
   healthOffline = false;
+  deletes = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string, options?: RequestInit) => {
@@ -66,6 +68,10 @@ beforeEach(() => {
           paid_api_calls_enabled: true,
           research_enabled: researchEnabled,
         });
+      }
+      if (options?.method === 'DELETE') {
+        deletes.push(url);
+        return new Response(null, { status: 204 });
       }
       if (options?.method === 'POST') {
         if (options.body instanceof FormData) {
@@ -167,6 +173,20 @@ describe('Investigation workspace', () => {
     expect(screen.getByRole('heading', { name: 'Your input' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Your input/ })).not.toBeInTheDocument();
     expect(screen.getAllByText('A synthetic claim.').length).toBeGreaterThan(0);
+  });
+
+  it('deletes an investigation only after confirmation', async () => {
+    mount(`/investigations/${id}`);
+    await screen.findByText('Investigation report');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Investigation actions' })[0]);
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Delete/ }));
+    expect(await screen.findByText('Delete this investigation?')).toBeInTheDocument();
+    expect(deletes).toEqual([]);
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(deletes).toEqual([`/api/investigations/${id}`]));
+    // The open report was the deleted one, so the workspace opens instead.
+    await screen.findByRole('button', { name: 'Start investigation' });
+    expect(posts).toHaveLength(0);
   });
 
   it('disables paid submission while the backend is disconnected', async () => {

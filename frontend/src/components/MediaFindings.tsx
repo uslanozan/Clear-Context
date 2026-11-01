@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Badge } from '@mantine/core';
 import { ArrowUpRight } from 'lucide-react';
 import type { CaptionCheck, MediaFinding, PriorFactCheck, SpeechTurn } from '../lib/types';
@@ -262,6 +262,7 @@ function Speech({ turns, onSeek }: { turns: SpeechTurn[]; onSeek: (at: number) =
 
 function MediaCard({ item, index }: { item: MediaFinding; index: number }) {
   const player = useRef<HTMLVideoElement>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
   const status = ANALYSIS[item.analysis.status];
   const src = `/api/media/${encodeURIComponent(item.id)}`;
   const noun: Noun = item.kind;
@@ -278,13 +279,22 @@ function MediaCard({ item, index }: { item: MediaFinding; index: number }) {
         {item.kind === 'image' ? (
           <img src={src} alt={`Uploaded image ${index + 1}: ${item.filename}`} />
         ) : (
-          <video
-            ref={player}
-            src={src}
-            controls
-            preload="metadata"
-            aria-label={`Uploaded video ${index + 1}: ${item.filename}`}
-          />
+          <>
+            {/* Served as uploaded, or as a WebM copy when the browser cannot show its codec. */}
+            <video
+              ref={player}
+              src={`${src}/playable`}
+              controls
+              preload="metadata"
+              aria-label={`Uploaded video ${index + 1}: ${item.filename}`}
+              onError={() => setVideoFailed(true)}
+            />
+            {videoFailed && (
+              <p className="muted small" role="note">
+                This video cannot be played here. The checks below are not affected.
+              </p>
+            )}
+          </>
         )}
       </div>
       <div className="media-body">

@@ -3105,3 +3105,31 @@ h2,
     margin-bottom: 0;
   }
 }
+
+/* Media in a report: the picture or video spans the card, the findings follow below it. */
+.media-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+.media-thumb img,
+.media-thumb video {
+  display: block;
+  max-height: 460px;
+  background: #000;
+}
+.media-thumb .small {
+  margin: 8px 0 0;
+}
+
+/* Delete confirmation: the investigation's own words, so the right one is removed. */
+.delete-target {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

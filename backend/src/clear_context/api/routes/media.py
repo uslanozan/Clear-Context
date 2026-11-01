@@ -1,8 +1,11 @@
 import re
 from uuid import UUID
 
+import av
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
+
+from clear_context.services.playable_video import playable
 
 router = APIRouter()
 
@@ -27,6 +30,21 @@ def get_media(media_id: UUID, request: Request):
     return FileResponse(
         stored_file(request, row.storage_name), media_type=row.mime_type, headers=HEADERS
     )
+
+
+@router.get("/media/{media_id}/playable")
+def get_playable(media_id: UUID, request: Request):
+    """A video the browser can show: the upload itself, or a WebM copy made on first request."""
+    row = request.app.state.repository.media(media_id)
+    if row is None or row.kind != "video":
+        raise HTTPException(status_code=404, detail="Video not found.")
+    try:
+        path, media_type = playable(stored_file(request, row.storage_name))
+    except (OSError, ValueError, av.FFmpegError) as error:
+        raise HTTPException(
+            status_code=422, detail="This video could not be prepared for playback."
+        ) from error
+    return FileResponse(path, media_type=media_type, headers=HEADERS)
 
 
 @router.get("/media/{media_id}/frames/{index}")

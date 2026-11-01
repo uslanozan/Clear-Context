@@ -54,6 +54,8 @@ function Workspace() {
   const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  // The history item waiting for delete confirmation.
+  const [pendingDelete, setPendingDelete] = useState<Investigation | null>(null);
   // Folding the rail is a per-browser preference; storage may be unavailable.
   const [railHidden, setRailHidden] = useState(() => {
     try {
@@ -153,6 +155,17 @@ function Workspace() {
     mutationFn: (groupId: string) => api.deleteGroup(groupId),
     onSuccess: refreshHistory,
   });
+  const deleteInvestigation = useMutation({
+    mutationFn: (investigationId: string) => api.deleteInvestigation(investigationId),
+    onSuccess: (_, investigationId) => {
+      setPendingDelete(null);
+      for (const key of ['investigation', 'steps', 'report', 'research']) {
+        queryClient.removeQueries({ queryKey: [key, investigationId] });
+      }
+      refreshHistory();
+      if (investigationId === id) navigate('/');
+    },
+  });
   const assignGroup = useMutation({
     mutationFn: ({
       investigationId,
@@ -175,6 +188,10 @@ function Workspace() {
       onRenameGroup={(groupId, name) => renameGroup.mutate({ id: groupId, name })}
       onDeleteGroup={(groupId) => deleteGroup.mutate(groupId)}
       onAssign={(investigationId, groupId) => assignGroup.mutate({ investigationId, groupId })}
+      onDelete={(item) => {
+        deleteInvestigation.reset();
+        setPendingDelete(item);
+      }}
       isLoading={history.isPending}
       hasError={history.isError}
       hasMore={Boolean(history.hasNextPage)}
@@ -375,6 +392,40 @@ function Workspace() {
           )}
         </main>
       </div>
+      <Modal
+        opened={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        title="Delete this investigation?"
+        centered
+        classNames={{ title: 'help-title' }}
+      >
+        <p className="delete-target" dir="auto">
+          {pendingDelete?.text || 'Files without text'}
+        </p>
+        <p className="muted">
+          The report, its evidence and research records, and uploaded files that no other
+          investigation uses are removed from your server. This cannot be undone.
+        </p>
+        {deleteInvestigation.isError && (
+          <p className="budget-error" role="alert">
+            {deleteInvestigation.error instanceof ApiError
+              ? deleteInvestigation.error.message
+              : 'The investigation could not be deleted. Try again.'}
+          </p>
+        )}
+        <div className="settings-actions">
+          <Button variant="default" onClick={() => setPendingDelete(null)}>
+            Cancel
+          </Button>
+          <Button
+            color="red"
+            loading={deleteInvestigation.isPending}
+            onClick={() => pendingDelete && deleteInvestigation.mutate(pendingDelete.id)}
+          >
+            Delete
+          </Button>
+        </div>
+      </Modal>
       <Modal
         opened={helpOpen}
         onClose={() => setHelpOpen(false)}
