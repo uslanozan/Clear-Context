@@ -17,7 +17,7 @@ import { Composer } from './components/Composer';
 import { SettingsPage } from './components/SettingsPage';
 import { runningStage } from './components/ProcessTimeline';
 import { Activity, ReportView } from './components/ReportView';
-import { StepGlyph } from './components/StepGlyph';
+import { StepJolly } from './components/StepJolly';
 import { Sidebar } from './components/Sidebar';
 import { HelpGuide } from './components/HelpGuide';
 import { api, ApiError, failureMessage } from './lib/api';
@@ -334,7 +334,7 @@ function Workspace() {
               {investigation.data?.status === 'queued' ? (
                 <div className="current-step">
                   <span className="current-step-glyph waiting">
-                    <StepGlyph event="graph_started" size={52} />
+                    <StepJolly event="graph_started" size={150} />
                   </span>
                   <div>
                     <h1>In the queue</h1>
@@ -347,7 +347,7 @@ function Workspace() {
               ) : (
                 <div className="current-step">
                   <span className="current-step-glyph">
-                    <StepGlyph event={running.event} size={52} animate />
+                    <StepJolly event={running.event} size={150} />
                   </span>
                   <div>
                     <h1>{running.title}</h1>

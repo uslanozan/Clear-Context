@@ -2368,6 +2368,24 @@ h2,
   .desktop-sidebar .sidebar {
     transition: none;
   }
+/* Jolly beside each stage and, larger, on the progress page. */
+.step-jolly {
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+.process-step .step-jolly {
+  order: 3;
+  margin-left: auto;
+}
+.process-step.waiting .step-jolly,
+.process-step.skipped .step-jolly {
+  opacity: 0.45;
+}
+.current-step-glyph:has(.step-jolly) {
+  width: 160px;
+  height: 160px;
+  background: transparent;
 }
 
 /* Stage details open in place under a recorded stage. */

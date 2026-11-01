@@ -9,6 +9,7 @@ import {
 } from '../lib/stages';
 import type { ResearchStep } from '../lib/types';
 import { StepGlyph } from './StepGlyph';
+import { StepJolly } from './StepJolly';
 
 /** The stages this investigation shows, in order, given what was recorded so far. */
 export function stageOrder(steps: ResearchStep[], researchEnabled = false) {
@@ -124,6 +125,7 @@ export function ProcessTimeline({
                   <Circle size={11} />
                 )}
               </span>
+              <StepJolly event={stage.event} size={44} />
               <div className="process-copy">
                 <div>
                   {event && details?.[stage.event] ? (
