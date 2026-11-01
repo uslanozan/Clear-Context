@@ -19,7 +19,8 @@
   --sidebar-line: rgb(255 255 255 / 0.09);
   /* Blue: --action fills buttons (white text), --accent colors links and focus on dark. */
   --action: var(--blue-1);
-  --action-strong: var(--blue-2);
+  /* Hover: between the two blues, so white text keeps 4.5:1. */
+  --action-strong: color-mix(in srgb, var(--blue-1) 55%, var(--blue-2));
   --accent: color-mix(in srgb, var(--blue-2) 62%, white);
   --accent-strong: color-mix(in srgb, var(--blue-2) 40%, white);
   --accent-soft: rgb(4 123 242 / 0.16);
