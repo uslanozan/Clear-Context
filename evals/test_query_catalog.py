@@ -35,7 +35,12 @@ def arguments():
 
 def test_default_selection_and_contract_are_catalog_driven():
     payload, profile = build_planner_request([claim()], **arguments())
-    assert profile.prompt == "query_planning_v5"
+    # The selection lives in the catalog; the test follows it instead of repeating a version,
+    # which went stale once already (v5 to v8).
+    catalog = yaml.safe_load(
+        (ROOT / "config/query_planners.yaml").read_text(encoding="utf-8")
+    )
+    assert profile.prompt == catalog["planners"][catalog["selected"]]["prompt"]
     definitions = payload["response_format"]["json_schema"]["schema"]["$defs"]
     assert "need_ids" in definitions["MappedSearchQuery"]["properties"]
     assert json.loads(payload["messages"][1]["content"])["source_published_at"] is None
