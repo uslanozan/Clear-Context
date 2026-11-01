@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Drawer, Loader, Modal, Skeleton } from '@mantine/core';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, BookOpenText, Check, FileSearch, Menu, RefreshCw, X } from 'lucide-react';
+import {
+  ArrowRight,
+  BookOpenText,
+  Check,
+  FileSearch,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  RefreshCw,
+  X,
+} from 'lucide-react';
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { EvaluationView } from './components/EvaluationView';
 import { Composer } from './components/Composer';
@@ -43,6 +53,23 @@ function Workspace() {
   const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  // Folding the rail is a per-browser preference; storage may be unavailable.
+  const [railHidden, setRailHidden] = useState(() => {
+    try {
+      return localStorage.getItem('clear-context:rail-hidden') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleRail = () =>
+    setRailHidden((hidden) => {
+      try {
+        localStorage.setItem('clear-context:rail-hidden', hidden ? '0' : '1');
+      } catch {
+        // The choice simply resets next time.
+      }
+      return !hidden;
+    });
   const health = useQuery({
     queryKey: ['health'],
     queryFn: ({ signal }) => api.health(signal),
@@ -162,7 +189,7 @@ function Workspace() {
   );
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${railHidden ? 'rail-hidden' : ''}`}>
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
@@ -187,6 +214,15 @@ function Workspace() {
               onClick={() => setMobileOpen(true)}
             >
               <Menu size={20} />
+            </button>
+            <button
+              className="rail-toggle icon-button"
+              aria-label={railHidden ? 'Show navigation' : 'Hide navigation'}
+              aria-expanded={!railHidden}
+              title={railHidden ? 'Show navigation' : 'Hide navigation'}
+              onClick={toggleRail}
+            >
+              {railHidden ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
             </button>
             <Link to="/">Workspace</Link>
             <span className="breadcrumb-divider">/</span>

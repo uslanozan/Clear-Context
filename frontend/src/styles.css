@@ -2587,3 +2587,32 @@ h2,
 .process-step.skipped .process-state {
   color: var(--muted);
 }
+
+/* The navigation rail folds away on wide screens. */
+.app-layout,
+.desktop-sidebar .sidebar {
+  transition:
+    grid-template-columns 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-layout.rail-hidden {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+.app-layout.rail-hidden .desktop-sidebar .sidebar {
+  transform: translateX(-100%);
+  visibility: hidden;
+}
+.rail-toggle {
+  margin-left: -8px;
+}
+@media (max-width: 900px) {
+  .rail-toggle {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-layout,
+  .desktop-sidebar .sidebar {
+    transition: none;
+  }
+}

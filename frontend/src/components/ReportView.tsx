@@ -6,7 +6,6 @@ import {
   Check,
   CheckCheck,
   CircleHelp,
-  Copy,
   Download,
   FileSearch,
   Link2,
@@ -96,8 +95,6 @@ export function ReportView({
   report: Report;
   steps: ResearchStep[];
 }) {
-  const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState(false);
   const evidenceMissing = report.sources.length === 0;
   // Only label the mode when source research actually ran for this report.
   const researchModeLabel = steps.some((step) => step.name === 'plan_queries')
@@ -142,17 +139,6 @@ export function ReportView({
     </details>
   );
 
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setCopyError(false);
-      window.setTimeout(() => setCopied(false), 2500);
-    } catch {
-      setCopyError(true);
-    }
-  }
-
   function exportReport() {
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }),
@@ -193,19 +179,7 @@ export function ReportView({
             )}
           </p>
         </div>
-        <Button
-          variant="default"
-          leftSection={copied ? <Check size={14} /> : <Copy size={14} />}
-          onClick={() => void copyLink()}
-        >
-          {copied ? 'Link copied' : 'Copy link'}
-        </Button>
       </div>
-      {copyError && (
-        <Alert color="orange" mb="md">
-          The link couldn’t be copied. You can copy it from your address bar.
-        </Alert>
-      )}
       {coverage && coverage.status === 'partial' && (
         <Alert color="orange" title="Claim extraction is partial" mb="md">
           Some parts need another extraction pass. This report may omit claims.
