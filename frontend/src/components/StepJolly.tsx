@@ -12,6 +12,8 @@ const EVENTS = new Set([
   'evaluate_evidence',
   'validate_report',
   'report_saved',
+  // Shown in place of the stage that stopped.
+  'failed',
 ]);
 
 export function StepJolly({ event, size = 40 }: { event: string; size?: number }) {

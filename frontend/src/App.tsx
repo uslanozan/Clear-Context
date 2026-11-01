@@ -311,7 +311,7 @@ function Workspace() {
           ) : investigation.data?.status === 'failed' ? (
             <div className="failure-page">
               <span className="failure-icon">
-                <X size={23} />
+                <StepJolly event="failed" size={200} />
               </span>
 
               <h1>We couldn’t finish this one</h1>
@@ -334,7 +334,7 @@ function Workspace() {
               {investigation.data?.status === 'queued' ? (
                 <div className="current-step">
                   <span className="current-step-glyph waiting">
-                    <StepJolly event="graph_started" size={150} />
+                    <StepJolly event="graph_started" size={220} />
                   </span>
                   <div>
                     <h1>In the queue</h1>
@@ -347,7 +347,7 @@ function Workspace() {
               ) : (
                 <div className="current-step">
                   <span className="current-step-glyph">
-                    <StepJolly event={running.event} size={150} />
+                    <StepJolly event={running.event} size={220} />
                   </span>
                   <div>
                     <h1>{running.title}</h1>

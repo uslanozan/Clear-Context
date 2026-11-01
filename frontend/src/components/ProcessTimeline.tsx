@@ -125,7 +125,7 @@ export function ProcessTimeline({
                   <Circle size={11} />
                 )}
               </span>
-              <StepJolly event={stage.event} size={44} />
+              <StepJolly event={failed ? 'failed' : stage.event} size={84} />
               <div className="process-copy">
                 <div>
                   {event && details?.[stage.event] ? (

@@ -2368,6 +2368,8 @@ h2,
   .desktop-sidebar .sidebar {
     transition: none;
   }
+}
+
 /* Jolly beside each stage and, larger, on the progress page. */
 .step-jolly {
   display: block;
@@ -2383,8 +2385,8 @@ h2,
   opacity: 0.45;
 }
 .current-step-glyph:has(.step-jolly) {
-  width: 160px;
-  height: 160px;
+  width: 230px;
+  height: 230px;
   background: transparent;
 }
 
@@ -2987,5 +2989,24 @@ h2,
   .report-main .input-card .media-card,
   .report-main .input-card .link-card {
     padding: 12px;
+  }
+}
+.process-step .step-jolly {
+  align-self: center;
+}
+.process-step.failed .step-jolly {
+  opacity: 1;
+}
+.failure-icon .step-jolly {
+  margin-bottom: 8px;
+}
+@media (max-width: 640px) {
+  .current-step-glyph:has(.step-jolly) {
+    width: 140px;
+    height: 140px;
+  }
+  .process-step .step-jolly {
+    width: 64px;
+    height: 64px;
   }
 }
