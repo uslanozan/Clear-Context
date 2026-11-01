@@ -2337,27 +2337,62 @@ h2,
   }
 }
 
-/* Research depth: the selected pill is glass; more depth, more cracks. */
+/* Research depth: the selected pill flows slowly; the deeper the mode, the darker and livelier. */
 .depth-control .mantine-SegmentedControl-indicator {
-  background-color: transparent;
-  background-size: 100% 100%;
+  border-radius: 8px;
   background-repeat: no-repeat;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.3),
-    0 4px 14px rgb(4 123 242 / 0.25);
-  border-radius: 8px;
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    inset 0 -1px 0 rgb(0 0 0 / 0.35),
+    0 4px 14px rgb(1 97 221 / 0.3);
+  animation: depth-flow 9s ease-in-out infinite alternate;
 }
 .depth-control[data-depth='fast'] .mantine-SegmentedControl-indicator {
-  background-image: linear-gradient(135deg, var(--blue-2), var(--blue-1));
+  background-image: linear-gradient(110deg, #0161dd, #0a74ee 45%, #0161dd);
+  background-size: 260% 100%;
 }
 .depth-control[data-depth='balanced'] .mantine-SegmentedControl-indicator {
-  background-image: url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%2040%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%200%20L58%200%20L50%2020%20L30%2040%20L0%2040Z%22%20fill=%22%23047bf2%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M58%200%20L100%200%20L100%2028%20L50%2020Z%22%20fill=%22%230b6be4%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M50%2020%20L100%2028%20L100%2040%20L30%2040Z%22%20fill=%22%230161dd%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M0%200%20L58%200%20L50%2020%20L30%2040%20L0%2040Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M58%200%20L100%200%20L100%2028%20L50%2020Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M50%2020%20L100%2028%20L100%2040%20L30%2040Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3C/svg%3E');
+  background-image: linear-gradient(110deg, #014fb4, #0161dd 40%, #013f94 70%, #014fb4);
+  background-size: 280% 100%;
+  animation-duration: 7s;
 }
 .depth-control[data-depth='deep'] .mantine-SegmentedControl-indicator {
-  background-image: url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%2040%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%200%20L30%200%20L46%2018%20L0%2024Z%22%20fill=%22%23047bf2%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M30%200%20L48%200%20L46%2018Z%22%20fill=%22%230b6be4%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M48%200%20L62%200%20L46%2018Z%22%20fill=%22%230161dd%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M62%200%20L100%200%20L100%2020%20L46%2018Z%22%20fill=%22%230358c8%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M46%2018%20L100%2020%20L100%2040%20L72%2040Z%22%20fill=%22%230a78ee%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M46%2018%20L72%2040%20L36%2040Z%22%20fill=%22%230352b8%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M46%2018%20L36%2040%20L0%2040%20L0%2024Z%22%20fill=%22%23046ae0%22%20stroke=%22%2318181a%22%20stroke-width=%222.6%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M0%200%20L30%200%20L46%2018%20L0%2024Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M30%200%20L48%200%20L46%2018Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M48%200%20L62%200%20L46%2018Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M62%200%20L100%200%20L100%2020%20L46%2018Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M46%2018%20L100%2020%20L100%2040%20L72%2040Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M46%2018%20L72%2040%20L36%2040Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3Cpath%20d=%22M46%2018%20L36%2040%20L0%2040%20L0%2024Z%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-opacity=%22.55%22%20stroke-width=%22.8%22%20stroke-linejoin=%22round%22/%3E%3C/svg%3E');
+  background-image:
+    linear-gradient(100deg, transparent 38%, rgb(255 255 255 / 0.14) 50%, transparent 62%),
+    linear-gradient(110deg, #002f78, #0150b8 35%, #001f55 65%, #003a86);
+  background-size:
+    220% 100%,
+    300% 100%;
+  animation-name: depth-flow-deep;
+  animation-duration: 5.5s;
 }
 .depth-control .mantine-SegmentedControl-label[data-active] {
   color: #fff;
+}
+@keyframes depth-flow {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+@keyframes depth-flow-deep {
+  from {
+    background-position:
+      100% 50%,
+      0% 50%;
+  }
+  to {
+    background-position:
+      0% 50%,
+      100% 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .depth-control .mantine-SegmentedControl-indicator {
+    animation: none;
+  }
 }
 
 /* History groups: folders that only organize the list. */
@@ -2482,6 +2517,61 @@ h2,
 }
 @media (prefers-reduced-motion: reduce) {
   .group-toggle svg {
+    transition: none;
+  }
+}
+
+/* Failed investigations read as red glass in the history list. */
+.history-item.is-failed {
+  background: linear-gradient(180deg, rgb(255 90 80 / 0.17), rgb(255 90 80 / 0.07));
+  box-shadow:
+    inset 0 0 0 1px rgb(255 120 110 / 0.36),
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 4px 14px rgb(255 70 60 / 0.1);
+  color: var(--sidebar-ink);
+}
+.history-item.is-failed:hover {
+  background: linear-gradient(180deg, rgb(255 90 80 / 0.24), rgb(255 90 80 / 0.1));
+}
+.history-item.is-failed.active {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 130 120 / 0.65),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+  color: #fff;
+}
+.history-item.is-failed svg {
+  color: var(--danger);
+}
+.history-state.failed {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(255 90 80 / 0.22);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  color: #ffc0b8;
+}
+
+/* Dragging an investigation onto a group. */
+.history-row[draggable='true'] {
+  cursor: grab;
+}
+.history-row[draggable='true']:active {
+  cursor: grabbing;
+}
+.history-group,
+.ungrouped-zone {
+  border-radius: 8px;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.history-group.is-drop-target,
+.ungrouped-zone.is-drop-target {
+  background: rgb(4 123 242 / 0.14);
+  box-shadow: inset 0 0 0 1px rgb(4 123 242 / 0.65);
+}
+@media (prefers-reduced-motion: reduce) {
+  .history-group,
+  .ungrouped-zone {
     transition: none;
   }
 }

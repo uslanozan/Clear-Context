@@ -39,6 +39,7 @@ const HISTORY_STATE: Record<string, string> = {
   failed: 'Failed',
 };
 
+const DRAG_TYPE = 'application/x-clear-context-investigation';
 const COLLAPSED_KEY = 'clear-context:collapsed-groups';
 
 // Which groups are folded is a per-browser convenience, so it lives in the browser only.
@@ -99,17 +100,31 @@ function HistoryItem({
   groups,
   onNavigate,
   onAssign,
+  onDragChange,
 }: {
   item: Investigation;
   groups: HistoryGroup[];
   onNavigate: () => void;
   onAssign: Props['onAssign'];
+  onDragChange: (id: string | null) => void;
 }) {
   return (
-    <div className="history-row">
+    <div
+      className="history-row"
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.setData(DRAG_TYPE, item.id);
+        event.dataTransfer.effectAllowed = 'move';
+        onDragChange(item.id);
+      }}
+      onDragEnd={() => onDragChange(null)}
+    >
       <NavLink
         to={`/investigations/${item.id}`}
-        className={({ isActive }) => `history-item ${isActive ? 'active' : ''}`}
+        draggable={false}
+        className={({ isActive }) =>
+          `history-item ${isActive ? 'active' : ''} ${item.status === 'failed' ? 'is-failed' : ''}`
+        }
         onClick={onNavigate}
       >
         <BookOpenText size={15} strokeWidth={1.6} aria-hidden="true" />
@@ -152,6 +167,30 @@ export function Sidebar(props: Props) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<string | null>(null);
+  // Dragging an investigation onto a group files it there; the menu stays as the keyboard way.
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [over, setOver] = useState<string | null>(null);
+  const dropOn = (target: string | null) => ({
+    onDragOver: (event: React.DragEvent) => {
+      if (!event.dataTransfer.types.includes(DRAG_TYPE)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      setOver(target ?? 'none');
+    },
+    onDragLeave: (event: React.DragEvent) => {
+      // Leaving into a child of the same target is not leaving it.
+      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOver(null);
+    },
+    onDrop: (event: React.DragEvent) => {
+      const id = event.dataTransfer.getData(DRAG_TYPE);
+      event.preventDefault();
+      setOver(null);
+      setDragging(null);
+      if (!id) return;
+      const item = props.items.find((entry) => entry.id === id);
+      if (item && (item.group_id ?? null) !== target) props.onAssign(id, target);
+    },
+  });
 
   const known = new Set(props.groups.map((group) => group.id));
   const ungrouped = props.items.filter((item) => !item.group_id || !known.has(item.group_id));
@@ -169,6 +208,10 @@ export function Sidebar(props: Props) {
       groups={props.groups}
       onNavigate={props.onNavigate}
       onAssign={props.onAssign}
+      onDragChange={(id) => {
+        setDragging(id);
+        if (!id) setOver(null);
+      }}
     />
   );
 
@@ -246,7 +289,11 @@ export function Sidebar(props: Props) {
           const members = props.items.filter((item) => item.group_id === group.id);
           const open = !collapsed.has(group.id);
           return (
-            <section key={group.id} className="history-group">
+            <section
+              key={group.id}
+              className={`history-group ${over === group.id ? 'is-drop-target' : ''}`}
+              {...dropOn(group.id)}
+            >
               <div className="group-head">
                 {renaming === group.id ? (
                   <NameField
@@ -297,10 +344,16 @@ export function Sidebar(props: Props) {
             </section>
           );
         })}
-        {props.groups.length > 0 && ungrouped.length > 0 && (
-          <p className="group-label">Not in a group</p>
+        {props.groups.length > 0 && (ungrouped.length > 0 || dragging) && (
+          <div
+            className={`ungrouped-zone ${over === 'none' ? 'is-drop-target' : ''}`}
+            {...dropOn(null)}
+          >
+            <p className="group-label">Not in a group</p>
+            {ungrouped.map(row)}
+          </div>
         )}
-        {ungrouped.map(row)}
+        {props.groups.length === 0 && ungrouped.map(row)}
         {props.hasMore && (
           <button className="load-more" disabled={props.isFetchingMore} onClick={props.onLoadMore}>
             {props.isFetchingMore ? 'Loading…' : 'Load earlier investigations'}
