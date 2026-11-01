@@ -38,8 +38,9 @@ It does not give a single true/false verdict. Each detail of a claim is assessed
 
 ## Brand Commitments
 
-- Name: Clear Context. Mark: two stacked letter C, the upper one's lower arm merging into the lower one's upper arm, drawn as one rounded line.
-- Colors drawn from Meta and Muse blue, with the cream of Muse's mascot Jolly used sparingly.
+- Name: Clear Context.
+- Exactly three colors plus a material: two blues taken from the logo (#0161dd, #047bf2), the gray #1f1f22, and glass. Confirmed by the owner on November 1, 2026.
+- Logos confirmed on November 1, 2026: the six-piece broken page (large uses) and the broken glass C (favicon, extension, rail). Font: Funnel Display with Funnel Sans.
 - The official Meta wordmark and Muse Jolly image appear only as attribution, unaltered, without implying Meta ownership or endorsement. No derivative Jolly artwork or animation.
 - No AI-slop patterns (impeccable.style/slop): no pulsing status dots, eyebrows above headings, periods ending headings, single italic words in headings, gradient text or decorative glow.
 

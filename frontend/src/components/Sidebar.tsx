@@ -36,7 +36,7 @@ export function Sidebar(props: Props) {
     <aside className="sidebar" aria-label="Workspace navigation">
       <Link to="/" className="brand" onClick={props.onNavigate}>
         <span className="brand-icon">
-          <LogoMark size={34} tone="dark" />
+          <LogoMark size={36} />
         </span>
         <span>
           Clear Context<span className="brand-tagline">Investigation workspace</span>

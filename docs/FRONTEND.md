@@ -19,7 +19,7 @@ Restart Vite after changing these settings. The **Settings** page (`/settings`) 
 
 - `src/theme.ts`: Mantine palette, fonts, radii, and component defaults.
 - `src/styles.css`: shared surface/text tokens, layout, reusable domain classes, responsive rules, focus, and reduced-motion styles.
-- A dark theme: near-black navy page, lifted navy surfaces and rail, Meta blue for actions and a cream highlighter for quoted evidence. Onest for text and JetBrains Mono for timestamps and counts; both are bundled locally.
+- A dark theme built from two logo blues (#0161dd, #047bf2), the gray #1f1f22 and glass (translucent, blurred surfaces over a blurred copy of the logo). Funnel Display for headings, Funnel Sans for text, JetBrains Mono for data; all bundled locally.
 - `components/StepGlyph.tsx` draws one glyph per recorded stage; it moves only while that stage runs and stays still under reduced motion. `components/Logo.tsx` holds the Clear Context mark (also in `public/brand/`).
 - `Composer`, `Sidebar`, and `ReportView` share this system. Use Mantine controls for forms, dialogs, alerts, and disclosure rather than introducing a second component library.
 
@@ -47,7 +47,7 @@ For production, build output is `frontend/dist/`. Serve it with SPA fallback to 
 
 ## Dependencies and assets
 
-Mantine (MIT), React (MIT), Vite (MIT), TanStack Query (MIT), React Router (MIT), and Lucide (ISC) retain their upstream licenses. Onest and JetBrains Mono fonts use the SIL Open Font License; packaged font licenses remain in their installed dependencies. The Clear Context mark is original to this project.
+Mantine (MIT), React (MIT), Vite (MIT), TanStack Query (MIT), React Router (MIT), and Lucide (ISC) retain their upstream licenses. Funnel Display, Funnel Sans and JetBrains Mono fonts use the SIL Open Font License; packaged font licenses remain in their installed dependencies. The logos are original to this project (AI-generated, see `public/brand/README.md`). Glass is a CSS adaptation of the idea behind [liquid-glass-js](https://github.com/dashersw/liquid-glass-js) (MIT); no code was copied. Panel and text transitions follow patterns from [transitions.dev](https://github.com/Jakubantalik/transitions.dev) under its license, with its credit comments kept.
 
 The durable visual rules are in [DESIGN.md](../DESIGN.md). The official Meta and Muse assets have separate [attribution](../frontend/public/brand/README.md).
 
