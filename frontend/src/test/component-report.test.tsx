@@ -1,4 +1,5 @@
 import { MantineProvider } from '@mantine/core';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ReportView } from '../components/ReportView';
@@ -53,11 +54,15 @@ it('shows component status, directional source and highlighted source text', () 
     model_usage: [],
   };
   render(
-    <MantineProvider>
-      <MemoryRouter>
-        <ReportView investigation={investigation} report={report} steps={[]} />
-      </MemoryRouter>
-    </MantineProvider>,
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { enabled: false } } })}
+    >
+      <MantineProvider>
+        <MemoryRouter>
+          <ReportView investigation={investigation} report={report} steps={[]} />
+        </MemoryRouter>
+      </MantineProvider>
+    </QueryClientProvider>,
   );
   expect(screen.getByText('Evidence by detail')).toBeInTheDocument();
   expect(screen.getByText('Contradicting source')).toBeInTheDocument();
@@ -119,11 +124,15 @@ it('names a source once for several excerpts and shows readable source names', (
     model_usage: [],
   };
   render(
-    <MantineProvider>
-      <MemoryRouter>
-        <ReportView investigation={investigation} report={report} steps={[]} />
-      </MemoryRouter>
-    </MantineProvider>,
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { enabled: false } } })}
+    >
+      <MantineProvider>
+        <MemoryRouter>
+          <ReportView investigation={investigation} report={report} steps={[]} />
+        </MemoryRouter>
+      </MantineProvider>
+    </QueryClientProvider>,
   );
   expect(screen.getAllByText('Supporting source')).toHaveLength(1);
   expect(screen.getByText('opened in 2019').tagName).toBe('MARK');
@@ -176,11 +185,15 @@ it('omits a component heading that repeats the only claim', () => {
     extraction_coverage: { status: 'processed', model_calls: 1, chunks: [], notes: [] },
   };
   render(
-    <MantineProvider>
-      <MemoryRouter>
-        <ReportView investigation={investigation} report={report} steps={[]} />
-      </MemoryRouter>
-    </MantineProvider>,
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { enabled: false } } })}
+    >
+      <MantineProvider>
+        <MemoryRouter>
+          <ReportView investigation={investigation} report={report} steps={[]} />
+        </MemoryRouter>
+      </MantineProvider>
+    </QueryClientProvider>,
   );
   expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument();
   expect(screen.queryByText('A bridge  opened in 2019.')).not.toBeInTheDocument();
@@ -248,11 +261,15 @@ it('separates unassessed details from insufficient evidence and labels need-leve
     model_usage: [],
   };
   render(
-    <MantineProvider>
-      <MemoryRouter>
-        <ReportView investigation={investigation} report={report} steps={[]} />
-      </MemoryRouter>
-    </MantineProvider>,
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { enabled: false } } })}
+    >
+      <MantineProvider>
+        <MemoryRouter>
+          <ReportView investigation={investigation} report={report} steps={[]} />
+        </MemoryRouter>
+      </MantineProvider>
+    </QueryClientProvider>,
   );
   expect(screen.getByText('Insufficient evidence')).toBeInTheDocument();
   expect(screen.getByText('Not assessed')).toBeInTheDocument();

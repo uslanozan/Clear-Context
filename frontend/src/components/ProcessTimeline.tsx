@@ -1,4 +1,5 @@
-import { Check, Circle, X } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Check, ChevronDown, Circle, X } from 'lucide-react';
 import {
   BASE_STAGES,
   FOLLOWUP_STAGE,
@@ -45,13 +46,16 @@ export function ProcessTimeline({
   planned = false,
   hasError = false,
   researchEnabled = false,
+  details,
 }: {
   steps?: ResearchStep[];
   isRunning?: boolean;
   planned?: boolean;
   hasError?: boolean;
   researchEnabled?: boolean;
+  details?: Partial<Record<string, ReactNode>>;
 }) {
+  const [open, setOpen] = useState<string | null>(null);
   const STAGES = stageOrder(steps, researchEnabled);
   const failure = steps.find((step) => step.status === 'failed');
   const lastCompleted = STAGES.reduce(
@@ -116,7 +120,20 @@ export function ProcessTimeline({
               </span>
               <div className="process-copy">
                 <div>
-                  <strong>{stage.title}</strong>
+                  {event && details?.[stage.event] ? (
+                    <button
+                      type="button"
+                      className="process-title-button"
+                      aria-expanded={open === stage.event}
+                      aria-controls={`step-detail-${stage.event}`}
+                      onClick={() => setOpen(open === stage.event ? null : stage.event)}
+                    >
+                      <strong>{stage.title}</strong>
+                      <ChevronDown size={14} className={open === stage.event ? 'is-open' : ''} />
+                    </button>
+                  ) : (
+                    <strong>{stage.title}</strong>
+                  )}
                   {/* Only running and stopped stages need words; markers show the rest. */}
                   <span
                     className={
@@ -129,6 +146,11 @@ export function ProcessTimeline({
                   </span>
                 </div>
                 <p>{stage.detail}</p>
+                {open === stage.event && details?.[stage.event] && (
+                  <div className="step-detail" id={`step-detail-${stage.event}`}>
+                    {details[stage.event]}
+                  </div>
+                )}
                 {event && (
                   <time dateTime={event.created_at}>
                     {new Date(event.created_at).toLocaleTimeString('en-GB')}

@@ -387,3 +387,43 @@ def test_malformed_search_results_are_dropped_not_fatal(repository):
     response = client.search(SearchRequest(query="bridge", language="en", max_results=3))
     assert [r["url"] for r in response["results"]] == ["https://example.org/a"]
     client.close()
+
+
+def test_overview_lists_plans_and_searches_across_batches(tmp_path):
+    repository = RetrievalRepository(tmp_path / "research.sqlite")
+    investigation_id = "11111111-1111-4111-8111-111111111111"
+    repository.register_plan(plan(investigation_id))
+    repository.register_plan(plan(f"{investigation_id}:batch1"))
+    repository.register_plan(plan("someone-else"))
+    # Reverse image lookups are stored as query rows without text.
+    with repository.engine.begin() as conn:
+        repository._insert_query(
+            conn, investigation_id, "q_image", {"kind": "reverse_image"}, [], "image_match"
+        )
+    overview = repository.overview(investigation_id)
+    repository.close()
+    assert [q["query"] for q in overview["queries"]].count("Example University founding") == 2
+    assert {q["origin"] for q in overview["queries"]} == {"initial", "image_match"}
+    image = next(q for q in overview["queries"] if q["origin"] == "image_match")
+    assert (image["kind"], image["query"], image["language"]) == ("reverse_image", None, None)
+    assert [n["status"] for n in overview["needs"]].count("needs_context") == 2
+    assert (overview["results"], overview["selections"]) == (0, 0)
+
+
+def test_research_endpoint_is_read_only_and_empty_without_research(settings):
+    from fastapi.testclient import TestClient
+
+    from clear_context.main import create_app
+
+    with TestClient(create_app(settings)) as client:
+        investigation = client.post("/api/investigations", json={"text": "A claim."}).json()
+        overview = client.get(f"/api/investigations/{investigation['id']}/research").json()
+        assert overview == {
+            "queries": [],
+            "needs": [],
+            "results": 0,
+            "sources_found": 0,
+            "selections": 0,
+        }
+        missing = client.get("/api/investigations/22222222-2222-4222-8222-222222222222/research")
+        assert missing.status_code == 404

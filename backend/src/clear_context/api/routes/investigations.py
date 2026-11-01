@@ -18,10 +18,12 @@ from clear_context.domain.investigation import (
     InvestigationStatus,
     ResearchMode,
 )
+from clear_context.repositories.retrieval import RetrievalRepository
 from clear_context.schemas.investigation import (
     InvestigationCreate,
     InvestigationFollowUp,
     InvestigationView,
+    ResearchOverview,
     StepView,
 )
 from clear_context.services import media as media_service
@@ -175,6 +177,20 @@ def get_investigation(request: Request, investigation_id: UUID):
 def get_steps(request: Request, investigation_id: UUID):
     require_investigation(request, investigation_id)
     return request.app.state.repository.steps(investigation_id)
+
+
+@router.get("/investigations/{investigation_id}/research", response_model=ResearchOverview)
+def get_research(request: Request, investigation_id: UUID):
+    """Searches, research needs and counts recorded for this investigation; read-only."""
+    require_investigation(request, investigation_id)
+    workspace = request.app.state.research_workspace
+    if not workspace.exists():
+        return ResearchOverview(queries=[], needs=[], results=0, sources_found=0, selections=0)
+    research = RetrievalRepository(workspace)
+    try:
+        return research.overview(str(investigation_id))
+    finally:
+        research.close()
 
 
 @router.get("/investigations/{investigation_id}/report", response_model=InvestigationReport)

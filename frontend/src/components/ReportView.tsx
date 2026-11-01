@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Accordion, Alert, Badge, Button } from '@mantine/core';
 import {
   ArrowLeft,
@@ -13,6 +14,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ProcessTimeline } from './ProcessTimeline';
+import { stageDetails } from './StepDetails';
+import { api } from '../lib/api';
 import { ClaimSource } from './ClaimSource';
 import { BudgetNotice } from './BudgetNotice';
 import { LinkFindings } from './LinkFindings';
@@ -78,12 +81,16 @@ export function Activity({
   steps,
   isRunning = false,
   hasError = false,
+  details,
 }: {
   steps: ResearchStep[];
   isRunning?: boolean;
   hasError?: boolean;
+  details?: Partial<Record<string, ReactNode>>;
 }) {
-  return <ProcessTimeline steps={steps} isRunning={isRunning} hasError={hasError} />;
+  return (
+    <ProcessTimeline steps={steps} isRunning={isRunning} hasError={hasError} details={details} />
+  );
 }
 
 export function ReportView({
@@ -95,6 +102,12 @@ export function ReportView({
   report: Report;
   steps: ResearchStep[];
 }) {
+  // Searches and research needs live in the research workspace, not in the report.
+  const research = useQuery({
+    queryKey: ['research', investigation.id],
+    queryFn: ({ signal }) => api.research(investigation.id, signal),
+    staleTime: Infinity,
+  });
   const evidenceMissing = report.sources.length === 0;
   // Only label the mode when source research actually ran for this report.
   const researchModeLabel = steps.some((step) => step.name === 'plan_queries')
@@ -407,7 +420,7 @@ export function ReportView({
               </ul>
             )}
           </section>
-          <Activity steps={steps} />
+          <Activity steps={steps} details={stageDetails(report, research.data)} />
           <section className="side-panel usage-panel">
             <h3>Model usage</h3>
             {report.model_usage.length ? (

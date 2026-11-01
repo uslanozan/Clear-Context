@@ -1,4 +1,5 @@
 import { MantineProvider } from '@mantine/core';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -80,11 +81,15 @@ describe('Claim provenance', () => {
       },
     };
     render(
-      <MantineProvider theme={theme}>
-        <MemoryRouter>
-          <ReportView investigation={investigation} report={report} steps={[]} />
-        </MemoryRouter>
-      </MantineProvider>,
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { enabled: false } } })}
+      >
+        <MantineProvider theme={theme}>
+          <MemoryRouter>
+            <ReportView investigation={investigation} report={report} steps={[]} />
+          </MemoryRouter>
+        </MantineProvider>
+      </QueryClientProvider>,
     );
     expect(screen.getByText('Claim extraction is partial')).toBeInTheDocument();
     expect(screen.getByText('Unresolved')).toBeInTheDocument();

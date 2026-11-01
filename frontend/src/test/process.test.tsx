@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ProcessTimeline } from '../components/ProcessTimeline';
 
@@ -64,5 +64,21 @@ describe('Recorded investigation steps', () => {
     render(<ProcessTimeline hasError />);
     expect(screen.getByRole('status')).toHaveTextContent('Activity could not be loaded');
     expect(screen.queryByText('Complete')).not.toBeInTheDocument();
+  });
+  it('opens the recorded details of a stage on demand', () => {
+    render(
+      <ProcessTimeline
+        steps={[started]}
+        details={{
+          graph_started: <p>120 characters analyzed</p>,
+          extract_claims: <p>never shown</p>,
+        }}
+      />,
+    );
+    expect(screen.queryByText('120 characters analyzed')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Receive input/ }));
+    expect(screen.getByText('120 characters analyzed')).toBeInTheDocument();
+    // A stage without a record offers no details, even if some exist.
+    expect(screen.queryByRole('button', { name: /Separate claims/ })).not.toBeInTheDocument();
   });
 });

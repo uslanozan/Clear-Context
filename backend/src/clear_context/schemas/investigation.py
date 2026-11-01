@@ -40,6 +40,31 @@ class InvestigationView(BaseModel):
     queue_position: int | None = None
 
 
+class PlannedSearch(BaseModel):
+    # Text searches carry query and language; reverse image lookups carry neither.
+    kind: str = "text"
+    query: str | None = None
+    language: str | None = None
+    # initial searches come from the plan; followup ones from the second round.
+    origin: str
+
+
+class PlannedNeed(BaseModel):
+    claim_id: str
+    description: str
+    status: str
+
+
+class ResearchOverview(BaseModel):
+    """Recorded research work for one investigation; counts, never quality scores."""
+
+    queries: list[PlannedSearch]
+    needs: list[PlannedNeed]
+    results: int
+    sources_found: int
+    selections: int
+
+
 class StepView(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     name: str

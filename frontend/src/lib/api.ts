@@ -1,6 +1,7 @@
 import type {
   AppSettings,
   Health,
+  ResearchOverview,
   HistoryGroup,
   Investigation,
   Report,
@@ -47,6 +48,8 @@ export const api = {
     request<Investigation>(`/investigations/${encodeURIComponent(id)}`, { signal }),
   steps: (id: string, signal?: AbortSignal) =>
     request<ResearchStep[]>(`/investigations/${encodeURIComponent(id)}/steps`, { signal }),
+  research: (id: string, signal?: AbortSignal) =>
+    request<ResearchOverview>(`/investigations/${encodeURIComponent(id)}/research`, { signal }),
   report: (id: string, signal?: AbortSignal) =>
     request<Report>(`/investigations/${encodeURIComponent(id)}/report`, { signal }),
   create: (input: { text: string; research_mode?: ResearchMode }) =>

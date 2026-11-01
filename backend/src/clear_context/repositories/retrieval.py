@@ -5,7 +5,7 @@ from dataclasses import asdict
 from hashlib import sha256
 from pathlib import Path
 
-from sqlalchemy import create_engine, delete, event, select
+from sqlalchemy import create_engine, delete, event, func, or_, select
 from sqlalchemy.dialects.sqlite import insert
 
 from clear_context.models.retrieval_cache import (
@@ -50,6 +50,72 @@ class RetrievalRepository:
 
     def close(self):
         self.engine.dispose()
+
+    def overview(self, investigation_id: str) -> dict:
+        """What research recorded for one investigation: plans, searches, results, selections.
+
+        A complete run splits into batches whose case ids carry a ':batchN' suffix.
+        """
+        with self.engine.connect() as conn:
+            case_ids = list(
+                conn.scalars(
+                    select(cases.c.id).where(
+                        or_(
+                            cases.c.id == investigation_id,
+                            cases.c.id.like(f"{investigation_id}:batch%"),
+                        )
+                    )
+                )
+            )
+            if not case_ids:
+                return {
+                    "queries": [],
+                    "needs": [],
+                    "results": 0,
+                    "sources_found": 0,
+                    "selections": 0,
+                }
+            needs_out = []
+            for payload in conn.scalars(select(cases.c.plan).where(cases.c.id.in_(case_ids))):
+                plan = SavedResearchPlan.model_validate_json(payload)
+                needs_out += [
+                    {"claim_id": n.claim_id, "description": n.description, "status": n.status}
+                    for n in plan.needs
+                ]
+            queries_out = []
+            for payload, origin in conn.execute(
+                select(queries.c.payload, queries.c.origin).where(queries.c.case_id.in_(case_ids))
+            ):
+                search = json.loads(payload)
+                # Reverse image lookups carry no query text or language.
+                queries_out.append(
+                    {
+                        "kind": search.get("kind", "text"),
+                        "query": search.get("query"),
+                        "language": search.get("language"),
+                        "origin": origin,
+                    }
+                )
+            results = conn.scalar(
+                select(func.count()).select_from(hits).where(hits.c.case_id.in_(case_ids))
+            )
+            found = conn.scalar(
+                select(func.count(func.distinct(hits.c.source_id))).where(
+                    hits.c.case_id.in_(case_ids)
+                )
+            )
+            chosen = conn.scalar(
+                select(func.count())
+                .select_from(selections)
+                .where(selections.c.case_id.in_(case_ids))
+            )
+        return {
+            "queries": queries_out,
+            "needs": needs_out,
+            "results": results or 0,
+            "sources_found": found or 0,
+            "selections": chosen or 0,
+        }
 
     def register_plan(self, plan: SavedResearchPlan):
         payload = encode(plan.model_dump())

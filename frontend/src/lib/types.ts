@@ -195,6 +195,13 @@ export interface Report {
     notes?: string[];
   } | null;
 }
+export interface ResearchOverview {
+  queries: { kind: string; query: string | null; language: string | null; origin: string }[];
+  needs: { claim_id: string; description: string; status: string }[];
+  results: number;
+  sources_found: number;
+  selections: number;
+}
 export interface Health {
   status: string;
   mode: 'mock' | 'meta';
