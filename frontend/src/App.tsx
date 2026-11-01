@@ -13,7 +13,6 @@ import {
   X,
 } from 'lucide-react';
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { EvaluationView } from './components/EvaluationView';
 import { Composer } from './components/Composer';
 import { SettingsPage } from './components/SettingsPage';
 import { runningStage } from './components/ProcessTimeline';
@@ -36,7 +35,6 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Workspace />} />
-      <Route path="/evaluations" element={<Workspace />} />
       <Route path="/settings" element={<Workspace />} />
       <Route path="/investigations/:id" element={<Workspace />} />
       <Route
@@ -56,7 +54,6 @@ function Workspace() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const isEvaluations = location.pathname === '/evaluations';
   const isSettings = location.pathname === '/settings';
   const queryClient = useQueryClient();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -251,19 +248,11 @@ function Workspace() {
             </button>
             <Link to="/">Workspace</Link>
             <span className="breadcrumb-divider">/</span>
-            <span>
-              {isEvaluations
-                ? 'Extraction review'
-                : isSettings
-                  ? 'Settings'
-                  : id
-                    ? 'Investigation'
-                    : 'New investigation'}
-            </span>
+            <span>{isSettings ? 'Settings' : id ? 'Investigation' : 'New investigation'}</span>
           </div>
         </header>
         <main id="main-content" className="workspace-main">
-          {health.isError && !isEvaluations && (
+          {health.isError && (
             <Alert
               color="orange"
               title="Your investigation service is unavailable"
@@ -282,9 +271,7 @@ function Workspace() {
               </button>
             </Alert>
           )}
-          {isEvaluations ? (
-            <EvaluationView />
-          ) : isSettings ? (
+          {isSettings ? (
             <SettingsPage />
           ) : !id ? (
             <Composer
@@ -337,7 +324,7 @@ function Workspace() {
                 onClick={() => navigate('/', { state: { draft: investigation.data!.text } })}
                 rightSection={<ArrowRight size={15} />}
               >
-                Edit original passage
+                Edit your input
               </Button>
               <AccordionPassage text={investigation.data.text} />
               <Activity steps={steps.data || []} hasError={steps.isError} />

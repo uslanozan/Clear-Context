@@ -25,11 +25,11 @@ Restart Vite after changing these settings. The **Settings** page (`/settings`) 
 
 ## Working flow
 
-Paste text, explicitly start an investigation, follow recorded progress, and inspect the saved report. Examples only fill the form. History links and report reloads do not run inference. Reports support copying their local URL and exporting JSON; a local link requires access to the same server and database.
+Paste text, attach images or video, or include links, explicitly start an investigation, follow recorded progress, and inspect the saved report. History links and report reloads do not run inference. The report's input card shows the entered text, the links in it (with images taken from linked pages) and the attached files. Each investigation step opens what it recorded. Reports export as JSON or as a Clear Context PDF built in the browser. History items can be grouped and deleted; deleting asks for confirmation and is refused while an investigation runs.
 
 Submission never retries automatically. A failed submission preserves the passage, and a failed investigation can reopen its original text for editing. Query polling stops at terminal status. The current API has no idempotency key: a lost network response can leave an accepted investigation in history, so check history before manually resubmitting.
 
-Source research and server-side media analysis are pending. Clipboard, file picker, and drag/drop accept up to 4 local image/video previews (20 MB per image, 100 MB per video, 100 MB combined). Previews can be removed and are cleaned up on unmount. Media is not uploaded or persisted; attached media explicitly blocks text-only submission. Video playback depends on browser codec support, with a visible failure fallback. All current findings remain unresolved; the UI displays this explicitly. Activity and token usage come from stored API data. Mobile layout uses a navigation drawer and a single-column report; it is not an installable PWA yet.
+Clipboard, file picker, and drag/drop accept up to 4 image/video files (20 MB per image, 100 MB per video, 100 MB combined), with local previews that can be removed and are cleaned up on unmount. Report videos play from `/api/media/{id}/playable`, which serves a WebM copy when the browser cannot show the uploaded codec; a video that still cannot play shows a note. Each detail of a claim shows its recorded result, and the claim's label is counted from those results without a model call. Activity and token usage come from stored API data. Mobile layout uses a navigation drawer and a single-column report; it is not an installable PWA yet.
 
 ## Checks
 
@@ -41,19 +41,15 @@ npm run build
 npm run format:check
 ```
 
-Behavior tests mock HTTP responses and cover example loading without POST, double-click submission protection, report rendering, input preservation with no automatic retry, saved-report reads, and disconnected submission. They do not spend Meta credits. Browser checks use the actual local API and saved reports.
+Behavior tests mock HTTP responses and cover loading without POST, double-click submission protection, confirmed deletion, claim labels, report rendering, input preservation with no automatic retry, saved-report reads, and disconnected submission. They do not spend Meta credits. Browser checks use the actual local API and saved reports.
 
 For production, build output is `frontend/dist/`. Serve it with SPA fallback to `index.html` for `/investigations/:id` and reverse-proxy `/api` to FastAPI before that fallback. Vite preview alone does not proxy the API. The Docker image does this with nginx; see [frontend/nginx.conf](../frontend/nginx.conf) and the README's Docker section.
 
 ## Dependencies and assets
 
-Mantine (MIT), React (MIT), Vite (MIT), TanStack Query (MIT), React Router (MIT), and Lucide (ISC) retain their upstream licenses. Funnel Display, Funnel Sans and JetBrains Mono fonts use the SIL Open Font License; packaged font licenses remain in their installed dependencies. The logos are original to this project (AI-generated, see `public/brand/README.md`). Glass is a CSS adaptation of the idea behind [liquid-glass-js](https://github.com/dashersw/liquid-glass-js) (MIT); no code was copied. Panel and text transitions follow patterns from [transitions.dev](https://github.com/Jakubantalik/transitions.dev) under its license, with its credit comments kept.
+Mantine (MIT), React (MIT), Vite (MIT), TanStack Query (MIT), React Router (MIT), react-pdf (MIT), and Lucide (ISC) retain their upstream licenses. Funnel Display, Funnel Sans and JetBrains Mono fonts use the SIL Open Font License; packaged font licenses remain in their installed dependencies, and the static copies used by the PDF export keep theirs in `src/pdf/fonts/`. The logos are original to this project (AI-generated, see `public/brand/README.md`). Glass is a CSS adaptation of the idea behind [liquid-glass-js](https://github.com/dashersw/liquid-glass-js) (MIT); no code was copied. Panel and text transitions follow patterns from [transitions.dev](https://github.com/Jakubantalik/transitions.dev) under its license, with its credit comments kept.
 
 The durable visual rules are in [DESIGN.md](../DESIGN.md). The official Meta and Muse assets have separate [attribution](../frontend/public/brand/README.md).
-
-## Review saved extraction runs
-
-Open `/evaluations` in the web workspace (it is not in the navigation) and choose the local `evals/runs` folder. The browser reads matching `run.json` and `results.jsonl` files locally; it does not upload them or start model calls. Select up to two runs and an input to inspect their recorded claims, source passages, processing ranges, and token-based cost estimates. The folder is ignored by Git and may not be present in another checkout. Reloading the page requires selecting the folder again. Extracted statements and processed ranges do not establish truth or exhaustive extraction.
 
 ## Chrome extension
 

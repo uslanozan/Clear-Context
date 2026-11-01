@@ -129,6 +129,6 @@ export function failureMessage(code: string | null) {
   };
   return (
     messages[code || ''] ||
-    'This investigation could not be completed. Your original passage is still available.'
+    'This investigation could not be completed. Your input is still available.'
   );
 }

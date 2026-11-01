@@ -3,7 +3,7 @@ export const BASE_STAGES = [
   {
     event: 'graph_started',
     title: 'Receive input',
-    detail: 'Save the original passage in your workspace.',
+    detail: 'Save your input in your workspace.',
   },
   {
     event: 'extract_claims',
