@@ -47,6 +47,7 @@ export function ProcessTimeline({
   hasError = false,
   researchEnabled = false,
   details,
+  onOpenChange,
 }: {
   steps?: ResearchStep[];
   isRunning?: boolean;
@@ -54,8 +55,13 @@ export function ProcessTimeline({
   hasError?: boolean;
   researchEnabled?: boolean;
   details?: Partial<Record<string, ReactNode>>;
+  onOpenChange?: (event: string | null) => void;
 }) {
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpenState] = useState<string | null>(null);
+  const setOpen = (event: string | null) => {
+    setOpenState(event);
+    onOpenChange?.(event);
+  };
   const STAGES = stageOrder(steps, researchEnabled);
   const failure = steps.find((step) => step.status === 'failed');
   const lastCompleted = STAGES.reduce(

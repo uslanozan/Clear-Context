@@ -163,7 +163,11 @@ describe('Investigation workspace', () => {
     mount(`/investigations/${id}`);
     await screen.findByText('Investigation report');
     expect(posts).toHaveLength(0);
-    await userEvent.click(screen.getByRole('button', { name: /Original passage/ }));
+    // The original passage starts open.
+    expect(screen.getByRole('button', { name: /Original passage/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
     expect(screen.getAllByText('A synthetic claim.').length).toBeGreaterThan(0);
   });
 

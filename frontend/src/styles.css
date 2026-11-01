@@ -2686,3 +2686,26 @@ h2,
     transition: none;
   }
 }
+
+/* An open stage detail widens the side column; the grid track animates. */
+@media (min-width: 1101px) {
+  .report-grid {
+    transition: grid-template-columns 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .report-grid.stage-open {
+    grid-template-columns: minmax(0, 1fr) 420px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-grid {
+    transition: none;
+  }
+}
+/* Report reading surfaces: a near-black glass keeps the ambient colors from tinting long text. */
+.report-main .claim-card,
+.report-main .media-card,
+.report-main .link-card,
+.report-main .budget-notice,
+.report-main .original-passage .mantine-Accordion-item {
+  background: rgb(12 12 14 / 0.84);
+}

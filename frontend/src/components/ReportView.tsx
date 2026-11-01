@@ -82,14 +82,22 @@ export function Activity({
   isRunning = false,
   hasError = false,
   details,
+  onOpenChange,
 }: {
   steps: ResearchStep[];
   isRunning?: boolean;
   hasError?: boolean;
   details?: Partial<Record<string, ReactNode>>;
+  onOpenChange?: (event: string | null) => void;
 }) {
   return (
-    <ProcessTimeline steps={steps} isRunning={isRunning} hasError={hasError} details={details} />
+    <ProcessTimeline
+      steps={steps}
+      isRunning={isRunning}
+      hasError={hasError}
+      details={details}
+      onOpenChange={onOpenChange}
+    />
   );
 }
 
@@ -108,6 +116,8 @@ export function ReportView({
     queryFn: ({ signal }) => api.research(investigation.id, signal),
     staleTime: Infinity,
   });
+  // An open stage widens the side column so its details are easier to read.
+  const [stageOpen, setStageOpen] = useState(false);
   const evidenceMissing = report.sources.length === 0;
   // Only label the mode when source research actually ran for this report.
   const researchModeLabel = steps.some((step) => step.name === 'plan_queries')
@@ -221,9 +231,14 @@ export function ReportView({
           {!!report.claims.length && <span className="notice-tag">NEEDS EVIDENCE</span>}
         </div>
       )}
-      <div className="report-grid">
+      <div className={`report-grid${stageOpen ? ' stage-open' : ''}`}>
         <div className="report-main">
-          <Accordion className="original-passage" variant="separated" radius="md">
+          <Accordion
+            className="original-passage"
+            variant="separated"
+            radius="md"
+            defaultValue="original"
+          >
             <Accordion.Item value="original">
               <Accordion.Control icon={<FileSearch size={17} />}>
                 Original passage<span className="original-label">Your starting point</span>
@@ -420,7 +435,11 @@ export function ReportView({
               </ul>
             )}
           </section>
-          <Activity steps={steps} details={stageDetails(report, research.data)} />
+          <Activity
+            steps={steps}
+            details={stageDetails(report, research.data)}
+            onOpenChange={(event) => setStageOpen(event !== null)}
+          />
           <section className="side-panel usage-panel">
             <h3>Model usage</h3>
             {report.model_usage.length ? (
