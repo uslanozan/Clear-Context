@@ -124,6 +124,8 @@ class ResearchNeed(BaseModel):
     claim_id: str
     description: str
     status: Literal["planned", "needs_context", "budget_deferred", "not_checkable"]
+    # Only pages showing the same picture settle it; plans saved before v9 lack the flag.
+    about_attached_media: bool = False
 
 
 class ResearchQuery(BaseModel):

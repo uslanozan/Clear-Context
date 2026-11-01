@@ -11,6 +11,7 @@ from clear_context.services.query_planning import (
     build_request,
     validate_component_plan,
     validate_mapped_plan,
+    validate_media_mapped_plan,
     validate_plan,
 )
 
@@ -20,7 +21,7 @@ class PlannerProfile(BaseModel):
 
     implementation: Literal["structured_llm"]
     prompt: str = Field(min_length=1)
-    response_schema: Literal["claim", "component", "mapped_component"]
+    response_schema: Literal["claim", "component", "mapped_component", "media_mapped_component"]
     status: Literal["historical", "candidate"]
 
 
@@ -79,6 +80,8 @@ def parse_planner_response(
     maximum_queries: int,
     profile: PlannerProfile,
 ) -> dict:
+    if profile.response_schema == "media_mapped_component":
+        return validate_media_mapped_plan(content, claims, maximum_queries).model_dump()
     if profile.response_schema == "mapped_component":
         return validate_mapped_plan(content, claims, maximum_queries).model_dump()
     if profile.response_schema == "component":

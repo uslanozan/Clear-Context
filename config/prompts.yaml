@@ -1554,6 +1554,21 @@ experiments:
       opinions, tastes and private experiences nobody else could observe, such as how long a
       task took the author or how they felt.
 
+  query_planning_v9:
+    # Extends query_planning_v8: each need says whether it is only about the attached media.
+    extends: query_planning_v8
+    system: |-
+      Every need has about_attached_media. Set it true only for a need about what an attached
+      image or video shows: that it shows a place, event, time or person, for example "The
+      attached video shows a storm in Izmir". Only pages showing the same picture can settle
+      such a need, so its search queries are not run. Set it false for every other need,
+      including the facts the description relies on: when the text also states that an event
+      happened, at a place or on a date ("a storm hit Izmir on 12 October"), register that as
+      a separate need with about_attached_media false and plan web searches for it. Do not
+      add such a need when the text states no event beyond what the media shows; a phrase
+      like "a short blue screen video" only describes the media. Statements spoken or shown
+      inside a video are claims by the speaker or the video: their needs are false.
+
   evidence_component_experiment_v6:
     # Extends v5 with evidence found by reverse image search for the user's image or video.
     extends: evidence_component_experiment_v5

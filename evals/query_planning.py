@@ -87,6 +87,16 @@ class MappedComponentPlan(StrictRecord):
     questions: list[MappedQuestion]
 
 
+class MediaInformationNeed(InformationNeed):
+    # Mirrors the application contract (v9); this offline copy only builds its schema.
+    about_attached_media: bool
+
+
+class MediaMappedComponentPlan(StrictRecord):
+    needs: list[MediaInformationNeed] = Field(min_length=1)
+    questions: list[MappedQuestion]
+
+
 def build_request(
     claims: list[PlanningClaim],
     *,
@@ -96,7 +106,10 @@ def build_request(
     maximum_queries: int = 16,
     model: str = "muse-spark-1.3",
     prompt_version: str = PROMPT_VERSION,
-    response_schema: Literal["claim", "component", "mapped_component"] | None = None,
+    response_schema: Literal[
+        "claim", "component", "mapped_component", "media_mapped_component"
+    ]
+    | None = None,
 ) -> tuple[dict, str]:
     if not claims or len({claim.id for claim in claims}) != len(claims):
         raise ValueError("Input claims must have unique IDs and must not be empty.")
@@ -123,6 +136,7 @@ def build_request(
         "claim": QueryPlan,
         "component": ComponentQueryPlan,
         "mapped_component": MappedComponentPlan,
+        "media_mapped_component": MediaMappedComponentPlan,
     }
     return {
         "model": model,

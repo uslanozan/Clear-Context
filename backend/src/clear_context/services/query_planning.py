@@ -90,6 +90,18 @@ class MappedComponentPlan(StrictRecord):
     questions: list[MappedQuestion]
 
 
+class MediaInformationNeed(InformationNeed):
+    # True when the need is only about what the attached image or video shows (its place,
+    # time, event or people). Such a need is settled by pages that show the same picture,
+    # never by a web search for the event.
+    about_attached_media: bool
+
+
+class MediaMappedComponentPlan(StrictRecord):
+    needs: list[MediaInformationNeed] = Field(min_length=1)
+    questions: list[MappedQuestion]
+
+
 def build_request(
     claims: list[PlanningClaim],
     *,
@@ -99,7 +111,8 @@ def build_request(
     maximum_queries: int = 16,
     model: str = "muse-spark-1.3",
     prompt_version: str = PROMPT_VERSION,
-    response_schema: Literal["claim", "component", "mapped_component"] | None = None,
+    response_schema: Literal["claim", "component", "mapped_component", "media_mapped_component"]
+    | None = None,
     image_context: list[dict] | None = None,
 ) -> tuple[dict, str]:
     if not claims or len({claim.id for claim in claims}) != len(claims):
@@ -134,6 +147,7 @@ def build_request(
         "claim": QueryPlan,
         "component": ComponentQueryPlan,
         "mapped_component": MappedComponentPlan,
+        "media_mapped_component": MediaMappedComponentPlan,
     }
     return {
         "model": model,
@@ -254,4 +268,16 @@ def validate_mapped_plan(
             covered.update(ids)
         if covered != set(question.need_ids):
             raise ValueError("Question needs are not covered by its search queries.")
+    return plan
+
+
+def validate_media_mapped_plan(
+    content: str, claims: list[PlanningClaim], maximum_queries: int
+) -> MediaMappedComponentPlan:
+    """The mapped-plan rules, plus a flag on each need for claims about the attached media."""
+    plan = MediaMappedComponentPlan.model_validate_json(content)
+    compatible = plan.model_dump()
+    for need in compatible["needs"]:
+        need.pop("about_attached_media")
+    validate_mapped_plan(json.dumps(compatible), claims, maximum_queries)
     return plan

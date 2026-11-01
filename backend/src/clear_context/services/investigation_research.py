@@ -419,7 +419,8 @@ class InvestigationResearch:
             source_published_at=subject.published_on.isoformat() if subject.published_on else None,
             maximum_queries=budget.max_queries,
             model=self.models["research"].api_model_id,
-            # The selected planner (v7) handles text and image context alike.
+            # The selected planner (v9) handles text and media context alike and flags needs
+            # that only the attached media's own matches can settle.
             image_context=images or None,
         )
         usage = []
@@ -453,12 +454,22 @@ class InvestigationResearch:
         if progress:
             progress("plan_queries")
         needs = [
-            {k: item[k] for k in ("id", "claim_id", "description", "status")}
+            {
+                **{k: item[k] for k in ("id", "claim_id", "description", "status")},
+                "about_attached_media": bool(item.get("about_attached_media")),
+            }
             for item in plan["needs"]
         ]
+        # A need about what the attached media shows is settled only by pages that show the
+        # same picture (reverse image search and fact checks); a web search for the event
+        # finds other pictures, so its queries are not run for that need.
+        media_needs = {n["id"] for n in needs if n["about_attached_media"]}
         queries = []
         for question in plan["questions"]:
             for q in question["queries"]:
+                need_ids = [n for n in q["need_ids"] if n not in media_needs]
+                if not need_ids:
+                    continue
                 queries.append(
                     {
                         "id": f"q{len(queries) + 1}",
@@ -467,7 +478,7 @@ class InvestigationResearch:
                             "language": q["language"],
                             "max_results": 3,
                         },
-                        "need_ids": q["need_ids"],
+                        "need_ids": need_ids,
                     }
                 )
         saved = SavedResearchPlan.model_validate(
@@ -484,6 +495,11 @@ class InvestigationResearch:
         research = RetrievalRepository(self.workspace)
         tavily = TavilyClient(timeout=30, api_key=self.settings.tavily_api_key.get_secret_value())
         limitations = ["Evidence assessments do not establish source reliability."]
+        if media_needs:
+            limitations.append(
+                "Details about what the attached media shows were not searched on the web; "
+                "only pages showing the same picture or video can settle them."
+            )
         try:
             research.register_plan(saved)
             policy = load_retrieval_policy(PROJECT_ROOT / "config/retrieval.yaml")
@@ -811,6 +827,9 @@ class InvestigationResearch:
             if not missing:
                 continue
             need = needs[row["need_ids"][0]]
+            # A web search cannot settle what the attached media shows; see plan building.
+            if need.about_attached_media:
+                continue
             count = len(packets.packet(saved.case_id, (need.id,), tuple(receipts)).evidence)
             passages_before[need.id] = count
             gaps.append(

@@ -130,8 +130,9 @@ def test_query_mapping_cannot_claim_unsearched_question_coverage(ids, message):
         validate_mapped_plan(json.dumps(plan), [claim()], 2)
 
 
-def test_catalog_parser_validates_selected_schema():
-    profile = load_planner_profile(ROOT / "config/query_planners.yaml")
+def test_catalog_parser_validates_mapped_schema():
+    # The application's media-flagged contract (v9) is tested in backend/tests.
+    profile = load_planner_profile(ROOT / "config/query_planners.yaml", "v5")
     result = parse_planner_response(json.dumps(mapped_plan()), [claim()], 2, profile)
     assert result["questions"][0]["queries"][1]["need_ids"] == ["n2"]
     with pytest.raises(ValueError, match="budget"):

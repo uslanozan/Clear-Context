@@ -1,5 +1,5 @@
 schema_version: 1
-selected: v8
+selected: v9
 planners:
   v1:
     implementation: structured_llm
@@ -44,3 +44,10 @@ planners:
     prompt: query_planning_v8
     status: candidate
     response_schema: mapped_component
+  # v8 plus a flag on needs that are only about what the attached media shows; those needs
+  # are settled by pages showing the same picture, not by a web search for the event.
+  v9:
+    implementation: structured_llm
+    prompt: query_planning_v9
+    status: candidate
+    response_schema: media_mapped_component

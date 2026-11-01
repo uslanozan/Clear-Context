@@ -89,7 +89,10 @@ def run_research(
                 claim_id = request["claims"][0]["id"]
                 return completion(
                     {
-                        "needs": [{**need, "claim_id": claim_id} for need in needs],
+                        "needs": [
+                            {"about_attached_media": False, **need, "claim_id": claim_id}
+                            for need in needs
+                        ],
                         "questions": [
                             {
                                 "need_ids": ["n1"],
@@ -723,3 +726,34 @@ def test_the_users_description_of_media_is_never_grouped(monkeypatch, tmp_path):
     service = InvestigationResearch(settings, {"research": model, "judge": model}, tmp_path / "r")
     service.run(uuid4(), claims, user_text=f"{caption}.")
     assert caption not in seen and len(seen) == 2
+
+
+def test_a_need_about_the_attached_media_is_not_searched_on_the_web(monkeypatch, tmp_path):
+    # Searching the web for "a blue screen video" finds other videos, never the attached one.
+    calls = []
+    _, report = run_research(
+        monkeypatch,
+        tmp_path,
+        [{**PLANNED_NEED, "about_attached_media": True}],
+        [MAYOR_INSUFFICIENT],
+        MAYOR_FOLLOWUP,
+        calls=calls,
+    )
+    component = report.findings[0].components[0]
+    assert component.status == "insufficient"
+    assert report.sources == []
+    # No follow-up round either: another web search cannot settle it.
+    assert calls.count("followup_queries") == 0
+    assert any("same picture or video" in item for item in report.limitations)
+
+
+def test_other_needs_are_still_searched_beside_a_media_need(monkeypatch, tmp_path):
+    _, report = run_research(
+        monkeypatch,
+        tmp_path,
+        [{**PLANNED_NEED, "about_attached_media": False}],
+        TWO_COMPONENTS,
+    )
+    assert report.findings[0].components[0].status == "contradicted"
+    assert {s.url for s in report.sources} == {"https://example.org/bridge"}
+    assert not any("same picture or video" in item for item in report.limitations)

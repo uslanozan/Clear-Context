@@ -19,7 +19,9 @@ class PlannerProfile(BaseModel):
 
     implementation: Literal["structured_llm"]
     prompt: str = Field(min_length=1)
-    response_schema: Literal["claim", "component", "mapped_component"]
+    response_schema: Literal[
+        "claim", "component", "mapped_component", "media_mapped_component"
+    ]
     status: Literal["historical", "candidate"]
 
 
