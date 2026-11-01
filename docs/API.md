@@ -19,7 +19,7 @@ Local development only, single process. Mock mode is the default. Meta mode supp
 | POST | `/api/investigations/{id}/rerun` | Accept `{ "research_mode": "deep" }`; start a new investigation with the same text and uploaded files, linked by `parent_id` and `relation: rerun` |
 | POST | `/api/investigations/{id}/continue` | Accept `{ "research_mode": "deep" }`; research again only the claims the report's budget did not reach; 409 when there are none |
 | GET | `/api/media/{id}` | An uploaded file with its detected content type |
-| GET | `/api/media/{id}/playable` | A video the browser can show: the upload itself when its codecs are H.264, VP8, VP9 or AV1, otherwise a WebM (VP9 and Opus, at most 720p) copy made with PyAV on first request and kept next to the upload; 404 for images |
+| GET | `/api/media/{id}/playable` | A video the browser can show: the upload itself when its codecs are H.264, VP8, VP9 or AV1, otherwise a WebM (VP9 and Opus, at most 720p) copy kept next to the upload. The copy is prepared in the background after upload, one video at a time, and made on request if it is not ready yet; 404 for images |
 | GET | `/api/groups` | History groups in display order. Groups only organize the history list; they never change a report |
 | POST | `/api/groups` | Create a group from `{ "name": "..." }` (1-60 characters after whitespace is collapsed; 409 after 40 groups) |
 | PATCH | `/api/groups/{id}` | Rename a group |

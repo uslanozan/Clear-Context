@@ -5,7 +5,9 @@ their sound without a picture, so those videos get a WebM copy (VP9 and Opus) ma
 the FFmpeg libraries bundled in PyAV. The original file is never changed or replaced.
 """
 
+import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from fractions import Fraction
 from pathlib import Path
 
@@ -17,6 +19,9 @@ MAX_HEIGHT = 720
 MILLISECOND = Fraction(1, 1000)
 OPUS_FRAME = 960
 
+logger = logging.getLogger(__name__)
+# One copy at a time, so preparing videos never competes with several investigations for CPU.
+_preparer = ThreadPoolExecutor(max_workers=1, thread_name_prefix="playable-video")
 _locks: dict[str, threading.Lock] = {}
 _locks_guard = threading.Lock()
 
@@ -52,6 +57,10 @@ def playable(original: Path) -> tuple[Path, str]:
                 partial.replace(target)
             finally:
                 partial.unlink(missing_ok=True)
+            # The upload may have been deleted while the copy was being made.
+            if not original.exists():
+                target.unlink(missing_ok=True)
+                raise FileNotFoundError(original)
     return target, "video/webm"
 
 
@@ -109,3 +118,16 @@ def _transcode(source: Path, target: Path) -> None:
         out.mux(video_out.encode(None))
         if audio_out is not None:
             out.mux(audio_out.encode(None))
+
+
+def prepare_in_background(original: Path) -> None:
+    """Make the playable copy after upload, so the report's first view does not wait for it."""
+
+    def run() -> None:
+        try:
+            playable(original)
+        except Exception:
+            # Playback falls back to making the copy on request; the investigation is unaffected.
+            logger.warning("Could not prepare a playable copy of %s", original.name, exc_info=True)
+
+    _preparer.submit(run)

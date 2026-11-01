@@ -1,4 +1,5 @@
 import av
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import update
 from test_retrieval import plan
@@ -106,3 +107,30 @@ def test_delete_waits_for_a_running_investigation(settings):
 
 def test_copy_path_sits_next_to_the_upload(tmp_path):
     assert copy_path(tmp_path / "abc.mp4") == tmp_path / "abc.playable.webm"
+
+
+def test_upload_prepares_the_copy_before_anyone_opens_the_report(settings, tmp_path):
+    from clear_context.services import playable_video
+
+    clip = make_video(tmp_path / "clip.mp4", seconds=3, audio=False)
+    with TestClient(create_app(settings)) as client:
+        upload(client, "clip.mp4", clip.read_bytes(), "video/mp4")
+        # The preparer runs one job at a time; an empty job waits for the copy.
+        playable_video._preparer.submit(lambda: None).result(timeout=60)
+        assert len(list(settings.media_dir.glob("*.playable.webm"))) == 1
+
+
+def test_copy_of_a_deleted_upload_is_not_kept(tmp_path, monkeypatch):
+    from clear_context.services import playable_video
+
+    clip = make_video(tmp_path / "clip.mp4", seconds=2, audio=False)
+    real = playable_video._transcode
+
+    def transcode_then_delete(source, target):
+        real(source, target)
+        source.unlink()
+
+    monkeypatch.setattr(playable_video, "_transcode", transcode_then_delete)
+    with pytest.raises(FileNotFoundError):
+        playable_video.playable(clip)
+    assert list(tmp_path.glob("*.webm")) == []

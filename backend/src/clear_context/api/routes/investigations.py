@@ -28,7 +28,7 @@ from clear_context.schemas.investigation import (
     StepView,
 )
 from clear_context.services import media as media_service
-from clear_context.services.playable_video import copy_path
+from clear_context.services.playable_video import copy_path, prepare_in_background
 
 router = APIRouter()
 
@@ -88,6 +88,9 @@ async def create_investigation_with_media(
         research_mode=research_mode or default_mode(request),
         media=stored,
     )
+    for item in stored:
+        if item.kind == "video":
+            prepare_in_background(request.app.state.media_dir / item.storage_name)
     request.app.state.queue.submit(UUID(row.id), background_tasks)
     response.headers["Location"] = f"/api/investigations/{row.id}"
     return row
