@@ -24,7 +24,7 @@ import { LinkFindings } from './LinkFindings';
 import { MediaFindings } from './MediaFindings';
 import { EvidenceExcerpt, SourceTypeLabel, sourceDisplayName } from './EvidenceExcerpt';
 import { ClaimVerdict, DetailTag } from './VerdictTag';
-import { COMPONENT_STATUS, STATUS_ORDER } from '../lib/labels';
+import { detailSummary } from '../lib/labels';
 import { modeLabel } from '../lib/modes';
 import type { Investigation, Report, ResearchStep } from '../lib/types';
 
@@ -67,16 +67,6 @@ function EvidenceGroups({
       ))}
     </>
   );
-}
-
-/** Counts of detail results, settled outcomes first, e.g. "1 supported · 2 insufficient evidence". */
-function detailSummary(components: NonNullable<Report['findings'][number]['components']>) {
-  return STATUS_ORDER.map((status) => {
-    const count = components.filter((component) => component.status === status).length;
-    return count ? `${count} ${COMPONENT_STATUS[status].label.toLowerCase()}` : null;
-  })
-    .filter(Boolean)
-    .join(' · ');
 }
 
 function normalizeText(text: string): string {
@@ -124,6 +114,7 @@ export function ReportView({
   });
   // An open stage widens the side column so its details are easier to read.
   const [stageOpen, setStageOpen] = useState(false);
+  const [pdfState, setPdfState] = useState<'idle' | 'working' | 'failed'>('idle');
   const evidenceMissing = report.sources.length === 0;
   // Only label the mode when source research actually ran for this report.
   const researchModeLabel = steps.some((step) => step.name === 'plan_queries')
@@ -160,12 +151,16 @@ export function ReportView({
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  // The browser's print dialog saves the PDF; a print stylesheet lays the report out on paper.
-  function exportPdf() {
-    const title = document.title;
-    document.title = `clear-context-${report.investigation_id}`;
-    window.addEventListener('afterprint', () => (document.title = title), { once: true });
-    window.print();
+  // The PDF is built in the browser; its renderer loads only when someone exports.
+  async function exportPdf() {
+    setPdfState('working');
+    try {
+      const { downloadReportPdf } = await import('../pdf/download');
+      await downloadReportPdf(investigation, report, !!researchModeLabel);
+      setPdfState('idle');
+    } catch {
+      setPdfState('failed');
+    }
   }
 
   return (
@@ -358,6 +353,7 @@ export function ReportView({
               size="sm"
               leftSection={<FileText size={14} />}
               onClick={exportPdf}
+              loading={pdfState === 'working'}
             >
               Export PDF
             </Button>
@@ -371,6 +367,11 @@ export function ReportView({
             </Button>
             <span>PDF for reading and sharing · JSON with every recorded field</span>
           </div>
+          {pdfState === 'failed' && (
+            <p className="budget-error" role="alert">
+              The PDF could not be created. Try again, or export JSON.
+            </p>
+          )}
           <details className="technical-details">
             <summary>
               <ChevronRight size={15} aria-hidden="true" /> Technical details
@@ -405,8 +406,8 @@ export function ReportView({
               <>
                 <h4>Scope and limitations</h4>
                 <ul>
-                  {report.limitations.map((item) => (
-                    <li key={item}>{item}</li>
+                  {report.limitations.map((item, index) => (
+                    <li key={`${index}-${item}`}>{item}</li>
                   ))}
                 </ul>
               </>

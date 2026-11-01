@@ -21,3 +21,15 @@ export const STATUS_ORDER: ComponentStatus[] = [
   'insufficient',
   'not_assessed',
 ];
+
+/** Counts of detail results, settled outcomes first, e.g. "1 supported · 2 insufficient evidence". */
+export function detailSummary(
+  components: NonNullable<Report['findings'][number]['components']>,
+): string {
+  return STATUS_ORDER.map((status) => {
+    const count = components.filter((component) => component.status === status).length;
+    return count ? `${count} ${COMPONENT_STATUS[status].label.toLowerCase()}` : null;
+  })
+    .filter(Boolean)
+    .join(' · ');
+}

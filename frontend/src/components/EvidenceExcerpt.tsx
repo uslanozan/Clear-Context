@@ -43,16 +43,8 @@ export function sourceDisplayName(source: { title?: string; url: string } | unde
   }
 }
 
-export function EvidenceExcerpt({
-  evidence,
-  source,
-  showSource = true,
-}: {
-  evidence: EvidenceItem;
-  source?: SourceItem;
-  /** Set to false when a neighbouring excerpt from the same source already names it. */
-  showSource?: boolean;
-}) {
+/** The excerpt with trimmed surrounding text and a usable source URL, for screen and PDF. */
+export function excerptParts(evidence: EvidenceItem, source?: SourceItem) {
   const start = source?.content.indexOf(evidence.excerpt) ?? -1;
   const unique = start >= 0 && source?.content.indexOf(evidence.excerpt, start + 1) === -1;
   const rawBefore =
@@ -77,6 +69,28 @@ export function EvidenceExcerpt({
     // Some older reports contain no usable source URL.
   }
 
+  return { unique, before, after, hasMoreBefore, hasMoreAfter, url };
+}
+
+/** Plain label for the kind of site, or undefined for ordinary web pages. */
+export function sourceTypeText(type?: string | null): string | undefined {
+  return type ? SOURCE_TYPES[type] : undefined;
+}
+
+export function EvidenceExcerpt({
+  evidence,
+  source,
+  showSource = true,
+}: {
+  evidence: EvidenceItem;
+  source?: SourceItem;
+  /** Set to false when a neighbouring excerpt from the same source already names it. */
+  showSource?: boolean;
+}) {
+  const { unique, before, after, hasMoreBefore, hasMoreAfter, url } = excerptParts(
+    evidence,
+    source,
+  );
   return (
     <div className="evidence-excerpt">
       {url && showSource && (
