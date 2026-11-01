@@ -2073,16 +2073,6 @@ h2,
   border-right: 1px solid var(--sidebar-line);
   box-shadow: inset -1px 0 0 rgb(255 255 255 / 0.04);
 }
-/* Ambient backdrop: the logo, blurred, so the glass has something to refract. */
-.app-layout::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: url('/brand/backdrop.webp') center / cover no-repeat;
-  opacity: 0.5;
-  pointer-events: none;
-}
 @media (prefers-reduced-transparency: reduce) {
   .sidebar,
   .topbar,

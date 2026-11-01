@@ -10,6 +10,7 @@ import '@fontsource-variable/jetbrains-mono';
 import { App } from './App';
 import { theme } from './theme';
 import './styles.css';
+import './backdrop.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

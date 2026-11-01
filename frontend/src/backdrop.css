@@ -1,0 +1,11 @@
+/* Web app only: the extension has no .app-layout and no /brand folder, so it does not load this. */
+/* Ambient backdrop: the logo, blurred, so the glass has something to refract. */
+.app-layout::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url('/brand/backdrop.webp') center / cover no-repeat;
+  opacity: 0.5;
+  pointer-events: none;
+}
