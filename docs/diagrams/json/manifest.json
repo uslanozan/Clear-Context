@@ -15,7 +15,7 @@
     "slug": "03-media-today",
     "title": "What happens to an image or video today",
     "status": "IMPLEMENTED",
-    "notes": "Clipboard, file picker and drag and drop share validation; files are checked by signature, not name. Images go through the image checks in diagram 14 in Meta mode; preview mode stores them without analysis. Videos are stored and shown but not analyzed: no frames, transcript or reverse search. No AI-generation detector is integrated."
+    "notes": "Clipboard, file picker and drag and drop share validation; files are checked by signature, not name. Images go through the image checks in diagram 14 in Meta mode; preview mode stores them without analysis. Videos up to 50 MB and 10 minutes are checked in Meta mode: speech is transcribed with timestamps, a Muse model reads the frames with that transcript, and three frames are searched like images; larger videos are stored and reported as not analyzed. A video the browser cannot decode gets a WebM copy for playback. No AI-generation detector is integrated."
   },
   {
     "slug": "04-long-text-proposal",
@@ -32,8 +32,8 @@
   {
     "slug": "06-video-proposal",
     "title": "Video claims need timestamps and coverage limits",
-    "status": "PROPOSED / OPTIONAL",
-    "notes": "A silent clip takes only the frame branch. If transcription or decoding fails, preserve that gap. Compare claims with external sources and the relevant interval. Sampling can miss edits or events; neither a few real frames nor a detector score proves the entire clip. Media analysis, sampling, ASR, and AI detection are not implemented."
+    "status": "PROPOSAL, MOSTLY IMPLEMENTED IN 03",
+    "notes": "A silent clip takes only the frame branch. If transcription or decoding fails, preserve that gap. Compare claims with external sources and the relevant interval. Sampling can miss edits or events; neither a few real frames nor a detector score proves the entire clip. Frame sampling, speech transcription and timestamps are now implemented (diagram 03); this diagram is kept as the original proposal. AI detection is not implemented."
   },
   {
     "slug": "07-chunked-claims",

@@ -1,15 +1,15 @@
 # Workflow diagrams
 
-Updated October 31, 2026 from the actual implementation. Start with [the gallery](../html/index.html) or [the text-analysis explanation](../../TEXT_ANALYSIS.md).
+Updated November 1, 2026 from the actual implementation. Start with [the gallery](../html/index.html) or [the text-analysis explanation](../../TEXT_ANALYSIS.md).
 
 | Diagram | Meaning | Status |
 | --- | --- | --- |
 | [01 Text sequence](../html/01-text-sequence.html) | Browser, FastAPI/LangGraph, Meta, SQLite, and report reads | Implemented |
 | [02 Extraction guards](../html/02-extraction-guards.html) | What the model proposes and Python validates | Implemented |
-| [03 Media today](../html/03-media-today.html) | Upload boundary: images are analyzed, videos are stored but not analyzed | Implemented |
+| [03 Media today](../html/03-media-today.html) | Upload boundary: images and videos are validated, stored and analyzed (large videos are stored only) | Implemented |
 | [04 Longer text](../html/04-long-text-proposal.html) | Context chunks, offsets, qualifier handling, and relationships | Proposed |
 | [05 Photo/caption](../html/05-photo-proposal.html) | Original proposal; mostly implemented as diagram 14, authenticity signals still not | Proposal (record) |
-| [06 Video](../html/06-video-proposal.html) | Bounded frame sampling, optional speech transcription, timestamps, and partial coverage | Proposed / optional |
+| [06 Video](../html/06-video-proposal.html) | Original proposal for frame sampling, speech transcription, timestamps and partial coverage; mostly built, see 03 | Proposal (record) |
 | [07 Chunked claims](../html/07-chunked-claims.html) | Bounded targets/context, adaptive splitting, source provenance, partial outcomes | Implemented |
 | [08 Method B](../html/08-langextract-b.html) | LangExtract with system-role instructions and source alignment checks | Experimental |
 | [09 Method D](../html/09-direct-d.html) | Direct schema-constrained extraction and literal quote checks | Experimental |

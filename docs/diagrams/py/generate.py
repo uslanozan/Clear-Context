@@ -240,25 +240,25 @@ def media():
     )
     body += node(
         472, 416, 336, 112, "Upload and store",
-        ["Kept with the report", "Playable in the report"],
+        ["Playable in the report", "WebM copy if the codec needs it"],
     )
     body += node(
-        936, 416, 296, 112, "Not analyzed yet",
-        ["No frames or transcript", "Report states this"], terminal=True,
+        936, 416, 296, 112, "Video checks",
+        ["Speech, frames, reverse search", "Up to 50 MB and 10 minutes"], focal=True,
     )
     body += text(
         48, 604,
-        "Shared limits: 4 files / 100 MB total. Text, an image, or both are required; a video alone is refused.",
+        "Shared limits: 4 files / 100 MB total. A request needs text or at least one file. Videos over 50 MB or 10 minutes are stored and reported as not analyzed.",
         16, MUTED,
     )
     return write(
         "03-media-today",
         "What happens to an image or video today",
-        "Uploads are validated and stored on the server; images are analyzed, videos are not yet.",
+        "Uploads are validated and stored on the server; images and videos are analyzed in Meta mode.",
         "IMPLEMENTED",
         body,
-        "Clipboard, file picker and drag and drop share validation; files are checked by signature, not name. Images go through the image checks in diagram 14 in Meta mode; preview mode stores them without analysis. Videos are stored and shown but not analyzed: no frames, transcript or reverse search. No AI-generation detector is integrated.",
-        "api/routes/investigations.py; services/media.py; graph/nodes/analyze_media.py; components/Composer.tsx",
+        "Clipboard, file picker and drag and drop share validation; files are checked by signature, not name. Images go through the image checks in diagram 14 in Meta mode; preview mode stores them without analysis. Videos up to 50 MB and 10 minutes are checked in Meta mode: speech is transcribed with timestamps, a Muse model reads the frames with that transcript, and three frames are searched like images; larger videos are stored and reported as not analyzed. A video the browser cannot decode gets a WebM copy for playback. No AI-generation detector is integrated.",
+        "api/routes/investigations.py; services/media.py; services/video.py; services/video_analysis.py; services/playable_video.py; graph/nodes/analyze_media.py; components/Composer.tsx",
         "Solid: implemented flow | Accent: analysis path",
     )
 
@@ -494,11 +494,11 @@ def video():
     return write(
         "06-video-proposal",
         "Video claims need timestamps and coverage limits",
-        "Frame sampling and optional transcription are proposed preprocessing, not working features.",
-        "PROPOSED / OPTIONAL",
+        "The original proposal for frame sampling and optional transcription; mostly built, see diagram 03.",
+        "PROPOSAL, MOSTLY IMPLEMENTED IN 03",
         body,
-        "A silent clip takes only the frame branch. If transcription or decoding fails, preserve that gap. Compare claims with external sources and the relevant interval. Sampling can miss edits or events; neither a few real frames nor a detector score proves the entire clip. Media analysis, sampling, ASR, and AI detection are not implemented.",
-        "Proposed preprocessing and timestamped claim contracts; current input supports local previews only",
+        "A silent clip takes only the frame branch. If transcription or decoding fails, preserve that gap. Compare claims with external sources and the relevant interval. Sampling can miss edits or events; neither a few real frames nor a detector score proves the entire clip. Frame sampling, speech transcription and timestamps are now implemented (diagram 03); this diagram is kept as the original proposal. AI detection is not implemented.",
+        "Original proposal. Implemented in services/video.py and services/video_analysis.py (see diagram 03)",
         "Dashed: proposed flow | Optional audio is skipped for silent clips",
     )
 
@@ -641,7 +641,7 @@ if __name__ == "__main__":
         for row in records
     )
     (OUT / "html/index.html").write_text(
-        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>Diagrams 01-03, 07 and 13-16 describe working application code: 13 is the opt-in text research flow, 14 images, 15 links and 16 budget continuations. Diagrams 04-06 describe proposals (05 is now mostly implemented as 14); 08-09 show experimental runners; 10-12 show evaluation-workspace stages that the application flow reuses or does not select. Examples are explanatory, not measured inference results.</p><ol>{links}</ol></body></html>',
+        f'<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Clear Context workflow diagrams</title><style>body{{background:{PAPER};color:{INK};font:16px/1.6 system-ui,sans-serif;max-width:960px;margin:40px auto;padding:0 24px}}li{{margin:32px 0}}a{{color:{ACCENT}}}span{{font-size:12px}}</style></head><body><h1>Clear Context workflow diagrams</h1><p>Diagrams 01-03, 07 and 13-16 describe working application code: 13 is the opt-in text research flow, 14 images, 15 links and 16 budget continuations. Diagrams 04-06 describe proposals (05 is now mostly implemented as 14, and 06 as 03); 08-09 show experimental runners; 10-12 show evaluation-workspace stages that the application flow reuses or does not select. Examples are explanatory, not measured inference results.</p><ol>{links}</ol></body></html>',
         encoding="utf-8",
     )
     print(f"Generated {len(records)} HTML diagrams and index.")
