@@ -262,7 +262,10 @@ export function ReportView({
                     <h3 dir="auto">{claim.statement || claim.text}</h3>
                     {finding && (
                       <div className="claim-verdict">
-                        <ClaimVerdict assessment={finding.assessment} perDetail={hasComponents} />
+                        <ClaimVerdict
+                          assessment={finding.assessment}
+                          components={finding.components}
+                        />
                         {hasComponents && (
                           <span className="claim-verdict-summary">
                             {detailSummary(finding.components ?? [])}

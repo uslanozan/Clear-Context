@@ -187,3 +187,20 @@
   flex-direction: column;
   gap: 8px;
 }
+/* A claim's result, counted from its detail results like the web report. */
+.ext-claim-result {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ext-claim-result[data-tone='supported'] {
+  color: var(--success);
+}
+.ext-claim-result[data-tone='contradicted'] {
+  color: var(--danger);
+}
+.ext-claim-result[data-tone='conflicting'],
+.ext-claim-result[data-tone='insufficient'] {
+  color: var(--warning-ink);
+}

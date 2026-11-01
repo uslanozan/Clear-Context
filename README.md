@@ -43,7 +43,7 @@ Textual claims and image context are evaluated separately. Finding no supporting
 - Bounded, tool-driven web research and source comparison.
 - Claim-level evidence excerpts, source dates, and retrieval timestamps.
 - Visual-context checks when external evidence can be retrieved.
-- A report that distinguishes supported, contradicted, mixed, and unresolved findings.
+- A report that judges each detail of a claim as supported, contradicted, disputed, insufficient or not assessed, and labels the claim by counting those results (for example "Mostly supported" or "Mixed results"), without another model call.
 - A small manually reviewed evaluation set and a three-minute demonstration.
 
 Native mobile apps, PWA installation and incoming share integration, video from platform links (YouTube, X, Instagram and similar pages are read as pages; their videos are not downloaded), universal image provenance, deepfake detection, and a general-purpose knowledge base are outside the initial scope. The web interface should still work on phone screens. Visual inspection alone cannot establish an image's date, location, or authenticity.

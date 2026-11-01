@@ -9,9 +9,11 @@ it('explains every detail result and the claim-wide tag', () => {
     'Sources disagree',
     'Insufficient evidence',
     'Not assessed',
-    'No overall verdict',
+    'All details supported',
+    'Mixed results',
+    'Not settled',
   ]) {
-    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.getAllByText(label).length).toBeGreaterThan(0);
   }
   expect(screen.getByText(/not the same as false/)).toBeInTheDocument();
 });

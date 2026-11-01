@@ -1,9 +1,14 @@
-import { STATUS_ORDER, type ComponentStatus } from '../../src/lib/labels';
+import { claimSummary, STATUS_ORDER, type ComponentStatus } from '../../src/lib/labels';
 import type { Report } from '../../src/lib/types';
 
 /** A short view of a report for the capture window; the evidence stays in the web report. */
 export interface ReportSummary {
-  claims: { text: string; counts: [ComponentStatus, number][] }[];
+  claims: {
+    text: string;
+    counts: [ComponentStatus, number][];
+    // Counted from the detail results, as in the web report.
+    result: { label: string; tone: ComponentStatus } | null;
+  }[];
   hiddenClaims: number;
   media: { kind: 'image' | 'video'; earliest: string | null; mismatches: string[] }[];
   unreadableLinks: number;
@@ -24,6 +29,7 @@ export function summarize(report: Report): ReportSummary {
       counts: STATUS_ORDER.filter((status) => counts.has(status)).map(
         (status) => [status, counts.get(status)!] as [ComponentStatus, number],
       ),
+      result: claimSummary(finding.components ?? []),
     };
   });
   return {

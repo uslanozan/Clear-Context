@@ -1,5 +1,5 @@
-import { ClaimVerdict, DetailTag } from './VerdictTag';
-import type { ComponentStatus } from '../lib/labels';
+import { DetailTag, VerdictLabel } from './VerdictTag';
+import { CLAIM_SUMMARY, type ClaimSummaryKey, type ComponentStatus } from '../lib/labels';
 
 const STEPS = [
   {
@@ -60,15 +60,24 @@ export function HelpGuide() {
               <dd>{item.text}</dd>
             </div>
           ))}
-          <div className="help-claim-row">
-            <dt>
-              <ClaimVerdict assessment="unresolved" perDetail size="sm" />
-            </dt>
-            <dd>
-              Shown at the top of a claim. Details are judged one by one and are not merged into a
-              single verdict for the whole claim, so read the results below it.
-            </dd>
-          </div>
+        </dl>
+      </section>
+      <section className="help-results" aria-labelledby="help-claims-title">
+        <h3 id="help-claims-title">The result of a claim</h3>
+        <p className="help-results-intro">
+          The tag at the top of a claim is counted from its details; no model decides it. A claim
+          with one detail shows that detail's result. It describes the details that were checked,
+          not parts of the claim that no detail covers.
+        </p>
+        <dl>
+          {(Object.keys(CLAIM_SUMMARY) as ClaimSummaryKey[]).map((key) => (
+            <div key={key}>
+              <dt>
+                <VerdictLabel tone={CLAIM_SUMMARY[key].tone} label={CLAIM_SUMMARY[key].label} />
+              </dt>
+              <dd>{CLAIM_SUMMARY[key].rule}</dd>
+            </div>
+          ))}
         </dl>
       </section>
     </div>

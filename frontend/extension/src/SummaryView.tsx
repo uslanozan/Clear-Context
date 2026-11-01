@@ -23,7 +23,7 @@ export function SummaryView({ summary }: { summary: ReportSummary }) {
       ))}
       {summary.claims.length ? (
         <p className="muted small">
-          No overall verdict: each detail of a claim is assessed on its own.
+          Each claim's result is counted from its details; open the report for the evidence.
         </p>
       ) : (
         <p>No claims to check were found: nothing here states a fact that sources could settle.</p>
@@ -32,6 +32,11 @@ export function SummaryView({ summary }: { summary: ReportSummary }) {
         {summary.claims.map((claim, index) => (
           <li key={index}>
             <p dir="auto">{claim.text}</p>
+            {claim.result && (
+              <strong className="ext-claim-result" data-tone={claim.result.tone}>
+                {claim.result.label}
+              </strong>
+            )}
             <div className="ext-badges">
               {claim.counts.length ? (
                 claim.counts.map(([status, count]) => (

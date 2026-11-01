@@ -68,7 +68,8 @@ it('shows component status, directional source and highlighted source text', () 
   expect(screen.getByText('Contradicting source')).toBeInTheDocument();
   expect(screen.getByText('opened in 2019').tagName).toBe('MARK');
   expect(screen.getAllByRole('link', { name: /Bridge record/ }).length).toBeGreaterThan(0);
-  expect(screen.getByText('No overall verdict')).toBeInTheDocument();
+  // One contradicted detail: the claim takes that detail's result.
+  expect(screen.getAllByText('Contradicted').length).toBe(2);
   // The claim header summarizes the recorded detail results.
   expect(screen.getByText('1 contradicted')).toBeInTheDocument();
   expect(screen.getByText('1 claim')).toBeInTheDocument();

@@ -17,7 +17,7 @@ import {
 } from '@react-pdf/renderer';
 import { excerptParts, sourceDisplayName, sourceTypeText } from '../components/EvidenceExcerpt';
 import { ASSESSMENT_LABEL } from '../components/VerdictTag';
-import { COMPONENT_STATUS, detailSummary, type ComponentStatus } from '../lib/labels';
+import { claimSummary, COMPONENT_STATUS, detailSummary, type ComponentStatus } from '../lib/labels';
 import { modeLabel } from '../lib/modes';
 import type { Assessment, Investigation, Report } from '../lib/types';
 
@@ -578,12 +578,15 @@ export function ReportDocument({
               finding?.evidence_ids.includes(item.id),
             );
             const perDetail = parts.length > 0;
-            const verdictTone: Tone = finding ? ASSESSMENT_TONE[finding.assessment] : 'muted';
-            const verdictLabel = !finding
-              ? 'No finding'
-              : perDetail && finding.assessment === 'unresolved'
-                ? 'No overall verdict'
-                : ASSESSMENT_LABEL[finding.assessment];
+            // Counted from detail results, exactly as in the web report.
+            const summary = claimSummary(parts);
+            const verdictTone: Tone = summary
+              ? COMPONENT_TONE[summary.tone]
+              : finding
+                ? ASSESSMENT_TONE[finding.assessment]
+                : 'muted';
+            const verdictLabel =
+              summary?.label ?? (finding ? ASSESSMENT_LABEL[finding.assessment] : 'No finding');
             return (
               <View style={styles.claim} key={claim.id}>
                 <View style={styles.claimHead} wrap={false}>

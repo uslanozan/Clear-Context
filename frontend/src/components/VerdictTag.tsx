@@ -6,8 +6,8 @@ import {
   Scale,
   type LucideIcon,
 } from 'lucide-react';
-import { COMPONENT_STATUS, type ComponentStatus } from '../lib/labels';
-import type { Assessment } from '../lib/types';
+import { claimSummary, COMPONENT_STATUS, type ComponentStatus } from '../lib/labels';
+import type { Assessment, Report } from '../lib/types';
 
 type Tone = 'supported' | 'contradicted' | 'conflicting' | 'open' | 'muted';
 
@@ -51,6 +51,11 @@ function Tag({ tone, label, size }: { tone: Tone; label: string; size: 'sm' | 'l
   );
 }
 
+/** A tag in the color and icon of a detail result, with its own label. */
+export function VerdictLabel({ tone, label }: { tone: ComponentStatus; label: string }) {
+  return <Tag tone={COMPONENT_TONE[tone]} label={label} size="sm" />;
+}
+
 /** The result for one detail of a claim. */
 export function DetailTag({
   status,
@@ -63,21 +68,20 @@ export function DetailTag({
 }
 
 /**
- * The claim-wide result. With per-detail results an unresolved claim has no overall verdict,
- * which is not the same as nothing being found.
+ * The claim-wide result. With per-detail results it is counted from those results
+ * (see claimSummary); older reports without details show their saved assessment.
  */
 export function ClaimVerdict({
   assessment,
-  perDetail,
+  components = [],
   size = 'lg',
 }: {
   assessment: Assessment;
-  perDetail: boolean;
+  components?: NonNullable<Report['findings'][number]['components']>;
   size?: 'sm' | 'lg';
 }) {
-  if (perDetail && assessment === 'unresolved') {
-    return <Tag tone="open" label="No overall verdict" size={size} />;
-  }
+  const summary = claimSummary(components);
+  if (summary) return <Tag tone={COMPONENT_TONE[summary.tone]} label={summary.label} size={size} />;
   return (
     <Tag tone={ASSESSMENT_TONE[assessment]} label={ASSESSMENT_LABEL[assessment]} size={size} />
   );
