@@ -1,21 +1,38 @@
-import { useEffect, useState } from 'react';
-import { Button, TextInput } from '@mantine/core';
+import { useCallback, useEffect, useState } from 'react';
 import type { Health } from '../../src/lib/types';
-import { KNOWN_SERVERS, isLocalServer, normalizeServer } from './capture-model';
+import { KNOWN_SERVERS } from './capture-model';
 import { serverApi } from './server-api';
-import { loadChosenServer, saveServer } from './storage';
+import { loadLastServer, saveLastServer } from './storage';
 
 export type Connection =
   | { state: 'checking' }
   | { state: 'ready'; health: Health }
   | { state: 'unreachable'; message: string };
 
-/** The address the user picked, or the first known address that answers. */
-export async function findServer(): Promise<{ origin: string; chosen: boolean }> {
-  const chosen = await loadChosenServer();
-  if (chosen) return { origin: chosen, chosen: true };
+/** Origins of open tabs on this computer, which may be Clear Context on a custom port. */
+async function openLocalOrigins(): Promise<string[]> {
+  try {
+    const tabs = await chrome.tabs.query({
+      url: ['http://*.localhost/*', 'http://localhost/*', 'http://127.0.0.1/*'],
+    });
+    return tabs.flatMap((tab) => (tab.url ? [new URL(tab.url).origin] : []));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Finds the server without any setting: the address that worked last time, Clear Context
+ * tabs that are open right now (any port), then the addresses this project serves on.
+ * The first candidate that answers its health check wins.
+ */
+export async function findServer(): Promise<string> {
+  const last = await loadLastServer();
+  const candidates = Array.from(
+    new Set([...(last ? [last] : []), ...(await openLocalOrigins()), ...KNOWN_SERVERS]),
+  ).slice(0, 8);
   const answers = await Promise.all(
-    KNOWN_SERVERS.map((origin) =>
+    candidates.map((origin) =>
       serverApi.health(origin, AbortSignal.timeout(2000)).then(
         () => true,
         () => false,
@@ -23,29 +40,33 @@ export async function findServer(): Promise<{ origin: string; chosen: boolean }>
     ),
   );
   const found = answers.indexOf(true);
-  return { origin: KNOWN_SERVERS[Math.max(found, 0)], chosen: false };
+  if (found >= 0) {
+    void saveLastServer(candidates[found]);
+    return candidates[found];
+  }
+  return last ?? KNOWN_SERVERS[0];
 }
 
-/** The server to use and whether it answers; the user can pick another or go back to auto. */
+/** The server to use, whether it answers, and a way to look again after starting the app. */
 export function useServer() {
-  const [server, setServer] = useState<{ origin: string; chosen: boolean } | null>(null);
-  const connection = useConnection(server?.origin ?? null);
-  useEffect(() => {
+  const [server, setServer] = useState<string | null>(null);
+  const connection = useConnection(server);
+  const detect = useCallback(() => {
+    setServer(null);
     void findServer().then(setServer);
   }, []);
-  async function choose(origin: string | null) {
-    await saveServer(origin);
-    setServer(origin ? { origin, chosen: true } : null);
-    if (!origin) setServer(await findServer());
-  }
-  return { server, connection, choose };
+  useEffect(detect, [detect]);
+  return { server, connection, detect };
 }
 
 /** Whether the server answers its health check; rechecked when the address changes. */
 export function useConnection(server: string | null): Connection {
   const [connection, setConnection] = useState<Connection>({ state: 'checking' });
   useEffect(() => {
-    if (!server) return;
+    if (!server) {
+      setConnection({ state: 'checking' });
+      return;
+    }
     setConnection({ state: 'checking' });
     serverApi
       .health(server)
@@ -55,75 +76,21 @@ export function useConnection(server: string | null): Connection {
   return connection;
 }
 
-/** The server address and its status, with a way to pick another for custom setups. */
+/** The server address and its status. Unreachable servers offer one way out: look again. */
 export function ServerLine({
   server,
-  chosen,
   connection,
-  onChoose,
+  onRetry,
 }: {
   server: string;
-  chosen: boolean;
   connection: Connection;
-  onChoose: (origin: string | null) => void;
+  onRetry: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(server);
-  const [error, setError] = useState('');
-  if (editing) {
-    return (
-      <form
-        className="ext-server-form"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          const origin = normalizeServer(value);
-          if (!origin) {
-            setError('Enter an address such as http://clearcontext.localhost:8080');
-            return;
-          }
-          // Local addresses are allowed by the manifest; others need the user's permission.
-          if (!isLocalServer(origin)) {
-            const granted = await chrome.permissions.request({ origins: [`${origin}/*`] });
-            if (!granted) {
-              setError('Access to that address was not granted.');
-              return;
-            }
-          }
-          setEditing(false);
-          setError('');
-          onChoose(origin);
-        }}
-      >
-        <TextInput
-          size="xs"
-          aria-label="Clear Context server address"
-          value={value}
-          onChange={(event) => setValue(event.currentTarget.value)}
-          error={error || undefined}
-        />
-        <Button size="xs" type="submit">
-          Save
-        </Button>
-        <Button
-          size="xs"
-          variant="subtle"
-          onClick={() => {
-            setEditing(false);
-            onChoose(null);
-          }}
-        >
-          Detect automatically
-        </Button>
-      </form>
-    );
-  }
   const status =
     connection.state === 'checking'
       ? 'Connecting…'
       : connection.state === 'unreachable'
-        ? chosen
-          ? 'Not reachable'
-          : 'Not running: start Clear Context'
+        ? 'Not running: start Clear Context'
         : connection.health.mode === 'mock'
           ? 'Preview mode: no model calls'
           : 'Connected';
@@ -133,9 +100,11 @@ export function ServerLine({
       <span>
         {new URL(server).host} · {status}
       </span>
-      <button type="button" className="text-button" onClick={() => setEditing(true)}>
-        Change
-      </button>
+      {connection.state === 'unreachable' && (
+        <button type="button" className="text-button" onClick={onRetry}>
+          Check again
+        </button>
+      )}
     </p>
   );
 }

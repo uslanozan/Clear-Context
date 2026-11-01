@@ -373,6 +373,15 @@ function SettingsForm({
         </summary>
         <div className="settings-fields">
           <div>
+            <span className="settings-label">Chrome extension</span>
+            <p className="muted">
+              The extension finds this server by itself. It remembers the last address that worked,
+              looks at Clear Context tabs you have open and tries clearcontext.localhost. If you run
+              the app on another port (set in <code>.env</code> or <code>CLEAR_CONTEXT_PORT</code>),
+              open it once in this browser and the extension follows.
+            </p>
+          </div>
+          <div>
             <span className="settings-label" id="default-mode-label">
               Default research depth
             </span>

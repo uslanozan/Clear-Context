@@ -15,7 +15,12 @@ const capture: PendingCapture = {
   capturedAt: 0,
 };
 
-function installChrome(pending: PendingCapture | null, sync: Record<string, unknown> = {}) {
+function installChrome(
+  pending: PendingCapture | null,
+  sync: Record<string, unknown> = {},
+  local: Record<string, unknown> = {},
+  tabUrls: string[] = [],
+) {
   const session: Record<string, unknown> = pending ? { pending } : {};
   const opened: string[] = [];
   vi.stubGlobal('chrome', {
@@ -25,16 +30,23 @@ function installChrome(pending: PendingCapture | null, sync: Record<string, unkn
         set: vi.fn(async (items: Record<string, unknown>) => Object.assign(session, items)),
         remove: vi.fn(async (key: string) => delete session[key]),
       },
+      local: {
+        get: vi.fn(async (key: string) => (key in local ? { [key]: local[key] } : {})),
+        set: vi.fn(async (items: Record<string, unknown>) => Object.assign(local, items)),
+      },
       sync: {
         get: vi.fn(async (key: string) => (key in sync ? { [key]: sync[key] } : {})),
         set: vi.fn(async (items: Record<string, unknown>) => Object.assign(sync, items)),
         remove: vi.fn(async (key: string) => delete sync[key]),
       },
     },
-    tabs: { create: vi.fn(async ({ url }: { url: string }) => opened.push(url)) },
+    tabs: {
+      create: vi.fn(async ({ url }: { url: string }) => opened.push(url)),
+      query: vi.fn(async () => tabUrls.map((url) => ({ url }))),
+    },
     permissions: { request: vi.fn(async () => true) },
   });
-  return { session, opened };
+  return { session, opened, local };
 }
 
 function json(body: unknown, status = 200) {
@@ -178,19 +190,45 @@ it('finds the development server when Docker is not running', async () => {
   expect(probed).toContain('http://clearcontext.localhost/api/health');
 });
 
-it('uses an address the user picked without probing the known ones', async () => {
-  installChrome(capture, { serverChoice: 'http://192.168.1.5:8080' });
-  const probed: string[] = [];
+it('tries the address that worked last time first and remembers the one that answers', async () => {
+  const { local } = installChrome(capture, {}, { lastServer: 'http://192.168.1.5:8080' });
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (input: string) => {
-      probed.push(input);
-      return json({ status: 'ok', mode: 'meta', research_enabled: true });
-    }),
+    vi.fn(async (input: string) =>
+      input.startsWith('http://192.168.1.5:8080')
+        ? json({ status: 'ok', mode: 'meta', research_enabled: true })
+        : Promise.reject(new TypeError('Failed to fetch')),
+    ),
   );
   renderApp();
   expect(await screen.findByText(/192.168.1.5:8080 · Connected/)).toBeInTheDocument();
-  expect(probed.every((url) => url.startsWith('http://192.168.1.5:8080'))).toBe(true);
+  expect(local.lastServer).toBe('http://192.168.1.5:8080');
+  expect(screen.queryByRole('button', { name: 'Change' })).not.toBeInTheDocument();
+});
+
+it('finds Clear Context on a custom port through an open tab', async () => {
+  installChrome(capture, {}, {}, ['http://clearcontext.localhost:8099/investigations/x']);
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: string) =>
+      input.startsWith('http://clearcontext.localhost:8099')
+        ? json({ status: 'ok', mode: 'meta', research_enabled: true })
+        : Promise.reject(new TypeError('Failed to fetch')),
+    ),
+  );
+  renderApp();
+  expect(await screen.findByText(/clearcontext.localhost:8099 · Connected/)).toBeInTheDocument();
+});
+
+it('offers to look again when nothing answers', async () => {
+  installChrome(capture);
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))),
+  );
+  renderApp();
+  expect(await screen.findByText(/Not running: start Clear Context/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Check again' })).toBeInTheDocument();
 });
 
 it('shows a right-clicked link in the box and sends only what the box holds', async () => {

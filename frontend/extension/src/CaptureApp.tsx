@@ -25,8 +25,7 @@ const KIND_LABEL: Record<PendingCapture['kind'], string> = {
 
 export function CaptureApp() {
   const [capture, setCapture] = useState<PendingCapture | null | undefined>(undefined);
-  const { server: found, connection, choose } = useServer();
-  const server = found?.origin ?? null;
+  const { server, connection, detect } = useServer();
   const [started, setStarted] = useState<Investigation | null>(null);
 
   useEffect(() => {
@@ -41,14 +40,7 @@ export function CaptureApp() {
         </span>
         <div>
           <strong>Clear Context</strong>
-          {found && (
-            <ServerLine
-              server={found.origin}
-              chosen={found.chosen}
-              connection={connection}
-              onChoose={(origin) => void choose(origin)}
-            />
-          )}
+          {server && <ServerLine server={server} connection={connection} onRetry={detect} />}
         </div>
       </header>
       {started && server ? (

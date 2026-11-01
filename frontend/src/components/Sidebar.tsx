@@ -9,7 +9,6 @@ import {
   FolderPlus,
   Plus,
   RefreshCw,
-  FlaskConical,
   Settings,
 } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
@@ -192,13 +191,6 @@ export function Sidebar(props: Props) {
       >
         New investigation
       </Button>
-      <NavLink
-        to="/evaluations"
-        className={({ isActive }) => `evaluation-nav ${isActive ? 'active' : ''}`}
-        onClick={props.onNavigate}
-      >
-        <FlaskConical size={16} /> Extraction review
-      </NavLink>
       <NavLink
         to="/settings"
         className={({ isActive }) => `evaluation-nav settings-nav ${isActive ? 'active' : ''}`}

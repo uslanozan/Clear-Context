@@ -18,10 +18,12 @@ it('turns pasted text into a capture for review without sending it', async () =>
         get: vi.fn(async (key: string) => (key in session ? { [key]: session[key] } : {})),
         set: vi.fn(async (items: Record<string, unknown>) => Object.assign(session, items)),
       },
+      local: { get: vi.fn(async () => ({})), set: vi.fn(async () => undefined) },
       sync: { get: vi.fn(async () => ({})) },
     },
     runtime: { getURL: (path: string) => `chrome-extension://id/${path}` },
     windows: { create: createWindow },
+    tabs: { query: vi.fn(async () => []) },
   });
   const fetchMock = vi.fn(async (_url: string) => {
     throw new TypeError('Failed to fetch');

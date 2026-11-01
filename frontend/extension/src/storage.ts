@@ -2,8 +2,8 @@ import type { PendingCapture } from './capture-model';
 
 // The capture lives only for the browser session; nothing is sent until the user confirms.
 const PENDING = 'pending';
-// Set only when the user picks an address; otherwise the known addresses are tried.
-const SERVER = 'serverChoice';
+// The last address that answered, tried first next time; never typed in by the user.
+const LAST_SERVER = 'lastServer';
 const WINDOW = 'captureWindow';
 
 export async function savePending(capture: PendingCapture) {
@@ -19,15 +19,21 @@ export async function clearPending() {
   await chrome.storage.session.remove(PENDING);
 }
 
-export async function loadChosenServer(): Promise<string | null> {
-  const stored = await chrome.storage.sync.get(SERVER);
-  return (stored[SERVER] as string | undefined) ?? null;
+export async function loadLastServer(): Promise<string | null> {
+  try {
+    const stored = await chrome.storage.local.get(LAST_SERVER);
+    return (stored[LAST_SERVER] as string | undefined) ?? null;
+  } catch {
+    return null;
+  }
 }
 
-/** Remember an address the user picked; null returns to automatic detection. */
-export async function saveServer(origin: string | null) {
-  if (origin) await chrome.storage.sync.set({ [SERVER]: origin });
-  else await chrome.storage.sync.remove(SERVER);
+export async function saveLastServer(origin: string) {
+  try {
+    await chrome.storage.local.set({ [LAST_SERVER]: origin });
+  } catch {
+    // Detection simply starts from the known addresses next time.
+  }
 }
 
 /** Open the capture window, or bring the open one forward and show the new capture. */

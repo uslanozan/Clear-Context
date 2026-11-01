@@ -25,8 +25,7 @@ export function PopupApp() {
   const [hasPending, setHasPending] = useState(false);
   const [error, setError] = useState('');
   const [pasted, setPasted] = useState('');
-  const { server: found, connection, choose } = useServer();
-  const server = found?.origin ?? null;
+  const { server, connection, detect } = useServer();
 
   useEffect(() => {
     void loadPending().then((pending) => setHasPending(!!pending));
@@ -92,14 +91,7 @@ export function PopupApp() {
         </span>
         <div>
           <strong>Clear Context</strong>
-          {found && (
-            <ServerLine
-              server={found.origin}
-              chosen={found.chosen}
-              connection={connection}
-              onChoose={(origin) => void choose(origin)}
-            />
-          )}
+          {server && <ServerLine server={server} connection={connection} onRetry={detect} />}
         </div>
       </header>
       <Button fullWidth leftSection={<Crop size={16} />} onClick={() => void captureArea()}>
@@ -122,7 +114,6 @@ export function PopupApp() {
       >
         <Textarea
           label="Paste text or a link"
-          description="For example a post's address copied from the address bar."
           autosize
           minRows={2}
           maxRows={5}

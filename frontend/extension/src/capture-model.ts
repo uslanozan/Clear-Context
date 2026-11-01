@@ -54,24 +54,6 @@ export function cropBox(
   return { x, y, width: Math.max(0, right - x), height: Math.max(0, bottom - y) };
 }
 
-/** A server address the extension accepts: http(s), no credentials, path or query. */
-export function normalizeServer(value: string): string | null {
-  try {
-    const url = new URL(value.trim());
-    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
-    if ((url.pathname !== '/' && url.pathname !== '') || url.search || url.hash) return null;
-    return url.origin;
-  } catch {
-    return null;
-  }
-}
-
-/** Local addresses are covered by the manifest; others need a permission the user grants. */
-export function isLocalServer(origin: string) {
-  const host = new URL(origin).hostname;
-  return host === 'localhost' || host === '127.0.0.1' || host.endsWith('.localhost');
-}
-
 export function dataUrlToBlob(dataUrl: string): Blob {
   const [header, base64] = dataUrl.split(',', 2);
   const type = /data:([^;]+)/.exec(header)?.[1] ?? 'application/octet-stream';
