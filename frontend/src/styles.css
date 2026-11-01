@@ -3202,3 +3202,12 @@ h2,
     background: var(--surface-solid);
   }
 }
+@media (max-width: 640px) {
+  .input-card {
+    padding: 14px;
+  }
+  .report-main .input-card .media-card,
+  .report-main .input-card .link-card {
+    padding: 12px;
+  }
+}
