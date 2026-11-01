@@ -2575,3 +2575,15 @@ h2,
     transition: none;
   }
 }
+
+/* Timeline markers sit on glass: no opaque disc. A stage that never reported is dashed. */
+.process-marker {
+  background: rgb(255 255 255 / 0.04);
+}
+.process-step.skipped .process-marker {
+  border-style: dashed;
+  color: var(--muted);
+}
+.process-step.skipped .process-state {
+  color: var(--muted);
+}

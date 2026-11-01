@@ -47,7 +47,7 @@ It does not give a single true/false verdict. Each detail of a claim is assessed
 ## Evidence on Hand
 
 - Real recorded investigations in the local database (text, image and video cases).
-- Official brand assets: `frontend/public/brand/meta.svg`, `frontend/public/brand/muse-jolly.jpg`.
+- Official brand assets: `frontend/public/brand/meta.svg`, `frontend/public/brand/muse-logo.svg`. The official Jolly image is withheld until Meta answers the permission request sent on November 1, 2026.
 - No demo video yet, no user testimonials, no usage numbers, no press. None of these may be invented.
 
 ## Product Principles

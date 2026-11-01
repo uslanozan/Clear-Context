@@ -531,9 +531,8 @@ class InvestigationResearch:
             selections = await self._select(
                 research, saved.case_id, page_needs, budget.max_selection_calls
             )
-            if progress and not any(
-                s["status"] not in {"selected", "not_found"} for s in selections
-            ):
+            # The stage ran even when some pages failed; those are listed in the limitations.
+            if progress and selections:
                 progress("select_passages")
             usage.extend(
                 usage_record("passage_selection", self.models["research"].api_model_id, s["usage"])

@@ -57,12 +57,6 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
           <p>Add a claim and the material behind it.</p>
         </div>
         <div className="muse-reference">
-          <img
-            src="/brand/muse-jolly.jpg"
-            alt="Jolly, the Muse mascot, at a laptop"
-            width="1200"
-            height="630"
-          />
           <div>
             <img src="/brand/meta.svg" alt="Meta" width="68" height="15" />
             <span>Built with Muse</span>

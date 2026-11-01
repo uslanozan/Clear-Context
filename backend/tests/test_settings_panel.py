@@ -176,4 +176,3 @@ def test_reset_all_takes_every_value_from_env(settings):
         assert reset["changed"] == []
         assert reset["keys"]["serp_api_key"]["configured"] is False
         assert (reset["models"]["judge"], reset["search_min_score"]) == ("spark_1_3", 0.3)
-

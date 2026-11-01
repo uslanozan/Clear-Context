@@ -75,7 +75,17 @@ export function ProcessTimeline({
           const event = steps.find((step) => step.name === stage.event);
           const failed = index === failedIndex;
           const active = isRunning && !failure && index === lastCompleted + 1;
-          const state = event ? 'complete' : failed ? 'failed' : active ? 'active' : 'waiting';
+          // A stage with no record before a recorded one did not report itself; it is not pending.
+          const skipped = !planned && !event && !failed && !active && index < lastCompleted;
+          const state = event
+            ? 'complete'
+            : failed
+              ? 'failed'
+              : active
+                ? 'active'
+                : skipped
+                  ? 'skipped'
+                  : 'waiting';
           const label = planned
             ? 'Not started'
             : event
@@ -84,7 +94,9 @@ export function ProcessTimeline({
                 ? 'Stopped'
                 : active
                   ? 'Running'
-                  : 'Pending';
+                  : skipped
+                    ? 'Not recorded'
+                    : 'Pending';
           return (
             <li
               key={stage.event}
@@ -107,7 +119,11 @@ export function ProcessTimeline({
                   <strong>{stage.title}</strong>
                   {/* Only running and stopped stages need words; markers show the rest. */}
                   <span
-                    className={active || failed ? 'process-state' : 'process-state visually-hidden'}
+                    className={
+                      active || failed || skipped
+                        ? 'process-state'
+                        : 'process-state visually-hidden'
+                    }
                   >
                     {label}
                   </span>

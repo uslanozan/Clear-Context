@@ -4,7 +4,6 @@ A provider returns pages where the same or a similar image appears. A match is a
 for reading those pages, not proof of an image's original source or date.
 """
 
-import base64
 import html
 import io
 import re

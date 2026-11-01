@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     # Optional; without it research uses Tavily's rate-limited keyless mode.
     tavily_api_key: SecretStr = Field(default=SecretStr(""), exclude=True)
     serp_api_key: SecretStr = Field(default=SecretStr(""), exclude=True)
-    # Google Fact Check Tools image search.
+    # Google Fact Check Tools image and caption search (free with a Google API key).
     fact_check_image_search: bool = True
     google_fact_check_api_key: SecretStr = Field(default=SecretStr(""), exclude=True)
 

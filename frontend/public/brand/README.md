@@ -9,6 +9,8 @@ These images are AI-generated illustrations, not photographs.
 
 Third-party, not covered by the application license:
 - `meta.svg`: official Meta wordmark from https://dev.meta.ai/logo/meta-logo-with-text.svg
-- `muse-jolly.jpg`: official Muse Jolly social image from https://muse.ai/images/landing/brand/og-image.jpg (retrieved October 27, 2026).
+- `muse-logo.svg`: official Muse logo from https://muse.ai/images/landing/brand/muse-logo.svg.
+
+The official Jolly image is not included while a permission request to Meta is pending.
 
 Meta and Muse assets are trademarks/artwork of their owners. They identify the inference provider in this independent hackathon project; they do not imply ownership, sponsorship, or endorsement. Preserve proportions and the original artwork.
