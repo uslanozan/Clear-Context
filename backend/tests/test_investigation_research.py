@@ -757,3 +757,20 @@ def test_other_needs_are_still_searched_beside_a_media_need(monkeypatch, tmp_pat
     assert report.findings[0].components[0].status == "contradicted"
     assert {s.url for s in report.sources} == {"https://example.org/bridge"}
     assert not any("same picture or video" in item for item in report.limitations)
+
+
+def test_a_media_need_called_not_checkable_is_still_checked(monkeypatch, tmp_path):
+    # Seen live: "a short blue screen video" came back not_checkable, and the report said
+    # "an opinion or value judgment". What media shows is checked against its own matches.
+    media_need = {
+        "id": "n2",
+        "description": "The attached video is a short blue screen video",
+        "status": "not_checkable",
+        "reason": "Describes the media",
+        "about_attached_media": True,
+    }
+    _, report = run_research(monkeypatch, tmp_path, [PLANNED_NEED, media_need], TWO_COMPONENTS)
+    components = {c.description: c for c in report.findings[0].components}
+    media = components["The attached video is a short blue screen video"]
+    assert media.status == "insufficient"
+    assert "opinion" not in media.explanation

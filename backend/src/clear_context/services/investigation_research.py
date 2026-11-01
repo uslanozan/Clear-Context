@@ -460,6 +460,11 @@ class InvestigationResearch:
             }
             for item in plan["needs"]
         ]
+        # What a picture shows is never an opinion: a media need the planner called
+        # not_checkable is still checked against pages showing the same picture.
+        for need in needs:
+            if need["about_attached_media"] and need["status"] == "not_checkable":
+                need["status"] = "planned"
         # A need about what the attached media shows is settled only by pages that show the
         # same picture (reverse image search and fact checks); a web search for the event
         # finds other pictures, so its queries are not run for that need.
