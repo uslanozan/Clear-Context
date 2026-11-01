@@ -117,6 +117,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 1.5,
   },
+  inputLabel: {
+    fontSize: 7,
+    fontWeight: 600,
+    letterSpacing: 0.6,
+    color: BRAND.muted,
+    marginBottom: 3,
+  },
+  inputPart: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: BRAND.line,
+  },
+  inputItem: { marginTop: 4 },
   glance: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 2 },
   stat: {
     borderWidth: 1,
@@ -386,6 +400,32 @@ function EvidenceGroups({
 
 // Each footer part is its own fixed, absolutely positioned element, the layout react-pdf repeats
 // reliably on every page.
+function MediaList({ items, label }: { items: Report['media']; label: string }) {
+  if (!items?.length) return null;
+  return (
+    <View style={styles.inputPart}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      {items.map((item) => (
+        <View style={styles.inputItem} key={item.id} wrap={false}>
+          <Text style={{ fontWeight: 600 }}>{item.filename}</Text>
+          <Text style={[styles.muted, styles.small]}>
+            {[
+              item.kind,
+              item.analysis.status.replace('_', ' '),
+              item.origin.matches.length ? `found on ${item.origin.matches.length} pages` : null,
+              item.prior_checks?.reviews.length
+                ? `${item.prior_checks.reviews.length} published fact checks`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function Footer({ id }: { id: string }) {
   return (
     <>
@@ -429,6 +469,8 @@ export function ReportDocument({
     ...report.evidence.map((item) => item.excerpt),
     ...report.sources.map((source) => source.content),
   ].some((text) => withoutEmoji(text) !== text.replace(/ {2,}/g, ' '));
+  const uploadedMedia = (report.media ?? []).filter((item) => !item.source_url);
+  const linkMedia = (report.media ?? []).filter((item) => item.source_url);
   const coverage = report.extraction_coverage;
   const ranges = coverage?.chunks.filter((chunk) => chunk.status !== 'split') ?? [];
 
@@ -514,59 +556,33 @@ export function ReportDocument({
           <Text style={styles.sectionTitle} minPresenceAhead={90}>
             Your input
           </Text>
+          {/* Everything the user sent, in one box: text, links in it and attached files. */}
           <View style={styles.inputBox}>
+            <Text style={styles.inputLabel}>TEXT YOU ENTERED</Text>
             <Text>
               {withoutEmoji(
                 investigation.text ||
-                  'No text was entered. Claims come from text read from the images.',
+                  'No text was entered. Claims come from text read from the files.',
               )}
             </Text>
+            {!!report.links?.length && (
+              <View style={styles.inputPart}>
+                <Text style={styles.inputLabel}>LINKS IN YOUR TEXT</Text>
+                {report.links.map((link) => (
+                  <View style={styles.inputItem} key={link.url} wrap={false}>
+                    <Text>
+                      <Text style={{ fontWeight: 600 }}>{link.title || link.site || link.url}</Text>
+                      <Text style={styles.muted}> · {LINK_STATUS[link.status] ?? link.status}</Text>
+                    </Text>
+                    <Text style={[styles.muted, styles.small]}>{link.url}</Text>
+                    {link.reason && <Text style={[styles.muted, styles.small]}>{link.reason}</Text>}
+                  </View>
+                ))}
+                <MediaList items={linkMedia} label="IMAGES FROM LINKED PAGES" />
+              </View>
+            )}
+            <MediaList items={uploadedMedia} label="FILES YOU ATTACHED" />
           </View>
-
-          {!!report.links?.length && (
-            <>
-              <Text style={styles.sectionTitle} minPresenceAhead={90}>
-                Links
-              </Text>
-              {report.links.map((link) => (
-                <View style={styles.listItem} key={link.url} wrap={false}>
-                  <Text>
-                    <Text style={{ fontWeight: 600 }}>{link.title || link.site || link.url}</Text>
-                    <Text style={styles.muted}> · {LINK_STATUS[link.status] ?? link.status}</Text>
-                  </Text>
-                  <Text style={[styles.muted, styles.small]}>{link.url}</Text>
-                  {link.reason && <Text style={[styles.muted, styles.small]}>{link.reason}</Text>}
-                </View>
-              ))}
-            </>
-          )}
-
-          {!!report.media?.length && (
-            <>
-              <Text style={styles.sectionTitle} minPresenceAhead={90}>
-                Images and video
-              </Text>
-              {report.media.map((item) => (
-                <View style={styles.listItem} key={item.id} wrap={false}>
-                  <Text style={{ fontWeight: 600 }}>{item.filename}</Text>
-                  <Text style={[styles.muted, styles.small]}>
-                    {[
-                      item.kind,
-                      item.analysis.status.replace('_', ' '),
-                      item.origin.matches.length
-                        ? `found on ${item.origin.matches.length} pages`
-                        : null,
-                      item.prior_checks?.reviews.length
-                        ? `${item.prior_checks.reviews.length} published fact checks`
-                        : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Text>
-                </View>
-              ))}
-            </>
-          )}
 
           <Text style={styles.sectionTitle} minPresenceAhead={90}>
             Claim by claim

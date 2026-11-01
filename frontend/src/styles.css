@@ -3133,3 +3133,45 @@ h2,
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* The input card holds the text, its links and attached files as labeled parts. */
+.input-part + .input-part {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.input-part .input-part {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+.input-part-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.input-part-heading h3 {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.input-part-heading span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.report-main .input-card .media-card,
+.report-main .input-card .link-card {
+  background: rgb(255 255 255 / 0.03);
+  box-shadow: none;
+  margin-bottom: 10px;
+}
+.input-part .media-card:last-child,
+.input-part .link-card:last-child {
+  margin-bottom: 0;
+}

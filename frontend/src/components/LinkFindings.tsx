@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Badge } from '@mantine/core';
 import { ArrowUpRight } from 'lucide-react';
 import type { LinkFinding } from '../lib/types';
@@ -19,11 +20,12 @@ function formatDate(value: string) {
     : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-export function LinkFindings({ links }: { links: LinkFinding[] }) {
+/** Links found in the user's text; shown inside the input card. */
+export function LinkFindings({ links, children }: { links: LinkFinding[]; children?: ReactNode }) {
   return (
-    <section className="link-findings" aria-labelledby="links-heading">
-      <div className="section-heading">
-        <h2 id="links-heading">Links</h2>
+    <section className="input-part link-findings" aria-labelledby="links-heading">
+      <div className="input-part-heading">
+        <h3 id="links-heading">Links in your text</h3>
         <span>
           {links.length} {links.length === 1 ? 'link' : 'links'}
         </span>
@@ -71,6 +73,7 @@ export function LinkFindings({ links }: { links: LinkFinding[] }) {
           </article>
         );
       })}
+      {children}
     </section>
   );
 }

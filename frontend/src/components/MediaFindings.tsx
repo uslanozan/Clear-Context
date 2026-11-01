@@ -410,13 +410,25 @@ function MediaCard({ item, index }: { item: MediaFinding; index: number }) {
   );
 }
 
-export function MediaFindings({ media }: { media: MediaFinding[] }) {
+/**
+ * Uploaded files, or with `fromLinks` the main images taken from linked pages;
+ * shown inside the input card so it is clear what the user sent.
+ */
+export function MediaFindings({
+  media,
+  fromLinks = false,
+}: {
+  media: MediaFinding[];
+  fromLinks?: boolean;
+}) {
+  const headingId = fromLinks ? 'link-media-heading' : 'media-heading';
   return (
-    <section className="media-findings" aria-labelledby="media-heading">
-      <div className="section-heading">
-        <h2 id="media-heading">Images and video</h2>
+    <section className="input-part media-findings" aria-labelledby={headingId}>
+      <div className="input-part-heading">
+        <h3 id={headingId}>{fromLinks ? 'Images from linked pages' : 'Files you attached'}</h3>
         <span>
-          {media.length} {media.length === 1 ? 'file' : 'files'}
+          {media.length}{' '}
+          {media.length === 1 ? (fromLinks ? 'image' : 'file') : fromLinks ? 'images' : 'files'}
         </span>
       </div>
       {media.map((item, index) => (

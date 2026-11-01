@@ -136,6 +136,9 @@ export function ReportView({
     },
   );
 
+  // Images taken from linked pages belong with the links; the rest are the user's uploads.
+  const uploadedMedia = (report.media ?? []).filter((item) => !item.source_url);
+  const linkMedia = (report.media ?? []).filter((item) => item.source_url);
   const coverage = report.extraction_coverage;
   const ranges = coverage?.chunks.filter((chunk) => chunk.status !== 'split') ?? [];
   const processedRanges = ranges.filter((chunk) => chunk.status === 'processed').length;
@@ -226,15 +229,25 @@ export function ReportView({
             <div className="section-heading">
               <h2 id="input-heading">Your input</h2>
             </div>
+            {/* Everything the user sent, in one place: text, links in it and attached files. */}
             <div className="input-card">
-              <p className="original-text" dir="auto">
-                {investigation.text ||
-                  'No text was entered. Claims come from text read from the images.'}
-              </p>
+              <section className="input-part" aria-labelledby="input-text-heading">
+                <div className="input-part-heading">
+                  <h3 id="input-text-heading">Text you entered</h3>
+                </div>
+                <p className="original-text" dir="auto">
+                  {investigation.text ||
+                    'No text was entered. Claims come from text read from the files.'}
+                </p>
+              </section>
+              {!!report.links?.length && (
+                <LinkFindings links={report.links}>
+                  {linkMedia.length > 0 && <MediaFindings media={linkMedia} fromLinks />}
+                </LinkFindings>
+              )}
+              {uploadedMedia.length > 0 && <MediaFindings media={uploadedMedia} />}
             </div>
           </section>
-          {!!report.links?.length && <LinkFindings links={report.links} />}
-          {!!report.media?.length && <MediaFindings media={report.media} />}
           <div className="section-heading">
             <h2>Claim by claim</h2>
             <span>
