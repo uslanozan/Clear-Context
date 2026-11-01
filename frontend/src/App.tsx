@@ -25,6 +25,13 @@ import { api, ApiError, failureMessage } from './lib/api';
 import { queueMessage } from './lib/stages';
 import type { Investigation, ResearchMode } from './lib/types';
 
+// Dialogs use the same glass surface as the settings sections.
+const GLASS_MODAL = {
+  content: 'glass-modal',
+  header: 'glass-modal-header',
+  title: 'help-title',
+};
+
 export function App() {
   return (
     <Routes>
@@ -397,7 +404,8 @@ function Workspace() {
         onClose={() => setPendingDelete(null)}
         title="Delete this investigation?"
         centered
-        classNames={{ title: 'help-title' }}
+        classNames={GLASS_MODAL}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 3 }}
       >
         <p className="delete-target" dir="auto">
           {pendingDelete?.text || 'Files without text'}
@@ -433,7 +441,8 @@ function Workspace() {
         closeButtonProps={{ 'aria-label': 'Close help' }}
         centered
         size="lg"
-        classNames={{ title: 'help-title' }}
+        classNames={GLASS_MODAL}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 3 }}
       >
         <div className="help-content">
           <HelpGuide />

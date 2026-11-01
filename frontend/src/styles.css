@@ -3175,3 +3175,30 @@ h2,
 .input-part .link-card:last-child {
   margin-bottom: 0;
 }
+
+/* Glass dialogs: the help guide and confirmations, matching the settings sections. */
+.glass-modal {
+  background: var(--glass-bg), rgb(31 31 34 / 0.66);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--glass-edge);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+/* The header stays readable when the dialog scrolls under it. */
+.glass-modal-header {
+  background: rgb(31 31 34 / 0.55);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.glass-modal .help-content {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass-modal {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--surface-solid);
+  }
+}
