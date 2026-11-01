@@ -795,12 +795,11 @@ h3 {
 .report-aside {
   min-width: 0;
 }
-.original-passage .mantine-Accordion-item {
-  border-color: var(--line);
-  background: transparent;
-}
-.original-passage .mantine-Accordion-control {
-  font-size: 13px;
+.input-card {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--glass-edge);
 }
 .original-text {
   font-size: 14px;
@@ -2695,13 +2694,33 @@ h2,
     transition: none;
   }
 }
-/* Report reading surfaces: a near-black glass keeps the ambient colors from tinting long text. */
+/* Report reading surfaces: near-black so the ambient colors do not tint long text. They skip the
+   backdrop blur, which flickers black in Chrome while the column width animates. */
 .report-main .claim-card,
 .report-main .media-card,
 .report-main .link-card,
-.report-main .budget-notice,
-.report-main .original-passage .mantine-Accordion-item {
-  background: rgb(12 12 14 / 0.84);
+.report-main .input-card {
+  background: rgb(12 12 14 / 0.9);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.report-main .budget-notice {
+  margin: 24px 0 0;
+  padding: 18px 20px;
+  background:
+    linear-gradient(rgb(241 196 112 / 0.07), rgb(241 196 112 / 0.07)), rgb(14 14 16 / 0.92);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.report-main .budget-notice strong {
+  color: var(--warning-ink);
+  font-size: 15px;
+}
+.report-main .budget-notice p {
+  margin: 6px 0 14px;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.65;
 }
 
 /* Verdict tags: one icon and color per outcome, shared by the report and the help guide. */
@@ -2894,5 +2913,195 @@ h2,
   .help-results dl > div {
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
+  }
+}
+
+/* Disclosures open smoothly where the browser can animate to an automatic height. */
+.claim-provenance,
+.settings-advanced,
+.technical-details {
+  interpolate-size: allow-keywords;
+}
+.claim-provenance::details-content,
+.settings-advanced::details-content,
+.technical-details::details-content {
+  block-size: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    block-size 380ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 300ms ease,
+    content-visibility 380ms allow-discrete;
+}
+.claim-provenance[open]::details-content,
+.settings-advanced[open]::details-content,
+.technical-details[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .claim-provenance::details-content,
+  .settings-advanced::details-content,
+  .technical-details::details-content {
+    transition: none;
+  }
+}
+
+/* Technical details: identifiers, extraction coverage and the report's limitations. */
+.technical-details {
+  margin: 8px 0 24px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.technical-details summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink);
+  font-weight: 600;
+}
+.technical-details summary::-webkit-details-marker {
+  display: none;
+}
+.technical-details summary svg {
+  transition: transform 200ms ease;
+}
+.technical-details[open] summary svg {
+  transform: rotate(90deg);
+}
+.technical-details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.technical-facts {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.technical-facts > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 12px;
+}
+.technical-facts dd {
+  margin: 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.technical-details h4 {
+  margin: 18px 0 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.technical-details ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.8;
+}
+@media (max-width: 640px) {
+  .technical-facts > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}
+
+/* PDF export: the browser prints the report alone, dark text on white paper. */
+@media print {
+  @page {
+    margin: 16mm 14mm;
+  }
+  :root {
+    --ink: #16161a;
+    --muted: #55555e;
+    --line: #d9d9de;
+    --line-strong: #b9b9c2;
+    --accent: #0161dd;
+    --highlight: rgb(4 123 242 / 0.16);
+    --success: #12794a;
+    --danger: #c0352a;
+    --warning-ink: #8a5a00;
+  }
+  html,
+  body,
+  .app-layout,
+  .workspace-main {
+    background: #fff !important;
+    color: var(--ink);
+  }
+  .app-layout::before,
+  .desktop-sidebar,
+  .topbar,
+  .back-link,
+  .report-actions,
+  .budget-actions,
+  .usage-panel,
+  .report-aside .process-timeline,
+  .report-aside .process-timeline ~ *,
+  .claim-provenance {
+    display: none !important;
+  }
+  * {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+  .app-layout,
+  .report-grid {
+    display: block !important;
+  }
+  .report-main .claim-card,
+  .report-main .media-card,
+  .report-main .link-card,
+  .report-main .input-card,
+  .report-main .budget-notice,
+  .detail-card {
+    background: #fff !important;
+    border-color: var(--line) !important;
+  }
+  .detail-card,
+  .evidence-excerpt,
+  .claim-topline {
+    break-inside: avoid;
+  }
+  .verdict-tag,
+  .evidence-excerpt mark,
+  .source-type {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .verdict-open {
+    --tone: #4f5b6e;
+  }
+  .technical-details::details-content {
+    block-size: auto !important;
+    opacity: 1 !important;
+    content-visibility: visible !important;
+  }
+  .technical-details summary svg {
+    display: none;
+  }
+  a {
+    color: var(--ink) !important;
+  }
+  /* Paper has no links, so the source list spells out each address. */
+  .evidence-panel a[href^='http']::after {
+    content: attr(href);
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+  .evidence-panel .side-panel-heading {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .report-main .budget-notice p {
+    margin-bottom: 0;
   }
 }

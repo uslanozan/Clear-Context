@@ -1,6 +1,7 @@
 import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { ReportView } from '../components/ReportView';
 import type { Investigation, Report } from '../lib/types';
@@ -72,6 +73,17 @@ it('shows component status, directional source and highlighted source text', () 
   // The claim header summarizes the recorded detail results.
   expect(screen.getByText('1 contradicted')).toBeInTheDocument();
   expect(screen.getByText('1 claim')).toBeInTheDocument();
+  expect(screen.getByText('Technical details')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Export JSON' })).toBeInTheDocument();
+  // PDF export goes through the browser's print dialog and restores the page title afterwards.
+  const print = vi.spyOn(window, 'print').mockImplementation(() => {});
+  document.title = 'Clear Context';
+  fireEvent.click(screen.getByRole('button', { name: 'Export PDF' }));
+  expect(print).toHaveBeenCalledOnce();
+  expect(document.title).toBe('clear-context-i1');
+  window.dispatchEvent(new Event('afterprint'));
+  expect(document.title).toBe('Clear Context');
+  print.mockRestore();
 });
 
 it('names a source once for several excerpts and shows readable source names', () => {

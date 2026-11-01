@@ -1,14 +1,16 @@
 import { useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Accordion, Alert, Button } from '@mantine/core';
+import { Alert, Button } from '@mantine/core';
 import {
   ArrowLeft,
   ArrowUpRight,
   Check,
   CheckCheck,
+  ChevronRight,
   CircleHelp,
   Download,
   FileSearch,
+  FileText,
   Link2,
   ShieldCheck,
 } from 'lucide-react';
@@ -144,29 +146,10 @@ export function ReportView({
   );
 
   const coverage = report.extraction_coverage;
-  const coverageDetails = coverage && (
-    <details className="claim-provenance">
-      <summary>Review processing coverage</summary>
-      <ul>
-        {(coverage.notes ?? []).map((note, index) => (
-          <li key={index}>{note}</li>
-        ))}
-      </ul>
-      <p>{coverage.model_calls} model calls recorded</p>
-      <ul>
-        {coverage.chunks
-          .filter((chunk) => chunk.status !== 'split')
-          .map((chunk) => (
-            <li key={`${chunk.start}-${chunk.end}`}>
-              Characters {chunk.start + 1}–{chunk.end}:{' '}
-              {chunk.status === 'processed' ? 'processed' : 'needs further extraction'}
-            </li>
-          ))}
-      </ul>
-    </details>
-  );
+  const ranges = coverage?.chunks.filter((chunk) => chunk.status !== 'split') ?? [];
+  const processedRanges = ranges.filter((chunk) => chunk.status === 'processed').length;
 
-  function exportReport() {
+  function exportJson() {
     const url = URL.createObjectURL(
       new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }),
     );
@@ -175,6 +158,14 @@ export function ReportView({
     anchor.download = `clear-context-${report.investigation_id}.json`;
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // The browser's print dialog saves the PDF; a print stylesheet lays the report out on paper.
+  function exportPdf() {
+    const title = document.title;
+    document.title = `clear-context-${report.investigation_id}`;
+    window.addEventListener('afterprint', () => (document.title = title), { once: true });
+    window.print();
   }
 
   return (
@@ -210,7 +201,6 @@ export function ReportView({
       {coverage && coverage.status === 'partial' && (
         <Alert color="orange" title="Claim extraction is partial" mb="md">
           Some parts need another extraction pass. This report may omit claims.
-          {coverageDetails}
         </Alert>
       )}
       {evidenceMissing && (
@@ -237,22 +227,17 @@ export function ReportView({
       )}
       <div className={`report-grid${stageOpen ? ' stage-open' : ''}`}>
         <div className="report-main">
-          <Accordion
-            className="original-passage"
-            variant="separated"
-            radius="md"
-            defaultValue="original"
-          >
-            <Accordion.Item value="original">
-              <Accordion.Control icon={<FileSearch size={17} />}>Your input</Accordion.Control>
-              <Accordion.Panel>
-                <p className="original-text">
-                  {investigation.text ||
-                    'No text was entered. Claims come from text read from the images.'}
-                </p>
-              </Accordion.Panel>
-            </Accordion.Item>
-          </Accordion>
+          <section className="input-section" aria-labelledby="input-heading">
+            <div className="section-heading">
+              <h2 id="input-heading">Your input</h2>
+            </div>
+            <div className="input-card">
+              <p className="original-text" dir="auto">
+                {investigation.text ||
+                  'No text was entered. Claims come from text read from the images.'}
+              </p>
+            </div>
+          </section>
           {!!report.links?.length && <LinkFindings links={report.links} />}
           {!!report.media?.length && <MediaFindings media={report.media} />}
           <div className="section-heading">
@@ -360,12 +345,6 @@ export function ReportView({
             })}
           </div>
           <BudgetNotice investigation={investigation} report={report} />
-          {coverage && coverage.status !== 'partial' && (
-            <div className="coverage-note">
-              <p>Processing all input ranges does not guarantee that every claim was identified.</p>
-              {coverageDetails}
-            </div>
-          )}
           <div className="report-endnote">
             <ShieldCheck size={17} />
             <p>
@@ -377,25 +356,62 @@ export function ReportView({
             <Button
               variant="default"
               size="sm"
-              leftSection={<Download size={14} />}
-              onClick={exportReport}
+              leftSection={<FileText size={14} />}
+              onClick={exportPdf}
             >
-              Export report
+              Export PDF
             </Button>
-            <span>JSON · Includes findings and available evidence</span>
+            <Button
+              variant="default"
+              size="sm"
+              leftSection={<Download size={14} />}
+              onClick={exportJson}
+            >
+              Export JSON
+            </Button>
+            <span>PDF for reading and sharing · JSON with every recorded field</span>
           </div>
-          <Accordion className="limitations" variant="default">
-            <Accordion.Item value="limitations">
-              <Accordion.Control>Scope & limitations</Accordion.Control>
-              <Accordion.Panel>
+          <details className="technical-details">
+            <summary>
+              <ChevronRight size={15} aria-hidden="true" /> Technical details
+            </summary>
+            <dl className="technical-facts">
+              <div>
+                <dt>Report</dt>
+                <dd>
+                  {report.investigation_id} · revision {report.revision}
+                </dd>
+              </div>
+              <div>
+                <dt>Mode</dt>
+                <dd>
+                  {report.mode === 'mock' ? 'Development preview' : 'Meta models'}
+                  {researchModeLabel && ` · ${researchModeLabel} research`}
+                </dd>
+              </div>
+              {coverage && (
+                <div>
+                  <dt>Claim extraction</dt>
+                  <dd>
+                    {processedRanges} of {ranges.length} input{' '}
+                    {ranges.length === 1 ? 'range' : 'ranges'} processed in {coverage.model_calls}{' '}
+                    model {coverage.model_calls === 1 ? 'call' : 'calls'}. Processing every range
+                    does not guarantee that every claim was found.
+                  </dd>
+                </div>
+              )}
+            </dl>
+            {!!report.limitations.length && (
+              <>
+                <h4>Scope and limitations</h4>
                 <ul>
                   {report.limitations.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-              </Accordion.Panel>
-            </Accordion.Item>
-          </Accordion>
+              </>
+            )}
+          </details>
         </div>
         <aside className="report-aside" aria-label="Evidence and investigation details">
           <section className="side-panel evidence-panel">
