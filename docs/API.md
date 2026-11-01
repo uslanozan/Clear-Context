@@ -17,6 +17,11 @@ Local development only, single process. Mock mode is the default. Meta mode supp
 | POST | `/api/investigations/{id}/rerun` | Accept `{ "research_mode": "deep" }`; start a new investigation with the same text and uploaded files, linked by `parent_id` and `relation: rerun` |
 | POST | `/api/investigations/{id}/continue` | Accept `{ "research_mode": "deep" }`; research again only the claims the report's budget did not reach; 409 when there are none |
 | GET | `/api/media/{id}` | An uploaded file with its detected content type |
+| GET | `/api/groups` | History groups in display order. Groups only organize the history list; they never change a report |
+| POST | `/api/groups` | Create a group from `{ "name": "..." }` (1-60 characters after whitespace is collapsed; 409 after 40 groups) |
+| PATCH | `/api/groups/{id}` | Rename a group |
+| DELETE | `/api/groups/{id}` | Delete a group; its investigations return to the ungrouped list unchanged |
+| PUT | `/api/investigations/{id}/group` | File an investigation with `{ "group_id": "<uuid>" }`, or pass `null` to ungroup it. `group_id` is also part of the investigation view |
 | GET | `/api/settings` | Panel settings: key status (configured, source, `preview` with the first eight and last four characters of keys of 24+ characters, the last four for 16-23; never the whole key), models per task, allowed model options, paid calls, advanced options and which fields the panel changed |
 | PUT | `/api/settings` | Save changed fields only; `null` takes the field's current `.env` value (an empty `.env` key removes the saved key). Applies from the next investigation without a restart; 422 when the result cannot run (for example paid calls without a Meta key, or a model that is not allowed) and nothing is saved |
 
