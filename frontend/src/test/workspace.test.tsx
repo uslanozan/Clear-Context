@@ -106,24 +106,16 @@ function mount(path = '/') {
 }
 
 describe('Investigation workspace', () => {
-  it('loads history and examples without submitting a paid request', async () => {
+  it('loads the workspace without submitting a paid request', async () => {
     mount();
-    await screen.findByText(
-      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
-    );
-    await userEvent.click(screen.getByRole('button', { name: /a date. a number. two claims/i }));
-    expect(
-      (screen.getByRole('textbox', { name: 'Passage to investigate' }) as HTMLTextAreaElement)
-        .value,
-    ).toContain('Cedar Observatory');
+    await screen.findByRole('textbox', { name: 'Passage to investigate' });
+    expect(screen.queryByText('Try a text example')).not.toBeInTheDocument();
     expect(posts).toHaveLength(0);
   });
 
   it('submits once, opens a report, and labels missing evidence honestly', async () => {
     mount();
-    await screen.findByText(
-      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
-    );
+    await screen.findByRole('textbox', { name: 'Passage to investigate' });
     fireEvent.change(screen.getByRole('textbox', { name: 'Passage to investigate' }), {
       target: { value: ' A synthetic claim. ' },
     });
@@ -151,18 +143,14 @@ describe('Investigation workspace', () => {
 
   it('hides research depth when source research is disabled', async () => {
     mount();
-    await screen.findByText(
-      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
-    );
+    await screen.findByRole('textbox', { name: 'Passage to investigate' });
     expect(screen.queryByText('Research depth')).not.toBeInTheDocument();
   });
 
   it('preserves the passage and never retries a failed submission automatically', async () => {
     failPost = true;
     mount();
-    await screen.findByText(
-      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
-    );
+    await screen.findByRole('textbox', { name: 'Passage to investigate' });
     const input = screen.getByRole('textbox', { name: 'Passage to investigate' });
     fireEvent.change(input, { target: { value: 'Keep this passage.' } });
     await userEvent.click(screen.getByRole('button', { name: 'Start investigation' }));
@@ -197,9 +185,7 @@ describe('Media intake', () => {
   const image = () => new File(['synthetic image bytes'], 'screenshot.png', { type: 'image/png' });
   it('sends a pasted image with its caption to the upload endpoint', async () => {
     mount();
-    await screen.findByText(
-      'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.',
-    );
+    await screen.findByRole('textbox', { name: 'Passage to investigate' });
     const input = screen.getByRole('textbox', { name: 'Passage to investigate' });
     fireEvent.paste(input, { clipboardData: { files: [image()], getData: () => 'A caption.' } });
     expect(screen.getByAltText('Preview of screenshot.png')).toBeInTheDocument();

@@ -9,6 +9,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from clear_context.api.router import router
 from clear_context.core.settings import Settings, resolve_path
 from clear_context.db.session import create_database, create_session_factory
+from clear_context.repositories.history_group import HistoryGroupRepository
 from clear_context.repositories.investigation import InvestigationRepository
 from clear_context.repositories.settings import SettingsRepository
 from clear_context.services.app_settings import differs_from_env, effective_settings, env_values
@@ -38,13 +39,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     raise RuntimeError(
                         "Database not initialized. Run Alembic upgrade head."
                     ) from None
-                if revision != "0009":
+                if revision != "0010":
                     raise RuntimeError("Database schema is unsupported. Run Alembic upgrade head.")
             sessions = create_session_factory(engine)
             repository = InvestigationRepository(sessions)
             repository.fail_interrupted()
             app.state.repository = repository
             app.state.settings_repository = SettingsRepository(sessions)
+            app.state.groups = HistoryGroupRepository(sessions)
             app.state.settings_error = None
             stored = app.state.settings_repository.load()
             # .env seeds panel fields that have no saved value yet; saved values are kept.
@@ -101,7 +103,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.add_middleware(
             CORSMiddleware,
             allow_origins=settings.cors_allowed_origins,
-            allow_methods=["GET", "POST", "PUT"],
+            allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
             allow_headers=["Content-Type"],
             expose_headers=["Location"],
             allow_credentials=False,

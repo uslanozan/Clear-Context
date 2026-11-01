@@ -1,6 +1,7 @@
 import type {
   AppSettings,
   Health,
+  HistoryGroup,
   Investigation,
   Report,
   ResearchMode,
@@ -34,6 +35,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       typeof body?.detail === 'string' ? body.detail : 'The request could not be completed.';
     throw new ApiError(response.status, message);
   }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
@@ -65,6 +67,26 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ research_mode }),
+    }),
+  groups: (signal?: AbortSignal) => request<HistoryGroup[]>('/groups', { signal }),
+  createGroup: (name: string) =>
+    request<HistoryGroup>('/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }),
+  renameGroup: (id: string, name: string) =>
+    request<HistoryGroup>(`/groups/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }),
+  deleteGroup: (id: string) => request<void>(`/groups/${id}`, { method: 'DELETE' }),
+  assignGroup: (id: string, groupId: string | null) =>
+    request<void>(`/investigations/${id}/group`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ group_id: groupId }),
     }),
   settings: (signal?: AbortSignal) => request<AppSettings>('/settings', { signal }),
   saveSettings: (changes: SettingsUpdate) =>

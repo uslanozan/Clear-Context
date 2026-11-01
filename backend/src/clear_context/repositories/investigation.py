@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import and_, literal_column, or_, select
 
 from clear_context.domain.investigation import (
     Claim,
@@ -199,7 +199,8 @@ class InvestigationRepository:
                 for row_id in session.scalars(
                     select(InvestigationRow.id)
                     .where(InvestigationRow.status == "queued")
-                    .order_by(InvestigationRow.created_at)
+                    # Equal timestamps keep insertion order (SQLite rowid).
+                    .order_by(InvestigationRow.created_at, literal_column("investigations.rowid"))
                 )
             ]
 
@@ -207,12 +208,17 @@ class InvestigationRepository:
         """How many queued investigations were accepted before this one; None unless queued."""
         if row.status != "queued":
             return None
+        rowid = literal_column("investigations.rowid")
         with self.sessions() as session:
+            own = session.scalar(select(rowid).where(InvestigationRow.id == row.id))
             return len(
                 session.scalars(
                     select(InvestigationRow.id).where(
                         InvestigationRow.status == "queued",
-                        InvestigationRow.created_at < row.created_at,
+                        or_(
+                            InvestigationRow.created_at < row.created_at,
+                            and_(InvestigationRow.created_at == row.created_at, rowid < own),
+                        ),
                     )
                 ).all()
             )

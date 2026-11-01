@@ -208,13 +208,15 @@ function Preview({
           <span className="settings-label" id="ext-mode-label">
             Research depth
           </span>
-          <SegmentedControl
-            fullWidth
-            aria-labelledby="ext-mode-label"
-            value={mode}
-            onChange={(value) => setMode(value as ResearchMode)}
-            data={RESEARCH_MODES.map(({ value, label }) => ({ value, label }))}
-          />
+          <div className="depth-control" data-depth={mode}>
+            <SegmentedControl
+              fullWidth
+              aria-labelledby="ext-mode-label"
+              value={mode}
+              onChange={(value) => setMode(value as ResearchMode)}
+              data={RESEARCH_MODES.map(({ value, label }) => ({ value, label }))}
+            />
+          </div>
         </div>
       )}
       {connection.state === 'unreachable' && (

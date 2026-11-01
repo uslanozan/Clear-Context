@@ -1,16 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Drawer, Loader, Modal, Skeleton } from '@mantine/core';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowRight,
-  BookOpenText,
-  Check,
-  CircleHelp,
-  FileSearch,
-  Menu,
-  RefreshCw,
-  X,
-} from 'lucide-react';
+import { ArrowRight, BookOpenText, Check, FileSearch, Menu, RefreshCw, X } from 'lucide-react';
 import { Link, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { EvaluationView } from './components/EvaluationView';
 import { Composer } from './components/Composer';
@@ -114,12 +105,48 @@ function Workspace() {
         : 'Clear Context — Look closer';
   }, [id, isSettings]);
 
+  const groups = useQuery({
+    queryKey: ['groups'],
+    queryFn: ({ signal }) => api.groups(signal),
+  });
+  const refreshHistory = () => {
+    void queryClient.invalidateQueries({ queryKey: ['groups'] });
+    void queryClient.invalidateQueries({ queryKey: ['history'] });
+  };
+  const createGroup = useMutation({
+    mutationFn: (name: string) => api.createGroup(name),
+    onSuccess: refreshHistory,
+  });
+  const renameGroup = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) => api.renameGroup(id, name),
+    onSuccess: refreshHistory,
+  });
+  const deleteGroup = useMutation({
+    mutationFn: (groupId: string) => api.deleteGroup(groupId),
+    onSuccess: refreshHistory,
+  });
+  const assignGroup = useMutation({
+    mutationFn: ({
+      investigationId,
+      groupId,
+    }: {
+      investigationId: string;
+      groupId: string | null;
+    }) => api.assignGroup(investigationId, groupId),
+    onSuccess: refreshHistory,
+  });
+
   const items = Array.from(
     new Map((history.data?.pages.flat() || []).map((item) => [item.id, item])).values(),
   );
   const sidebar = (
     <Sidebar
       items={items}
+      groups={groups.data ?? []}
+      onCreateGroup={(name) => createGroup.mutate(name)}
+      onRenameGroup={(groupId, name) => renameGroup.mutate({ id: groupId, name })}
+      onDeleteGroup={(groupId) => deleteGroup.mutate(groupId)}
+      onAssign={(investigationId, groupId) => assignGroup.mutate({ investigationId, groupId })}
       isLoading={history.isPending}
       hasError={history.isError}
       hasMore={Boolean(history.hasNextPage)}
@@ -172,15 +199,6 @@ function Workspace() {
                     ? 'Investigation'
                     : 'New investigation'}
             </span>
-          </div>
-          <div className="topbar-right">
-            <button
-              className="icon-button"
-              aria-label="How Clear Context works"
-              onClick={() => setHelpOpen(true)}
-            >
-              <CircleHelp size={17} />
-            </button>
           </div>
         </header>
         <main id="main-content" className="workspace-main">
@@ -319,10 +337,6 @@ function Workspace() {
             </div>
           )}
         </main>
-        <footer className="workspace-footer">
-          <span>Clear Context</span>
-          <span>Runs on your own server with your own keys</span>
-        </footer>
       </div>
       <Modal
         opened={helpOpen}

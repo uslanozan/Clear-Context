@@ -68,8 +68,9 @@ function renderPage() {
 
 it('shows key status without values and saves only changed fields', async () => {
   renderPage();
-  expect(await screen.findByText('LLM_2896...a1b2')).toBeInTheDocument();
-  expect(screen.getByText('tvly-dev...c3d4')).toBeInTheDocument();
+  // The saved key shows masked inside its own field, never in full.
+  expect(await screen.findByPlaceholderText('LLM_2896...a1b2')).toBeInTheDocument();
+  expect(screen.getByPlaceholderText('tvly-dev...c3d4')).toBeInTheDocument();
   const save = screen.getByRole('button', { name: 'Save changes' });
   expect(save).toBeDisabled();
   fireEvent.change(screen.getByLabelText('SerpApi key'), {

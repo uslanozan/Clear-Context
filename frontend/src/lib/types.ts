@@ -112,6 +112,12 @@ export interface MediaFinding {
     best_guess_labels: string[];
   };
 }
+export interface HistoryGroup {
+  id: string;
+  name: string;
+  position: number;
+}
+
 export interface Investigation {
   id: string;
   text: string;
@@ -125,6 +131,8 @@ export interface Investigation {
   model_usage: ModelUsage[];
   parent_id?: string | null;
   relation?: 'rerun' | 'continue' | null;
+  // The history group this investigation is filed in; organizational only.
+  group_id?: string | null;
   // Investigations accepted earlier that still wait; only while this one is queued.
   queue_position?: number | null;
 }

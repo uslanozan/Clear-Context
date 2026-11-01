@@ -26,3 +26,5 @@ class InvestigationRow(Base):
     # A rerun or continuation points to the report it started from.
     parent_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     relation: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # The history group this investigation is filed in, if any; purely organizational.
+    group_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)

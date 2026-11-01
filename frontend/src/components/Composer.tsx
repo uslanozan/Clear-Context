@@ -1,22 +1,12 @@
 import { useRef, useState } from 'react';
 import { Alert, Button, SegmentedControl, Textarea } from '@mantine/core';
-import { ArrowUpRight, ArrowRight, ImagePlus, Paperclip, X } from 'lucide-react';
+import { ArrowRight, ImagePlus, Paperclip, X } from 'lucide-react';
 import type { Health, ResearchMode } from '../lib/types';
 import { RESEARCH_MODES } from '../lib/modes';
 import { formatBytes, MEDIA_ACCEPT, useMediaAttachments } from '../lib/media';
 import { ProcessTimeline } from './ProcessTimeline';
 import { MediaPreview } from './MediaPreview';
 
-export const EXAMPLES = [
-  {
-    title: 'A date. A number. Two claims.',
-    text: 'The fictional Cedar Observatory opened on 12 May 2024. It has three telescopes.',
-  },
-  {
-    title: 'The small print matters.',
-    text: 'The fictional museum offers free entry only to students aged 18 or over on Tuesdays. Entry is not free on other days.',
-  },
-];
 interface Props {
   initialText?: string;
   health?: Health;
@@ -210,21 +200,20 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
               <span className="research-mode-label" id="research-mode-label">
                 Research depth
               </span>
-              <SegmentedControl
-                aria-labelledby="research-mode-label"
-                value={researchMode}
-                onChange={(value) => setResearchMode(value as ResearchMode)}
-                data={RESEARCH_MODES.map(({ value, label }) => ({ value, label }))}
-              />
+              {/* The selected pill shows glass that breaks into more pieces with more depth. */}
+              <div className="depth-control" data-depth={researchMode}>
+                <SegmentedControl
+                  aria-labelledby="research-mode-label"
+                  value={researchMode}
+                  onChange={(value) => setResearchMode(value as ResearchMode)}
+                  data={RESEARCH_MODES.map(({ value, label }) => ({ value, label }))}
+                />
+              </div>
               <p className="research-mode-detail">
                 {RESEARCH_MODES.find((mode) => mode.value === researchMode)?.detail}
               </p>
             </div>
           )}
-          <p className="input-description" id="input-description">
-            Paste or drop images or MP4 videos, or choose files. Up to 4 files · Images 20 MB ·
-            Videos 100 MB · Total 100 MB.
-          </p>
           {media.error && (
             <Alert color="red" title="Some files weren't added" role="alert">
               {media.error}
@@ -251,32 +240,6 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
               {error.message} Nothing will be submitted again automatically.
             </Alert>
           )}
-          <p className="privacy-note">
-            {health?.mode === 'meta'
-              ? health.research_enabled
-                ? 'Text and attached images are sent to Meta; links in your text, generated search queries and source URLs are sent to Tavily. Saved reports stay on your server.'
-                : 'Text and attached images are sent to Meta when you start. Source research is disabled. Saved reports stay on your server.'
-              : health?.mode === 'mock'
-                ? 'Preview mode. No model calls or credits used.'
-                : 'Waiting for your investigation service.'}
-          </p>
-          <section className="example-section">
-            <h2>Try a text example</h2>
-            {EXAMPLES.map((example) => (
-              <button
-                type="button"
-                key={example.title}
-                onClick={() => {
-                  setText(example.text);
-                  setValidation('');
-                  textarea.current?.focus();
-                }}
-              >
-                {example.title}
-                <ArrowUpRight size={15} />
-              </button>
-            ))}
-          </section>
         </div>
         <aside className="intake-aside">
           <ProcessTimeline planned researchEnabled={Boolean(health?.research_enabled)} />

@@ -67,14 +67,7 @@ function keyStatus(settings: AppSettings, name: KeyName) {
   const status = settings.keys[name];
   if (!status.configured) return 'Not set';
   // A key that differs from .env gets its own note below the field.
-  const origin = status.source === 'panel' ? 'Set' : 'Same as .env';
-  return status.preview ? (
-    <>
-      {origin} · <code className="settings-key-preview">{status.preview}</code>
-    </>
-  ) : (
-    origin
-  );
+  return status.source === 'panel' ? 'Set' : 'Same as .env';
 }
 
 /** Marks a saved value that differs from .env and lets the user take the .env value again. */
@@ -305,9 +298,14 @@ function SettingsForm({
                 <PasswordInput
                   label={label}
                   description={detail}
+                  // The saved key is shown masked inside the field; the server never sends the full key.
                   placeholder={
-                    settings.keys[name].configured ? 'Enter a new key to replace it' : 'Enter key'
+                    settings.keys[name].preview ??
+                    (settings.keys[name].configured
+                      ? 'Saved. Enter a new key to replace it'
+                      : 'Enter key')
                   }
+                  classNames={{ input: settings.keys[name].preview ? 'has-saved-key' : undefined }}
                   autoComplete="off"
                   spellCheck={false}
                   value={keys[name] ?? ''}
@@ -329,8 +327,28 @@ function SettingsForm({
       </section>
 
       <section className="settings-section" aria-labelledby="models-title">
-        <h2 id="models-title">Models</h2>
-        <p className="muted">Only models allowed for text investigations are listed.</p>
+        <div className="settings-section-head">
+          <div>
+            <h2 id="models-title">Models</h2>
+            <p className="muted">Only models allowed for text investigations are listed.</p>
+          </div>
+          <div className="provider-logos">
+            <img
+              className="provider-meta"
+              src="/brand/meta.svg"
+              alt="Meta"
+              width="68"
+              height="15"
+            />
+            <img
+              className="provider-muse"
+              src="/brand/muse-logo.svg"
+              alt="Muse"
+              width="30"
+              height="30"
+            />
+          </div>
+        </div>
         <div className="settings-grid">
           {TASKS.map(({ task, label }) => (
             <div key={task}>
