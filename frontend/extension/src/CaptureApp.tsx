@@ -217,7 +217,7 @@ function Preview({
           icon={<CircleAlert size={16} />}
           title="Clear Context isn't reachable"
         >
-          Start the app, or change the address above. Your capture is kept.
+          Start the app, then press Check again. Your capture is kept.
         </Alert>
       )}
       {error && (
