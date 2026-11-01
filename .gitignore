@@ -1,5 +1,5 @@
 notes.txt
-assets/
+/assets/
 # Secrets and local configuration
 .env
 .env.*
