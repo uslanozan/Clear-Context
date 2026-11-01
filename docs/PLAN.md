@@ -1,6 +1,6 @@
 # Build plan
 
-This is a working plan, not a claim of implemented functionality. Keep the scope small enough for one developer to complete and demonstrate.
+This is the working plan. Statuses below were last updated November 1, 2026; the [README](../README.md) lists what works today and the known limitations. Keep the scope small enough for one developer to complete and demonstrate.
 
 ## Product focus
 
@@ -20,16 +20,16 @@ First demonstration: a verifiable event paired with an image documented in a dif
 | Main interaction | Investigate, inspect evidence, add new evidence | Chosen |
 | Distribution | Self-hosted, bring your own Meta API key; no membership or subscription system | Chosen; controlled hosted demo separate |
 | Backend | Python + FastAPI | Chosen |
-| Frontend | React + TypeScript + Vite + Mantine | Text workspace implemented |
-| Desktop capture | Thin Chrome Manifest V3 extension; preview, start, short status, open web report | In scope after the working web flow |
+| Frontend | React + TypeScript + Vite + Mantine | Implemented: input and media intake, progress, report, JSON and PDF export, history, settings |
+| Desktop capture | Thin Chrome Manifest V3 extension; preview, start, short status, open web report | Implemented; loaded unpacked, not on the Chrome Web Store |
 | Mobile | Responsive web first; installable PWA / Android sharing only if time remains | Native apps deferred |
-| Orchestration | LangGraph with typed state, focused nodes, and bounded execution | Chosen; three-node graph implemented. Opt-in text research runs inside `evaluate_evidence` |
-| Main inference service | Meta Model API | Credits confirmed; small extraction checks passed |
-| Retrieval | Per-investigation source collection first | Implemented for opt-in text research: per-investigation sources, snapshots and passages in SQLite; no vector database |
-| Web search / extraction | Tavily keyless Search/Extract used for text research; rate limits, quota and failures still need measuring | Partly open; no automatic paid fallback |
-| Image-source lookup | Verify a usable provider before committing to automatic origin search | Open; highest external dependency risk |
+| Orchestration | LangGraph with typed state, focused nodes, and bounded execution | Implemented: `fetch_links`, `analyze_media`, `extract_claims`, `evaluate_evidence`, `validate_report`. Opt-in research runs inside `evaluate_evidence` |
+| Main inference service | Meta Model API | Credits confirmed; Muse Spark 1.3 and Muse Voice Transcribe in use |
+| Retrieval | Per-investigation source collection first | Implemented for opt-in research: per-investigation sources, snapshots and passages in SQLite; no vector database |
+| Web search / extraction | Tavily Search/Extract; keyless access is rate-limited, so use your own `TAVILY_API_KEY` | Implemented; no automatic paid fallback |
+| Image-source lookup | Verify a usable provider before committing to automatic origin search | Implemented as optional reverse image search (SerpApi Google Lens and Bing, off by default); matches are leads, not proof of origin |
 | Open-weight inference | Small experiments on available partner services | Optional |
-| Persistence | SQLite + SQLAlchemy + Alembic | Initial API implemented |
+| Persistence | SQLite + SQLAlchemy + Alembic | Implemented |
 | Packaging / hosting | Docker Compose after the working flow; hosted demo separate | Local Docker Compose implemented; hosted demo not started |
 
 ## Milestones
@@ -41,7 +41,7 @@ First demonstration: a verifiable event paired with an image documented in a dif
 | Oct 28 | Source validation and failure handling | Duplicate reporting is not counted as independent evidence; missing evidence stays unresolved |
 | Oct 29 | Image/caption workflow | A licensed, known-context image is compared with retrieved evidence; uncertain origin is explicit |
 | Oct 30 | Complete usable web flow | A user can submit input, open evidence, see research progress, and understand failed steps on desktop and phone screens |
-| Oct 31 | Thin Chrome extension and report updates | User-initiated capture previews the input and opens the same web report; new evidence invalidates affected findings |
+| Oct 31 | Thin Chrome extension and report updates | User-initiated capture previews the input and opens the same web report; new evidence invalidates affected findings (extension done; the new-evidence part is not built) |
 | Nov 1 | Evaluation and scope freeze | Run the selected cases, review citation accuracy, record failures and latency |
 | Nov 2 | Hosted demonstration | Check in a signed-out browser; document setup and limitations |
 | Nov 3 | Three-minute video and submission draft | Demonstrate implemented features with visible evidence; prepare a recording fallback |
@@ -51,7 +51,7 @@ Dates can shift; the deliverable order matters more than adding features.
 
 ## First implementation slice
 
-Current progress: the text-only API, model configuration validation, relational persistence, migrations, and API tests are implemented. The three-node LangGraph workflow supports mock processing and opt-in Meta claim extraction with token usage records. With `RESEARCH_ENABLED=true`, the same graph also runs bounded text research: V5 query planning, Tavily keyless search and page reading, `full_page_v1` passage selection, and component V2 evidence assessment, saved with source-highlighted excerpts. A responsive Mantine web workspace supports text submission, history, recorded progress, report inspection, and JSON export. Claim-wide verdicts stay `unresolved` by design, and one real end-to-end smoke case does not establish general quality. Link intake, graph checkpoints/resume, revisions, fast/balanced/deep research modes, source reliability, server-side media analysis, and extension capture remain pending. Local media paste, drop, selection, and previews are implemented. See [API guide](API.md).
+Current progress (November 1): the investigation flow is implemented end to end. The LangGraph workflow reads links (up to three) and media, extracts claims with exact quote positions, and, with `RESEARCH_ENABLED=true`, runs bounded research inside `evaluate_evidence`: query planning (`query_planning_v8`), Tavily search and page reading, full-page passage selection, per-detail evidence assessment, one follow-up round, Fast/Balanced/Deep budgets, and a linked continuation for details a budget did not reach. Images get Muse reading with a labeled caption check, optional reverse image search and published fact checks; videos get a speech transcript, frame reading and frame searches. The web app has text and media intake, history with groups and deletion, recorded progress with per-step details, reports with a result for each detail and a claim label counted from those results without a model call, and JSON and PDF export. A Chrome extension captures text, links, images, video frames and page areas, a settings page changes keys and models without restarting, and Docker Compose packages the app. The stored claim-wide finding stays `unresolved` by design; the interface derives the claim label from the detail results. One real run does not establish general quality. Not implemented: graph checkpoints and resume, report revisions, the correction or new-source flow (and invalidating affected findings), a per-user trusted-source list, a statistics page, PWA installation and Android sharing, and a hosted demonstration of the application. See the [API guide](API.md).
 
 1. Define investigation, claim, source, evidence, and finding records.
 2. Implement a Meta provider adapter, with a mock for local work before billing is ready.
@@ -66,7 +66,7 @@ Current progress: the text-only API, model configuration validation, relational 
 
 | Surface | Responsibilities | Not included in the MVP |
 | --- | --- | --- |
-| Web | Text/URL/image input; input preview; progress; complete evidence report; correction/new-source flow; stable report URLs | Generic chat interface, graph/dashboard as the main feature |
+| Web | Text/URL/image input; input preview; progress; complete evidence report; stable report URLs (a correction/new-source flow is planned, not built) | Generic chat interface, graph/dashboard as the main feature |
 | Chrome extension | User-invoked selected-text/page capture; optional selected image when accessible; preview; start investigation; brief status; open the web report | Full duplicate report UI, background scanning of all browsing, promise of universal social-site extraction |
 | Mobile web | Responsive input and evidence inspection; link paste and file upload | Native Android/iOS app, mobile browser extension |
 | Optional installed web app | Installation experiment and Android incoming-share feasibility check after core completion | Guaranteed cross-platform share-target behavior, offline AI research |
