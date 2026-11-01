@@ -2,9 +2,56 @@
 
 Investigate a claim. Inspect the evidence. Recover the context.
 
-Clear Context is a multimodal research agent being built for the Meta Global AI Developer Hackathon (October 26–November 4, 2026), in the solo Indie Developer track.
+Clear Context is a multimodal research agent built for the Meta Global AI Developer Hackathon (October 26–November 4, 2026), in the solo Indie Developer track. It runs on your own server with your own API keys, separates a post into claims, researches each detail, and shows the source passage every finding rests on.
 
-**Status: local API and LangGraph workflow implemented, with mock mode by default. Optional Meta text research connects query planning, Tavily keyless search, source reading, passage selection and evidence assessment to saved web reports. Image upload and Muse image reading (visible text, observations, place/time cues and a labeled caption-versus-image assessment) are implemented. Uploaded MP4 videos up to 50 MB and 10 minutes are checked too: Muse Voice Transcribe transcribes the speech with timestamps, a Muse model reads the frames with that transcript as context, and three frames are searched like images. Optional reverse image search (Google Lens through SerpApi) lists pages where the image appears and feeds readable ones to research; it is off by default. Links in the text (up to three) are read through Tavily: the first 3,000 characters of each page are checked like pasted text, its main image goes through the image checks, and a publication date is shown only when a news search index reports one for that exact page. The checked page is never used as evidence for itself. Opinions, value judgments and experiences only the author could know are reported as not researched. When a report's budget leaves details unresearched, the report offers to run again in Deep or to research only the remaining details as a linked continuation. A thin Chrome extension captures selected text, an image or video frame, or an area of a page, previews it and opens the web report.**
+Website: https://clearcontext.uslanozan.com.tr
+
+| The report | The PDF | The Chrome extension |
+| --- | --- | --- |
+| ![The report: input, claim, and a detail with its quoted sources](docs/images/report.webp) | ![The first page of the exported PDF](docs/images/report-pdf.webp) | ![The extension's capture window](docs/images/extension-capture.webp) |
+
+The screenshots show a recorded run on the claim "Scientists can reliably predict the date and location of major earthquakes." (balanced research, Meta Muse Spark 1.3).
+
+## The problem
+
+An event can be real while its accompanying photograph comes from another place or year. A statement can accurately quote a source while leaving out the condition that changes its meaning. Readers need to see the evidence for each part of a claim and where the investigation remains unresolved.
+
+## What works today
+
+Mock mode is the default and makes no model or search calls. Meta mode needs `APP_MODE=meta` and `ALLOW_PAID_API_CALLS=true`; source research also needs `RESEARCH_ENABLED=true` (see [Development](#development)).
+
+- **Input:** text up to 20,000 characters, up to three links inside it, and up to four images or videos, from the web app or the Chrome extension.
+- **Claims:** a Muse model separates the input into claims in their original wording, with exact quote positions, and splits them into details a source can settle. Opinions, value judgments and experiences only the author could know are reported as not researched.
+- **Research:** searches are planned per detail and run through Tavily; every readable page is read within a budget (Fast, Balanced or Deep), passages are selected, and each detail is judged only against recorded passages. Details left unsettled get one follow-up round; details the budget did not reach can be researched later as a linked continuation.
+- **Images:** Muse reads visible text and details and compares them with the caption (a labeled visual assessment, never evidence). Optional reverse image search (Google Lens and Bing through SerpApi) lists pages where the picture appears, and published fact checks of the same image are read as sources.
+- **Video:** MP4 up to 50 MB and 10 minutes is checked: speech is transcribed with Muse Voice Transcribe, a Muse model reads the frames with that transcript as context, and three frames are searched like images.
+- **Links:** the first 3,000 characters of each page are checked like pasted text and its main image goes through the image checks. A publication date is shown only when a news search index reports one for that exact page.
+- **Report:** each detail is supported, contradicted, disputed, insufficient or not assessed, with quotes inside their page text. The claim's label (for example "Mostly supported" or "Mixed results") is counted from those results without another model call. Every investigation step shows what it recorded. Reports export as a Clear Context PDF or JSON; history can be grouped and deleted.
+- **Chrome extension:** captures selected text, a link, an image or video frame, or an area of a page, previews it, and opens the web report. It finds the server by itself.
+
+## Known limitations
+
+- **No verdict on truth.** The report shows what recorded sources say about each detail. No supporting evidence is not evidence that a claim is false, and evidence assessments do not establish source reliability; the source type (fact check, reference, social, web) describes a page, it does not rate it.
+- **Models can be wrong.** An exact quote match proves only that the sentence is on the page, not that a model read its meaning correctly. Semantic completeness of claim extraction is not established, and a claim's label covers only the details that were checked. No accuracy figure is claimed.
+- **Image and video provenance is limited.** Visual inspection cannot establish an image's date, location or authenticity, and there is no AI-generated-image or deepfake detection. Lens dates are the dates shown for a page, not verified first publication. Videos from platform links (YouTube, X, Instagram) are not downloaded; capture a frame or an area instead.
+- **Dates and language.** Source language is inferred by the model; a publication date is known only when a news index reports one.
+- **Research depends on third parties.** Without a `TAVILY_API_KEY`, search uses keyless access, which is rate-limited and stopped repeated or Deep runs in testing. Reverse image search is off by default and sends images to SerpApi and Google.
+- **Not a hosted service.** The app has no authentication and binds to loopback; do not expose it to an untrusted network. Run one server instance per database. A running investigation cannot be cancelled, and graph checkpoints are not implemented: after a restart, queued investigations run again and running ones are marked failed as interrupted.
+- **Not implemented:** adding a correction or a source of your own to see which findings change, a per-user trusted-source list, and a statistics page across reports.
+- **Clients.** The web app is responsive but not an installable PWA. The extension is for Chrome, is not on the Chrome Web Store, and is loaded unpacked from this repository. PDF export leaves emoji out of quotes (the JSON keeps the exact text).
+- **Evaluation.** The reviewed evaluation set is small; its results are not a benchmark.
+
+## How it works
+
+1. Submit text, links or media through the web app, or capture them with the Chrome extension. Nothing is sent until you press Start investigation (or Investigate in the extension, after previewing the capture).
+2. The claims the agent extracts keep their original wording and are split into details such as dates, places and qualifications.
+3. The investigation plans searches per detail, reads sources within the chosen depth, and keeps exact passages.
+4. The report connects every finding to quoted passages and links, shows what stayed unsettled and which steps failed, and exports as PDF or JSON.
+5. Details the budget did not reach can be researched again as a continuation, or the whole report can be run again in Deep.
+
+Textual claims and image context are evaluated separately. Finding no supporting source is not sufficient to label a claim false. The agent must show uncertainty and failed research steps.
+
+## Engineering notes
 
 A separate evaluation workspace now replays saved query plans, shares source URLs,
 reads selected pages through Tavily keyless, and preserves claim/need/passage links
@@ -20,31 +67,16 @@ no document-wide eight-claim cap. Budget or validation gaps appear as partial ex
 processed ranges do not guarantee exhaustive claim coverage. Database migration `0005`
 is required. See [text analysis](docs/TEXT_ANALYSIS.md) and [prompt settings](docs/PROMPTS.md).
 
-## The problem
-
-An event can be real while its accompanying photograph comes from another place or year. A statement can accurately quote a source while leaving out the condition that changes its meaning. Readers need to see the evidence for each part of a claim and where the investigation remains unresolved.
-
-## Planned experience
-
-1. Submit a statement, article URL, or image through the web app, or capture selected content with the Chrome extension.
-2. Preview what was captured and confirm the intended claim before starting research.
-3. Review the specific claims the agent extracts, including dates, places, and qualifications.
-4. Watch the investigation gather sources, identify missing evidence, and refine searches.
-5. Inspect a web report connecting findings to source excerpts and links.
-6. Add a correction or new source and see which findings change.
-
-Textual claims and image context are evaluated separately. Finding no supporting source is not sufficient to label a claim false. The agent must show uncertainty and failed research steps.
-
 ## Hackathon MVP
 
-- Text or URL submission; optional single image.
+- Text, links inside the text, and up to four images or videos.
 - A responsive web application that is the complete investigation and evidence workspace.
 - A thin Chrome extension for user-initiated capture, preview, short status, and opening the web report.
 - Bounded, tool-driven web research and source comparison.
 - Claim-level evidence excerpts, source dates, and retrieval timestamps.
 - Visual-context checks when external evidence can be retrieved.
 - A report that judges each detail of a claim as supported, contradicted, disputed, insufficient or not assessed, and labels the claim by counting those results (for example "Mostly supported" or "Mixed results"), without another model call.
-- A small manually reviewed evaluation set and a three-minute demonstration.
+- A small manually reviewed evaluation set and a three-minute demonstration (the recording is still to come).
 
 Native mobile apps, PWA installation and incoming share integration, video from platform links (YouTube, X, Instagram and similar pages are read as pages; their videos are not downloaded), universal image provenance, deepfake detection, and a general-purpose knowledge base are outside the initial scope. The web interface should still work on phone screens. Visual inspection alone cannot establish an image's date, location, or authenticity.
 
@@ -65,18 +97,19 @@ Accounts, subscriptions, and billing management are outside the MVP. A controlle
 
 Text research uses Tavily Search and Extract. Set `TAVILY_API_KEY` to use your own Tavily account (the free plan includes monthly credits); without it, research falls back to keyless access, which is rate-limited without a published quota and stopped repeated or `deep` runs in testing. No paid fallback runs automatically. Connection errors, dropped connections and 429 and 5xx answers are retried twice with a short wait, honouring Retry-After up to 20 seconds. A dropped connection on a paid Meta call may already have been billed and is still repeated, so an investigation does not fail on a transient drop; a paid call is not repeated after a timeout. If research planning still fails, the report keeps the extracted claims and says they were not researched. Reverse image search is optional: set `REVERSE_IMAGE_PROVIDER=serpapi_lens` and `SERP_API_KEY` (SerpApi's free plan has a monthly search allowance; each image uses an upload and one or two searches). Images are then sent to SerpApi and Google. Match dates are the dates Google Lens shows for each page, not verified first-publication dates. With a Google API key, published fact checks of the same image are also looked up through the free Google Fact Check Tools API and read as sources; their ratings are shown as the publisher's, not adopted as a verdict. Users must confirm their own billing/credit availability before enabling paid inference.
 
-## Delivery order
+## Delivery status
 
-1. Prove a real claim-to-evidence workflow through the backend.
-2. Build the complete web submission and report experience.
-3. Add the thin Chrome capture extension and test the combined flow.
-4. If the core is complete and time remains, test PWA installation and Android incoming sharing. iOS native integration is not part of this hackathon scope.
+1. A real claim-to-evidence workflow through the backend: done.
+2. The complete web submission and report experience: done.
+3. The thin Chrome capture extension and the combined flow: done.
+4. PWA installation and Android incoming sharing: not started. iOS native integration is not part of this hackathon scope.
 
 ## Project documents
 
 - [Build plan](docs/PLAN.md)
 - [Text analysis explained](docs/TEXT_ANALYSIS.md)
 - [Workflow diagrams](docs/diagrams/md/README.md)
+- [API guide](docs/API.md)
 - [Model plan](docs/MODELS.md)
 - [Prompt management](docs/PROMPTS.md)
 - [Architecture and evidence contract](docs/ARCHITECTURE.md)
