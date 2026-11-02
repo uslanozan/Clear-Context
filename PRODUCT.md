@@ -41,13 +41,13 @@ It does not give a single true/false verdict. Each detail of a claim is assessed
 - Name: Clear Context.
 - Exactly three colors plus a material: two blues taken from the logo (#0161dd, #047bf2), the gray #1f1f22, and glass. Confirmed by the owner on November 1, 2026.
 - Logos confirmed on November 1, 2026: the six-piece broken page (large uses) and the broken glass C (favicon, extension, rail). Font: Funnel Display with Funnel Sans.
-- The official Meta wordmark and Muse Jolly image appear only as attribution, unaltered, without implying Meta ownership or endorsement. No derivative Jolly artwork or animation.
+- The official Meta wordmark and Muse logo appear unaltered. Jolly, the Muse mascot, appears in stage illustrations generated with Muse Image 1.0, with Meta's permission (November 2, 2026): only in the step list and on the progress and failure pages, never on a claim or its result, and always respectfully. Nothing implies Meta ownership, sponsorship or endorsement.
 - No AI-slop patterns (impeccable.style/slop): no pulsing status dots, eyebrows above headings, periods ending headings, single italic words in headings, gradient text or decorative glow.
 
 ## Evidence on Hand
 
 - Real recorded investigations in the local database (text, image and video cases).
-- Official brand assets: `frontend/public/brand/meta.svg`, `frontend/public/brand/muse-logo.svg`. The official Jolly image is withheld until Meta answers the permission request sent on November 1, 2026.
+- Official brand assets: `frontend/public/brand/meta.svg`, `frontend/public/brand/muse-logo.svg`. Jolly stage illustrations are in `frontend/public/brand/jolly/`, used with Meta's permission of November 2, 2026.
 - No demo video yet, no user testimonials, no usage numbers, no press. None of these may be invented.
 
 ## Product Principles

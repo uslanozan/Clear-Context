@@ -13,6 +13,8 @@ Third-party, not covered by the application license:
 - `meta.svg`: official Meta wordmark from https://dev.meta.ai/logo/meta-logo-with-text.svg
 - `muse-logo.svg`: official Muse logo from https://muse.ai/images/landing/brand/muse-logo.svg.
 
-The official Jolly image is not included while a permission request to Meta is pending.
+Used with Meta's permission:
+
+- `jolly/`: illustrations of Jolly, the Muse mascot, one per investigation stage, generated with Muse Image 1.0. Meta (Maya, Meta, in the hackathon Discord's office-hours channel on November 2, 2026) confirmed there is no restriction on using the Muse logo and Jolly, including illustrations generated with Muse Image 1.0, as part of the project; her one request is to use them in a way that is not offensive or harmful. Jolly appears only in the investigation's step list and on its progress and failure pages, never on a claim or its result.
 
 Meta and Muse assets are trademarks/artwork of their owners. They identify the inference provider in this independent hackathon project; they do not imply ownership, sponsorship, or endorsement. Preserve proportions and the original artwork.

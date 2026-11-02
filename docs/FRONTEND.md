@@ -20,7 +20,7 @@ Restart Vite after changing these settings. The **Settings** page (`/settings`) 
 - `src/theme.ts`: Mantine palette, fonts, radii, and component defaults.
 - `src/styles.css`: shared surface/text tokens, layout, reusable domain classes, responsive rules, focus, and reduced-motion styles.
 - A dark theme built from two logo blues (#0161dd, #047bf2), the gray #1f1f22 and glass (translucent, blurred surfaces over a blurred copy of the logo). Funnel Display for headings, Funnel Sans for text, JetBrains Mono for data; all bundled locally.
-- `components/StepGlyph.tsx` draws one glyph per recorded stage; it moves only while that stage runs and stays still under reduced motion. `components/Logo.tsx` holds the Clear Context mark (also in `public/brand/`).
+- `components/StepJolly.tsx` shows the Jolly illustration for a recorded stage (`public/brand/jolly/<event>.webp`) on the progress page and in the step list, and in place of the stage that failed. `components/StepGlyph.tsx` draws one glyph per recorded stage; it moves only while that stage runs and stays still under reduced motion. `components/Logo.tsx` holds the Clear Context mark (also in `public/brand/`).
 - `Composer`, `Sidebar`, and `ReportView` share this system. Use Mantine controls for forms, dialogs, alerts, and disclosure rather than introducing a second component library.
 
 ## Working flow

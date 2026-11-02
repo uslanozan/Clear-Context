@@ -115,7 +115,7 @@ Glass: `backdrop-filter: blur(18px) saturate(1.5)`, a 7% white to 3% white gradi
 
 ## Brand
 
-Two logos, both generated with Muse Image 1.0 and finished by hand: the six-piece broken page (large uses) and the broken glass C (favicon, extension, rail). Rasters on purpose: the glass edges do not survive vectorizing. The Meta wordmark and the Jolly image appear only as attribution, unaltered; the wordmark sits on a light chip because its lettering is dark.
+Two logos, both generated with Muse Image 1.0 and finished by hand: the six-piece broken page (large uses) and the broken glass C (favicon, extension, rail). Rasters on purpose: the glass edges do not survive vectorizing. The Meta wordmark appears only as attribution, unaltered; it sits on a light chip because its lettering is dark. Jolly, the Muse mascot, appears once per investigation stage (progress page and step list) (illustrations generated with Muse Image 1.0, used with Meta's permission) and in place of the stage that failed.
 
 ## Do's and Don'ts
 
