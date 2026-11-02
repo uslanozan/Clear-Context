@@ -1,55 +1,81 @@
-# Clear Context
+<p align="center">
+  <img src="docs/images/banner.webp" alt="Clear Context: every context, clear as glass. Claims separated, every detail researched, every finding tied to a quoted source." width="820">
+</p>
 
-Investigate a claim. Inspect the evidence. Recover the context.
+<p align="center">
+  <b>A self-hosted fact-checking agent built with Meta Muse.</b><br>
+  It separates a post into claims, researches each detail, and shows the source passage every finding rests on.
+</p>
 
-Clear Context is a multimodal research agent built for the Meta Global AI Developer Hackathon (October 26–November 4, 2026), in the solo Indie Developer track. It runs on your own server with your own API keys, separates a post into claims, researches each detail, and shows the source passage every finding rests on.
+<p align="center">
+  <a href="https://clearcontext.uslanozan.com.tr"><b>Website</b></a> ·
+  <a href="https://clearcontext.uslanozan.com.tr/under-the-hood/"><b>Under the hood</b></a> ·
+  <a href="#quick-start"><b>Quick start</b></a> ·
+  <a href="#chrome-extension"><b>Chrome extension</b></a>
+</p>
 
-Website: https://clearcontext.uslanozan.com.tr
+<p align="center">
+  <img alt="Meta Muse Spark 1.3" src="https://img.shields.io/badge/Meta-Muse%20Spark%201.3-0161dd">
+  <img alt="LangGraph" src="https://img.shields.io/badge/orchestration-LangGraph-1f1f22">
+  <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-3776ab">
+  <img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI-009688">
+  <img alt="React and TypeScript" src="https://img.shields.io/badge/web-React%20%2B%20TypeScript-149eca">
+  <img alt="Chrome MV3 extension" src="https://img.shields.io/badge/extension-Chrome%20MV3-4285f4">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-5fd39a"></a>
+</p>
 
 | The report | The PDF | The Chrome extension |
 | --- | --- | --- |
 | ![The report: input, claim, and a detail with its quoted sources](docs/images/report.webp) | ![The first page of the exported PDF](docs/images/report-pdf.webp) | ![The extension's capture window](docs/images/extension-capture.webp) |
 
-The screenshots show a recorded run on the claim "Scientists can reliably predict the date and location of major earthquakes." (balanced research, Meta Muse Spark 1.3).
+<sub>A recorded run on "Scientists can reliably predict the date and location of major earthquakes." (balanced research, Meta Muse Spark 1.3).</sub>
 
-## The problem
+## Why
 
-An event can be real while its accompanying photograph comes from another place or year. A statement can accurately quote a source while leaving out the condition that changes its meaning. Readers need to see the evidence for each part of a claim and where the investigation remains unresolved.
+An event can be real while its photograph comes from another place or year. A statement can quote a source accurately while leaving out the condition that changes its meaning. A single true-or-false stamp hides both. Clear Context shows the evidence for each part of a claim, and says plainly where the investigation stays unresolved.
 
-## What works today
+Built solo for the **Meta Global AI Developer Hackathon** (October 26 – November 4, 2026, Indie Developer track).
 
-Mock mode is the default and makes no model or search calls. Meta mode needs `APP_MODE=meta` and `ALLOW_PAID_API_CALLS=true`; source research also needs `RESEARCH_ENABLED=true` (see [Development](#development)).
+## Quick start
 
-- **Input:** text up to 20,000 characters, up to three links inside it, and up to four images or videos, from the web app or the Chrome extension.
-- **Claims:** a Muse model separates the input into claims in their original wording, with exact quote positions, and splits them into details a source can settle. Opinions, value judgments and experiences only the author could know are reported as not researched.
-- **Research:** searches are planned per detail and run through Tavily; every readable page is read within a budget (Fast, Balanced or Deep), passages are selected, and each detail is judged only against recorded passages. Details left unsettled get one follow-up round; details the budget did not reach can be researched later as a linked continuation.
-- **Images:** Muse reads visible text and details and compares them with the caption (a labeled visual assessment, never evidence). Optional reverse image search (Google Lens and Bing through SerpApi) lists pages where the picture appears, and published fact checks of the same image are read as sources. What a picture or video is said to show (its place, time or event) is settled only by pages showing the same picture, never by a web search for the event; the event the text reports is researched as a separate detail.
-- **Video:** MP4 up to 50 MB and 10 minutes is checked: speech is transcribed with Muse Voice Transcribe, a Muse model reads the frames with that transcript as context, and three frames are searched like images.
-- **Links:** the first 3,000 characters of each page are checked like pasted text and its main image goes through the image checks. A publication date is shown only when a news search index reports one for that exact page.
-- **Report:** each detail is supported, contradicted, disputed, insufficient or not assessed, with quotes inside their page text. The claim's label (for example "Mostly supported" or "Mixed results") is counted from those results without another model call. Every investigation step shows what it recorded. Reports export as a Clear Context PDF or JSON; history can be grouped and deleted.
-- **Chrome extension:** captures selected text, a link, an image or video frame, or an area of a page, previews it, and opens the web report. It finds the server by itself.
+Requires Docker with Compose v2.24 or newer.
 
-## Known limitations
+```bash
+git clone https://github.com/uslanozan/Clear-Context.git
+cd Clear-Context
+cp .env.example .env
+docker compose up -d --build
+```
 
-- **No verdict on truth.** The report shows what recorded sources say about each detail. No supporting evidence is not evidence that a claim is false, and evidence assessments do not establish source reliability; the source type (fact check, reference, social, web) describes a page, it does not rate it.
-- **Models can be wrong.** An exact quote match proves only that the sentence is on the page, not that a model read its meaning correctly. Semantic completeness of claim extraction is not established, and a claim's label covers only the details that were checked. No accuracy figure is claimed.
-- **Image and video provenance is limited.** Visual inspection cannot establish an image's date, location or authenticity, and there is no AI-generated-image or deepfake detection. Lens dates are the dates shown for a page, not verified first publication. Videos from platform links (YouTube, X, Instagram) are not downloaded; capture a frame or an area instead.
-- **Dates and language.** Source language is inferred by the model; a publication date is known only when a news index reports one.
-- **Research depends on third parties.** Without a `TAVILY_API_KEY`, search uses keyless access, which is rate-limited and stopped repeated or Deep runs in testing. Reverse image search is off by default and sends images to SerpApi and Google.
-- **Not a hosted service.** The app has no authentication and binds to loopback; do not expose it to an untrusted network. Run one server instance per database. A running investigation cannot be cancelled, and graph checkpoints are not implemented: after a restart, queued investigations run again and running ones are marked failed as interrupted.
-- **Not implemented:** adding a correction or a source of your own to see which findings change, a per-user trusted-source list, and a statistics page across reports.
-- **Clients.** The web app is responsive but not an installable PWA. The extension is for Chrome, is not on the Chrome Web Store, and is loaded unpacked from this repository. PDF export leaves emoji out of quotes (the JSON keeps the exact text).
-- **Evaluation.** The reviewed evaluation set is small; its results are not a benchmark.
+1. Open **http://clearcontext.localhost**.
+2. Add your keys in **Settings** (or in `.env` before starting): a Meta Model API key for Muse; Tavily, SerpApi and Google Fact Check keys add web research, reverse image search and published fact checks.
+3. Turn on **Allow paid calls**. Until then the app runs in preview mode and makes no model or search calls.
+4. Optional: load the Chrome extension from the `chrome-extension` folder ([below](#chrome-extension)).
+
+Your reports stay in a local SQLite database. The inputs and evidence of an investigation are sent to Meta and to the search services you enable; this is not offline inference. No account or subscription is involved, and a Muse Code subscription is not required.
+
+## What it does
+
+| | |
+| --- | --- |
+| **Input** | Text up to 20,000 characters, up to three links inside it, and up to four images or videos, from the web app or the Chrome extension. Nothing is sent until you press **Start investigation**. |
+| **Claims** | A Muse model separates the input into claims in their original wording, with exact quote positions, and splits them into details a source can settle. Opinions and experiences only the author could know are reported as not researched. |
+| **Research** | Searches are planned per detail and run through Tavily. Every readable page is read within a budget (Fast, Balanced or Deep), passages are selected, and each detail is judged only against recorded passages. Unsettled details get one follow-up round. |
+| **Images** | Muse reads visible text and compares the picture with its caption (a labeled visual assessment, never evidence). Optional reverse image search (Google Lens and Bing through SerpApi) and published fact checks find where the same picture appeared. What a picture is said to show is settled only by pages showing the same picture. |
+| **Video** | MP4 up to 50 MB and 10 minutes: speech is transcribed with Muse Voice Transcribe, a Muse model reads the frames with that transcript, and three frames are searched like images. |
+| **Links** | The first 3,000 characters of each page are checked like pasted text, and its main image goes through the image checks. A publication date is shown only when a news index reports one for that page. |
+| **Report** | Each detail is supported, contradicted, disputed, insufficient or not assessed, with quotes inside their page text. The claim label ("Mostly supported", "Mixed results") is counted from those results, not asked of a model. Every step shows what it recorded. Export as a Clear Context PDF or JSON. |
+| **Extension** | Captures selected text, a link, an image or video frame, or an area of a page, previews it, and opens the web report. It finds your server by itself. |
 
 ## How it works
 
-1. Submit text, links or media through the web app, or capture them with the Chrome extension. Nothing is sent until you press Start investigation (or Investigate in the extension, after previewing the capture).
-2. The claims the agent extracts keep their original wording and are split into details such as dates, places and qualifications.
+1. Submit text, links or media in the web app, or capture them with the Chrome extension.
+2. Claims keep their original wording and are split into details such as dates, places and qualifications.
 3. The investigation plans searches per detail, reads sources within the chosen depth, and keeps exact passages.
-4. The report connects every finding to quoted passages and links, shows what stayed unsettled and which steps failed, and exports as PDF or JSON.
-5. Details the budget did not reach can be researched again as a continuation, or the whole report can be run again in Deep.
+4. The report ties every finding to quoted passages and links, and shows what stayed unsettled and which steps failed.
+5. Details the budget did not reach can be researched later as a continuation, or the whole report can run again in Deep.
 
-Textual claims and image context are evaluated separately. Finding no supporting source is not sufficient to label a claim false. The agent must show uncertainty and failed research steps.
+Finding no supporting source is not evidence that a claim is false. Textual claims and image context are evaluated separately.
 
 ## Under the hood
 
@@ -144,47 +170,51 @@ Set `TAVILY_API_KEY` to use your own Tavily account (the free plan includes mont
 
 More detail: [architecture and evidence contract](docs/ARCHITECTURE.md), [text analysis](docs/TEXT_ANALYSIS.md), [evidence judgment](docs/EVIDENCE_JUDGMENT.md), [prompt settings](docs/PROMPTS.md) and [retrieval evaluation](evals/README.md#retrieval-workspace-evaluation-runner).
 
-## Hackathon MVP
+## Known limitations
 
-- Text, links inside the text, and up to four images or videos.
-- A responsive web application that is the complete investigation and evidence workspace.
-- A thin Chrome extension for user-initiated capture, preview, short status, and opening the web report.
-- Bounded, tool-driven web research and source comparison.
-- Claim-level evidence excerpts, source dates, and retrieval timestamps.
-- Visual-context checks when external evidence can be retrieved.
-- A report that judges each detail of a claim as supported, contradicted, disputed, insufficient or not assessed, and labels the claim by counting those results (for example "Mostly supported" or "Mixed results"), without another model call.
-- A small manually reviewed evaluation set and a three-minute demonstration (the recording is still to come).
+- **No verdict on truth.** The report shows what recorded sources say about each detail. No supporting evidence is not evidence that a claim is false, and evidence assessments do not establish source reliability; the source type (fact check, reference, social, web) describes a page, it does not rate it.
+- **Models can be wrong.** An exact quote match proves only that the sentence is on the page, not that a model read its meaning correctly. Semantic completeness of claim extraction is not established, and a claim's label covers only the details that were checked. No accuracy figure is claimed.
+- **Image and video provenance is limited.** Visual inspection cannot establish an image's date, location or authenticity, and there is no AI-generated-image or deepfake detection. Lens dates are the dates shown for a page, not verified first publication. Videos from platform links (YouTube, X, Instagram) are not downloaded; capture a frame or an area instead.
+- **Dates and language.** Source language is inferred by the model; a publication date is known only when a news index reports one.
+- **Research depends on third parties.** Without a `TAVILY_API_KEY`, search uses keyless access, which is rate-limited and stopped repeated or Deep runs in testing. Reverse image search is off by default and sends images to SerpApi and Google.
+- **Not a hosted service.** The app has no authentication and binds to loopback; do not expose it to an untrusted network. Run one server instance per database. A running investigation cannot be cancelled, and graph checkpoints are not implemented: after a restart, queued investigations run again and running ones are marked failed as interrupted.
+- **Not implemented:** adding a correction or a source of your own to see which findings change, a per-user trusted-source list, and a statistics page across reports.
+- **Clients.** The web app is responsive but not an installable PWA. The extension is for Chrome, is not on the Chrome Web Store, and is loaded unpacked from this repository. PDF export leaves emoji out of quotes (the JSON keeps the exact text).
+- **Evaluation.** The reviewed evaluation set is small; its results are not a benchmark.
 
-Native mobile apps, PWA installation and incoming share integration, video from platform links (YouTube, X, Instagram and similar pages are read as pages; their videos are not downloaded), universal image provenance, deepfake detection, and a general-purpose knowledge base are outside the initial scope. The web interface should still work on phone screens. Visual inspection alone cannot establish an image's date, location, or authenticity.
+## Chrome extension
 
-## Distribution and access
+The extension sends something from the page you are reading to your own Clear Context server and opens the web report. It does not show reports itself.
 
-The planned release is a self-hosted application with a browser interface and an optional Chrome capture extension. Users supply their own Meta Model API key on the backend; a Muse Code subscription is not required. Research history stays in local storage, while selected inputs and evidence are sent to external services for inference and retrieval. This is not offline inference.
+The repository ships it ready to load, with no build step: open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select the `chrome-extension` folder of your clone. After a `git pull`, press the reload button on its card in `chrome://extensions`. The source is in `frontend/extension/`; developers rebuild the folder with `npm run build:extension` in `frontend/` and check it with `npm run check:extension`.
 
-Accounts, subscriptions, and billing management are outside the MVP. A controlled hosted hackathon demo is separate from the local product. Docker Compose packaging runs the API and web interface on one local port; see [Run with Docker](#run-with-docker).
+<details>
+<summary><b>Ways to capture, and what the extension does</b></summary>
 
-## Delivery status
+- **Selected text:** select text, right-click and choose **Check with Clear Context** (or use **Use selected text** from the toolbar button). Only the text in the box is sent; to have a post or article read, paste its link into the text.
+- **An image or a video frame:** right-click it and choose **Check with Clear Context**. The picture is cut from a screenshot of what you see, so it works on pages that need a login. For an image, **Use the original image file** fetches the file the page published, after you grant access to that one site; reverse image search matches it better than an enlarged screenshot.
+- **An area:** toolbar button, **Capture an area**, then drag over anything on screen, such as a post or a paused video.
+- **A link:** right-click a link and choose **Check this link with Clear Context**, or paste text or a link (for example a post's address copied from the address bar) into **Paste text or a link** in the toolbar button and press **Continue**. The link appears in the box as text; the server reads it like a link typed into the web app.
 
-1. A real claim-to-evidence workflow through the backend: done.
-2. The complete web submission and report experience: done.
-3. The thin Chrome capture extension and the combined flow: done.
-4. PWA installation and Android incoming sharing: not started. iOS native integration is not part of this hackathon scope.
+A window then shows what was captured, lets you edit the text, choose the research depth and press **Investigate**; nothing is sent before that, and a failed request keeps the capture. It then shows the steps the server records and, when the report is ready, a short summary: each claim with the count of its supported, contradicted and unsettled details, and for a picture the earliest page found with the same picture and caption details it does not fit. The evidence itself stays in the web report (**Open report**). The extension finds the server itself, with no setting: it tries the address that worked last time, Clear Context tabs you have open (so any port works once you have opened the app in that browser), then `http://clearcontext.localhost` (Docker) and `http://clearcontext.localhost:5173` (development). When nothing answers it says so and offers **Check again**. The API key stays on the server; original image files ask for permission to the image's site when used. Videos on platforms such as YouTube or X are not downloaded; capture a frame or an area instead.
 
-## Project documents
+</details>
 
-- [Build plan](docs/PLAN.md)
-- [Text analysis explained](docs/TEXT_ANALYSIS.md)
-- [Workflow diagrams](docs/diagrams/md/README.md)
-- [API guide](docs/API.md)
-- [Model plan](docs/MODELS.md)
-- [Prompt management](docs/PROMPTS.md)
-- [Architecture and evidence contract](docs/ARCHITECTURE.md)
-- [Frontend guide and design system](docs/FRONTEND.md)
-- [Research resources: claim extraction and verification](docs/RESEARCH_RESOURCES.md)
-- [Evaluation plan](evals/README.md)
-- [Initial case specifications](evals/case-specs.json)
+## Settings
+
+The **Settings** page in the sidebar changes the most common settings without editing `.env` or restarting:
+
+- **API keys** for Meta, Tavily, SerpApi and Google Fact Check Tools. Keys are write-only: the page shows whether a key is set, where it comes from and a preview such as `LLM_ab12...wxyz` (first eight and last four characters for keys of 24 characters or more, only the last four for 16 to 23, nothing for shorter keys), never the whole key. To change a key, enter it again.
+- **Models** for claim extraction, image reading, research planning and evidence judging. Only catalog models allowed for text investigations are offered; contributor models stay hidden while `MODEL_ALLOW_TRAINING_USE=false`.
+- **Allow paid calls**, behind a confirmation. It switches between preview mode and live mode (Meta calls plus source research) and needs a Meta key. Saving a key never turns paid calls on by itself, and investigations still start only from an explicit button press.
+- **Advanced settings** (collapsed): default research depth, reverse image search, fact check search, link reading and the search score threshold.
+
+`.env` seeds these settings: when the server starts, every one of them that has no saved value yet is copied from `.env` into the SQLite database (the Docker data volume). From then on the database is the source, and changes apply from the next investigation; investigations already running finish with the settings they started with. Empty keys are not stored, so a key added to `.env` later is picked up at the next start. Editing any other value in `.env` later does not replace the saved one: the page marks it **Saved here · differs from .env**, and **Use .env value** copies the current `.env` value on save. **Reset all to .env**, behind a confirmation, does this for every field at once. Keys are stored as plain text, like `.env`, so keep the database private. Saved values that the server cannot use at start-up are reported on the page while the server runs with `.env`.
 
 ## Run with Docker
+
+<details>
+<summary><b>Ports, data volume, importing an older database, and network exposure</b></summary>
 
 Requires Docker with Compose v2.24 or newer. From the repository root:
 
@@ -208,7 +238,12 @@ The command copies `clear-context.db` and the `research.sqlite` cache beside it 
 
 The published port binds to loopback because the application has no authentication. Set `CLEAR_CONTEXT_PORT` if port 80 is taken (for example `8080`, then open `http://clearcontext.localhost:8080`). The API answers only to the host names in `ALLOWED_HOSTS` (default `localhost`, `127.0.0.1` and `*.localhost`), which stops other websites from reaching it through DNS rebinding. Changing `CLEAR_CONTEXT_BIND` exposes the app to your network without access control or HTTPS; do not do that on an untrusted network. Interactive API documentation is available at `http://clearcontext.localhost/docs` (and `/redoc`) unless `API_DOCS_ENABLED=false`.
 
+</details>
+
 ## Development
+
+<details>
+<summary><b>Run the backend and web app without Docker, paid-call settings, research budgets and checks</b></summary>
 
 Python 3.12 or newer is required. From the repository root on Windows PowerShell:
 
@@ -246,33 +281,22 @@ Checks from the repository root:
 
 New project work starts on October 26, 2026. External dependencies and reused components must be attributed; earlier private work must not be presented as hackathon output.
 
-## Chrome extension
+</details>
 
-The extension sends something from the page you are reading to your own Clear Context server and opens the web report. It does not show reports itself.
+## Project documents
 
-The repository ships it ready to load, with no build step: open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select the `chrome-extension` folder of your clone. After a `git pull`, press the reload button on its card in `chrome://extensions`. The source is in `frontend/extension/`; developers rebuild the folder with `npm run build:extension` in `frontend/` and check it with `npm run check:extension`. Ways to capture:
+- [Build plan and status](docs/PLAN.md)
+- [Architecture and evidence contract](docs/ARCHITECTURE.md)
+- [API guide](docs/API.md)
+- [Text analysis explained](docs/TEXT_ANALYSIS.md)
+- [Evidence judgment](docs/EVIDENCE_JUDGMENT.md)
+- [Model plan](docs/MODELS.md) and [prompt management](docs/PROMPTS.md)
+- [Frontend guide and design system](docs/FRONTEND.md)
+- [Workflow diagrams](docs/diagrams/md/README.md)
+- [Evaluation plan](evals/README.md) and [initial case specifications](evals/case-specs.json)
+- [Research resources: claim extraction and verification](docs/RESEARCH_RESOURCES.md)
 
-- **Selected text:** select text, right-click and choose **Check with Clear Context** (or use **Use selected text** from the toolbar button). Only the text in the box is sent; to have a post or article read, paste its link into the text.
-- **An image or a video frame:** right-click it and choose **Check with Clear Context**. The picture is cut from a screenshot of what you see, so it works on pages that need a login. For an image, **Use the original image file** fetches the file the page published, after you grant access to that one site; reverse image search matches it better than an enlarged screenshot.
-- **An area:** toolbar button, **Capture an area**, then drag over anything on screen, such as a post or a paused video.
-- **A link:** right-click a link and choose **Check this link with Clear Context**, or paste text or a link (for example a post's address copied from the address bar) into **Paste text or a link** in the toolbar button and press **Continue**. The link appears in the box as text; the server reads it like a link typed into the web app.
-
-A window then shows what was captured, lets you edit the text, choose the research depth and press **Investigate**; nothing is sent before that, and a failed request keeps the capture. It then shows the steps the server records and, when the report is ready, a short summary: each claim with the count of its supported, contradicted and unsettled details, and for a picture the earliest page found with the same picture and caption details it does not fit. The evidence itself stays in the web report (**Open report**). The extension finds the server itself, with no setting: it tries the address that worked last time, Clear Context tabs you have open (so any port works once you have opened the app in that browser), then `http://clearcontext.localhost` (Docker) and `http://clearcontext.localhost:5173` (development). When nothing answers it says so and offers **Check again**. The API key stays on the server; original image files ask for permission to the image's site when used. Videos on platforms such as YouTube or X are not downloaded; capture a frame or an area instead.
-
-## Settings
-
-The **Settings** page in the sidebar changes the most common settings without editing `.env` or restarting:
-
-- **API keys** for Meta, Tavily, SerpApi and Google Fact Check Tools. Keys are write-only: the page shows whether a key is set, where it comes from and a preview such as `LLM_2896...XkQs` (first eight and last four characters for keys of 24 characters or more, only the last four for 16 to 23, nothing for shorter keys), never the whole key. To change a key, enter it again.
-- **Models** for claim extraction, image reading, research planning and evidence judging. Only catalog models allowed for text investigations are offered; contributor models stay hidden while `MODEL_ALLOW_TRAINING_USE=false`.
-- **Allow paid calls**, behind a confirmation. It switches between preview mode and live mode (Meta calls plus source research) and needs a Meta key. Saving a key never turns paid calls on by itself, and investigations still start only from an explicit button press.
-- **Advanced settings** (collapsed): default research depth, reverse image search, fact check search, link reading and the search score threshold.
-
-`.env` seeds these settings: when the server starts, every one of them that has no saved value yet is copied from `.env` into the SQLite database (the Docker data volume). From then on the database is the source, and changes apply from the next investigation; investigations already running finish with the settings they started with. Empty keys are not stored, so a key added to `.env` later is picked up at the next start. Editing any other value in `.env` later does not replace the saved one: the page marks it **Saved here · differs from .env**, and **Use .env value** copies the current `.env` value on save. **Reset all to .env**, behind a confirmation, does this for every field at once. Keys are stored as plain text, like `.env`, so keep the database private. Saved values that the server cannot use at start-up are reported on the page while the server runs with `.env`.
-
-## Submission target
-
-Public GitHub repository and a three-minute demo submitted through Cerebral Valley by **November 5, 2026, 05:00 Europe/Istanbul** (November 4, 21:00 US Eastern). Recheck the event's written rules before submission.
+Out of scope for the hackathon: native mobile apps, PWA installation and share targets, downloading videos from platform links, universal image provenance, deepfake detection, and a general-purpose knowledge base. The web interface works on phone screens.
 
 ## License
 
