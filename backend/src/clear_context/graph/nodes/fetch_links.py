@@ -23,7 +23,8 @@ IMAGE_CANDIDATES = 4
 MIN_IMAGE_SIDE = 200
 LOCAL_ADDRESS = "This address is on your own computer or network; research services cannot open it."
 UNREADABLE = (
-    "This link could not be read. Paste the post's text or attach a screenshot to check it."
+    "This link could not be read. Paste the post's text or attach a screenshot to check it; "
+    "the Chrome extension's Capture an area takes a post as you see it."
 )
 
 
