@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img alt="Meta Muse Spark 1.3" src="https://img.shields.io/badge/Meta-Muse%20Spark%201.3-0161dd">
+  <img alt="Meta Muse Spark 1.3 and Muse Voice Transcribe 1.0" src="https://img.shields.io/badge/Meta-Muse%20Spark%201.3%20%2B%20Voice%20Transcribe%201.0-0161dd">
   <img alt="LangGraph" src="https://img.shields.io/badge/orchestration-LangGraph-1f1f22">
   <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-3776ab">
   <img alt="FastAPI" src="https://img.shields.io/badge/API-FastAPI-009688">
