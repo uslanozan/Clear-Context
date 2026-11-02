@@ -51,21 +51,98 @@ Mock mode is the default and makes no model or search calls. Meta mode needs `AP
 
 Textual claims and image context are evaluated separately. Finding no supporting source is not sufficient to label a claim false. The agent must show uncertainty and failed research steps.
 
-## Engineering notes
+## Under the hood
 
-A separate evaluation workspace now replays saved query plans, shares source URLs,
-reads selected pages through Tavily keyless, and preserves claim/need/passage links
-with bounded calls and TTL caches. Full-page Muse paragraph selection now supports
-ten concurrent requests by default and persists source-bound selection receipts. The opt-in
-application flow uses bounded search, selection and component assessment. It does not
-produce global claim verification or source-trust scores. See [retrieval evaluation](evals/README.md#retrieval-workspace-evaluation-runner)
-and [evidence judgment](docs/EVIDENCE_JUDGMENT.md).
+### Meta models
 
-V2 extraction now partitions long text under bounded character budgets, carries source
-context, and saves exact quote positions separately from interpreted statements. There is
-no document-wide eight-claim cap. Budget or validation gaps appear as partial extraction;
-processed ranges do not guarantee exhaustive claim coverage. Database migration `0005`
-is required. See [text analysis](docs/TEXT_ANALYSIS.md) and [prompt settings](docs/PROMPTS.md).
+Every model call goes to the Meta Model API with the server's own key. Muse Spark 1.3 is the default for each task; Settings can switch a task to another catalog model (Muse Wonder 1.0 or Muse Spark 1.1-1.3), and contributor models stay hidden unless training use is allowed.
+
+| Step | Model | What the call returns |
+| --- | --- | --- |
+| Claim extraction | Muse Spark 1.3 | Claims in their original wording with exact character positions, split into details a source can settle. Long input is cut into bounded chunks. |
+| Image and video reading | Muse Spark 1.3 (multimodal) | Visible text, observations and how the picture fits its caption, labeled as a visual assessment, never as evidence. A video's frames are read together with its transcript. |
+| Speech | Muse Voice Transcribe 1.0 | Timed speech turns from a video's audio; noise that the model put words to is filtered out. |
+| Research planning | Muse Spark 1.3 | Information needs per detail and the search queries that answer them, including which needs only same-picture pages can settle. |
+| Passage selection | Muse Spark 1.3 | The IDs of the paragraphs of each read page that bear on a need, up to ten pages at a time. |
+| Evidence judgment | Muse Spark 1.3 | A result per detail (supported, contradicted, disputed, insufficient) that cites recorded passage IDs only. |
+| Follow-up planning | Muse Spark 1.3 | New queries for details left insufficient, once per investigation. |
+
+Each text call asks for a JSON Schema response (`response_format: json_schema`) and is validated with Pydantic before anything is stored; a research plan that fails validation is asked for once more, and every call's token usage is recorded with the report. The claim label above the details ("Mostly supported", "Mixed results") is counted from the detail results, not asked of a model.
+
+### Agent orchestration with LangGraph
+
+An investigation is a compiled LangGraph `StateGraph` ([graph/investigation.py](backend/src/clear_context/graph/investigation.py)) over a typed state ([graph/state.py](backend/src/clear_context/graph/state.py)). Conditional edges choose the path from the input: links are read first, their images join uploaded media, and a continuation skips straight to research.
+
+```mermaid
+flowchart LR
+  start([Input]) -->|links in the text| fetch[fetch_links]
+  start -->|images or video| media[analyze_media]
+  start -->|text only| extract[extract_claims]
+  start -->|continuation| evidence
+  fetch -->|a page image or upload| media
+  fetch --> extract
+  media --> extract
+  extract --> evidence[evaluate_evidence]
+  evidence -->|continuation| merge[merge_continuation]
+  evidence --> validate[validate_report]
+  merge --> validate
+  validate --> done([Report])
+```
+
+The graph runs with a recursion limit and is streamed node by node; every update is written to SQLite as a recorded step, which is what the web app and the extension show as progress. Nothing in the progress view is estimated. The nodes are focused steps of one bounded workflow, not independent agents that negotiate with each other.
+
+`evaluate_evidence` runs the research loop for every detail ([services/investigation_research.py](backend/src/clear_context/services/investigation_research.py)):
+
+```mermaid
+flowchart LR
+  plan[Plan needs and queries] --> search[Web search]
+  plan --> images[Reverse image search and fact checks]
+  search --> read[Read every page found]
+  images --> read
+  read --> select[Select passages]
+  select --> judge[Judge each detail]
+  judge -->|insufficient, once| followup[Follow-up queries]
+  followup --> search
+  judge --> report[Validated report]
+```
+
+Research depth sets the call limits, not the method:
+
+| Depth | Queries | Pages read | Passage calls | Judgment calls | Follow-up round |
+| --- | --- | --- | --- | --- | --- |
+| Fast | 3 | 12 | 12 | 4 | none |
+| Balanced | 6 | 20 | 20 | 6 | 2 queries, 10 pages |
+| Deep | 10 | 30 | 30 | 10 | 4 queries, 15 pages |
+
+Details the budget did not reach are listed as such and can be researched later as a linked continuation, which runs the same graph on those details and merges the results into a new report.
+
+### Grounding checks
+
+- A claim's quote must match the input at its saved character positions; `validate_report` rejects the report otherwise.
+- Passage selection returns paragraph IDs from the page's own text, so a passage is always the page's wording, never the model's. A judgment's schema lists only the passage IDs recorded for that detail as allowed values, so it cannot cite anything else.
+- The page being checked is never evidence for itself, and a fact-check rating is shown as the publisher's, not adopted as the verdict.
+- What an attached picture or video shows (its place, time or event) is settled only by pages that show the same picture; a web search for the event cannot settle it.
+- Mock mode, the default, makes no model or search calls, and paid calls need an explicit setting plus a button press for every investigation.
+
+### External services
+
+| Service | Used for |
+| --- | --- |
+| Meta Model API | Chat completions for every Muse step above, and speech transcription. |
+| Tavily Search and Extract | Web search, page reading, reading the links in the input, and the publication date a news index reports for a linked page. |
+| SerpApi (optional) | Reverse image search through Google Lens and Bing. |
+| Google Fact Check Tools (optional) | Published fact checks of the same image or its caption. |
+
+Set `TAVILY_API_KEY` to use your own Tavily account (the free plan includes monthly credits); without it, research falls back to keyless access, which is rate-limited without a published quota and stopped repeated or Deep runs in testing. No paid fallback runs automatically. Connection errors, dropped connections and 429 and 5xx answers are retried twice with a short wait, honouring Retry-After up to 20 seconds. A dropped connection on a paid Meta call may already have been billed and is still repeated, so an investigation does not fail on a transient drop; a paid call is not repeated after a timeout. If research planning still fails, the report keeps the extracted claims and says they were not researched. Reverse image search is optional: set `REVERSE_IMAGE_PROVIDER=serpapi_lens` and `SERP_API_KEY` (SerpApi's free plan has a monthly search allowance; each image uses an upload and one or two searches). Images are then sent to SerpApi and Google. Match dates are the dates Google Lens shows for each page, not verified first-publication dates. With a Google API key, published fact checks are looked up through the free Google Fact Check Tools API. Users must confirm their own billing or credit availability before enabling paid inference.
+
+### Stack
+
+- **Backend:** Python, FastAPI, Pydantic, LangGraph, httpx; SQLite through SQLAlchemy with Alembic migrations; PyAV for playable video copies. Prompts and method catalogs live in `config/*.yaml`.
+- **Frontend:** React, TypeScript, Vite, Mantine with one shared theme, TanStack Query, and react-pdf for the PDF export.
+- **Extension:** Chrome Manifest V3, built from the same theme and types as the web app.
+- **Packaging:** Docker Compose serves the API and web app on one local address, with the database and uploads in a volume.
+
+More detail: [architecture and evidence contract](docs/ARCHITECTURE.md), [text analysis](docs/TEXT_ANALYSIS.md), [evidence judgment](docs/EVIDENCE_JUDGMENT.md), [prompt settings](docs/PROMPTS.md) and [retrieval evaluation](evals/README.md#retrieval-workspace-evaluation-runner).
 
 ## Hackathon MVP
 
@@ -85,17 +162,6 @@ Native mobile apps, PWA installation and incoming share integration, video from 
 The planned release is a self-hosted application with a browser interface and an optional Chrome capture extension. Users supply their own Meta Model API key on the backend; a Muse Code subscription is not required. Research history stays in local storage, while selected inputs and evidence are sent to external services for inference and retrieval. This is not offline inference.
 
 Accounts, subscriptions, and billing management are outside the MVP. A controlled hosted hackathon demo is separate from the local product. Docker Compose packaging runs the API and web interface on one local port; see [Run with Docker](#run-with-docker).
-
-## Technology direction
-
-- **Backend:** Python + FastAPI, with validated data contracts and a bounded LangGraph workflow. Investigation status, node progress, and reports persist in SQLite; graph checkpoints/resume are not implemented yet.
-- **Frontend:** React + TypeScript + Vite, Mantine for shared components/theme, and TanStack Query for API state.
-- **Extension:** a thin Chrome Manifest V3 client using the same backend; the full report stays on the web.
-- **Primary models:** Muse through Meta Model API; exact model selection follows small quality/cost experiments.
-- **Optional experiments:** Meta open-weight inference on Baseten, Fireworks, or Modal, subject to access and evaluation.
-- **Storage:** SQLite with SQLAlchemy and Alembic migrations; no separate database server.
-
-Text research uses Tavily Search and Extract. Set `TAVILY_API_KEY` to use your own Tavily account (the free plan includes monthly credits); without it, research falls back to keyless access, which is rate-limited without a published quota and stopped repeated or `deep` runs in testing. No paid fallback runs automatically. Connection errors, dropped connections and 429 and 5xx answers are retried twice with a short wait, honouring Retry-After up to 20 seconds. A dropped connection on a paid Meta call may already have been billed and is still repeated, so an investigation does not fail on a transient drop; a paid call is not repeated after a timeout. If research planning still fails, the report keeps the extracted claims and says they were not researched. Reverse image search is optional: set `REVERSE_IMAGE_PROVIDER=serpapi_lens` and `SERP_API_KEY` (SerpApi's free plan has a monthly search allowance; each image uses an upload and one or two searches). Images are then sent to SerpApi and Google. Match dates are the dates Google Lens shows for each page, not verified first-publication dates. With a Google API key, published fact checks of the same image are also looked up through the free Google Fact Check Tools API and read as sources; their ratings are shown as the publisher's, not adopted as a verdict. Users must confirm their own billing/credit availability before enabling paid inference.
 
 ## Delivery status
 
