@@ -2,7 +2,8 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Builds the Chrome extension into dist-extension/ (load it unpacked in chrome://extensions).
+// Builds the Chrome extension into the repo's chrome-extension/ folder, which is committed so
+// users can load it unpacked in chrome://extensions without a build. Rebuild after changes.
 const root = fileURLToPath(new URL('./extension/', import.meta.url));
 
 export default defineConfig({
@@ -10,7 +11,7 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   build: {
-    outDir: fileURLToPath(new URL('./dist-extension/', import.meta.url)),
+    outDir: fileURLToPath(new URL('../chrome-extension/', import.meta.url)),
     emptyOutDir: true,
     rollupOptions: {
       input: {

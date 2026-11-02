@@ -182,15 +182,9 @@ New project work starts on October 26, 2026. External dependencies and reused co
 
 ## Chrome extension
 
-The extension in `frontend/extension/` sends something from the page you are reading to your own Clear Context server and opens the web report. It does not show reports itself.
+The extension sends something from the page you are reading to your own Clear Context server and opens the web report. It does not show reports itself.
 
-```powershell
-cd frontend
-npm ci
-npm run build:extension
-```
-
-Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select `frontend/dist-extension`. Ways to capture:
+The repository ships it ready to load, with no build step: open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select the `chrome-extension` folder of your clone. After a `git pull`, press the reload button on its card in `chrome://extensions`. The source is in `frontend/extension/`; developers rebuild the folder with `npm run build:extension` in `frontend/` and check it with `npm run check:extension`. Ways to capture:
 
 - **Selected text:** select text, right-click and choose **Check with Clear Context** (or use **Use selected text** from the toolbar button). Only the text in the box is sent; to have a post or article read, paste its link into the text.
 - **An image or a video frame:** right-click it and choose **Check with Clear Context**. The picture is cut from a screenshot of what you see, so it works on pages that need a login. For an image, **Use the original image file** fetches the file the page published, after you grant access to that one site; reverse image search matches it better than an enlarged screenshot.
