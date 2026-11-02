@@ -14,6 +14,7 @@ from urllib.parse import urljoin, urlsplit
 
 import httpx
 
+from clear_context.providers.social_pages import post_text
 from clear_context.providers.tavily import EXTRACT_ENDPOINT, markdown_to_text
 from clear_context.schemas.retrieval import ENDPOINT as SEARCH_ENDPOINT
 from clear_context.schemas.retrieval import canonical_source_url
@@ -165,6 +166,7 @@ class TavilyLinkReader:
 
         Measured: Reddit posts failed basic extraction but read with advanced; Facebook and
         Instagram posts failed both. Advanced costs more credits, so it runs only on failure.
+        A social page with only a login wall or a regional notice counts as a failure too.
         """
         try:
             return self._read(url, "basic")
@@ -187,6 +189,8 @@ class TavilyLinkReader:
         item = results[0] if results and isinstance(results[0], dict) else {}
         raw = item.get("raw_content")
         text = markdown_to_text(raw) if isinstance(raw, str) else ""
+        # On social media pages, keep the post and drop counts, replies and menus.
+        text = post_text(url, text) if text else ""
         if not text:
             raise LinkFailure("unreadable")
         title = item.get("title") if isinstance(item.get("title"), str) else None

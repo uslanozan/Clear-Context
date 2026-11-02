@@ -12,6 +12,7 @@ from clear_context.providers.link_reader import (
     host_label,
     local_address,
 )
+from clear_context.providers.social_pages import profile_picture
 from clear_context.services.media import store
 
 # One main image per page; later images are usually logos, ads or related stories.
@@ -79,7 +80,8 @@ def fetch_links(state: InvestigationState, runtime: Runtime[InvestigationContext
         pages.append((index, page.text))
         media_ids, notes = [], []
         failures = []
-        for image_url in page.images[:IMAGE_CANDIDATES]:
+        candidates = [image for image in page.images if not profile_picture(image)]
+        for image_url in candidates[:IMAGE_CANDIDATES]:
             if len(media_ids) >= MAX_IMAGES_PER_LINK:
                 break
             try:
