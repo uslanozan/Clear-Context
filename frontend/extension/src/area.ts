@@ -18,14 +18,15 @@
     inset: '0',
     zIndex: '2147483647',
     cursor: 'crosshair',
-    background: 'rgba(37, 44, 40, 0.35)',
+    background: 'rgba(31, 31, 34, 0.45)',
   });
   const box = document.createElement('div');
   Object.assign(box.style, {
     position: 'fixed',
-    border: '2px solid #a84315',
-    background: 'rgba(255, 254, 250, 0.12)',
-    boxShadow: '0 0 0 9999px rgba(37, 44, 40, 0.35)',
+    // The logo blue (#047bf2) over the app's dark gray, as in the web app.
+    border: '2px solid #047bf2',
+    background: 'rgba(4, 123, 242, 0.1)',
+    boxShadow: '0 0 0 9999px rgba(31, 31, 34, 0.45), 0 0 16px rgba(4, 123, 242, 0.55)',
     display: 'none',
   });
   const hint = document.createElement('div');
@@ -37,8 +38,9 @@
     transform: 'translateX(-50%)',
     padding: '8px 14px',
     borderRadius: '8px',
-    background: '#fffefa',
-    color: '#252c28',
+    background: '#1f1f22',
+    color: '#ececef',
+    border: '1px solid rgba(4, 123, 242, 0.6)',
     font: '600 14px system-ui, sans-serif',
     boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
   });
@@ -87,7 +89,7 @@
     start = null;
     if (current.width < 12 || current.height < 12) {
       box.style.display = 'none';
-      overlay.style.background = 'rgba(37, 44, 40, 0.35)';
+      overlay.style.background = 'rgba(31, 31, 34, 0.45)';
       return;
     }
     const rect = current;
