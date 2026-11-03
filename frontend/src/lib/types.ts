@@ -133,6 +133,8 @@ export interface Investigation {
   relation?: 'rerun' | 'continue' | null;
   // The history group this investigation is filed in; organizational only.
   group_id?: string | null;
+  // A name the user gave it in the history list.
+  title?: string | null;
   // Investigations accepted earlier that still wait; only while this one is queued.
   queue_position?: number | null;
 }

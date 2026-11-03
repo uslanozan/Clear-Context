@@ -87,6 +87,12 @@ export const api = {
   deleteGroup: (id: string) => request<void>(`/groups/${id}`, { method: 'DELETE' }),
   deleteInvestigation: (id: string) =>
     request<void>(`/investigations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  renameInvestigation: (id: string, title: string | null) =>
+    request<void>(`/investigations/${id}/title`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title }),
+    }),
   assignGroup: (id: string, groupId: string | null) =>
     request<void>(`/investigations/${id}/group`, {
       method: 'PUT',

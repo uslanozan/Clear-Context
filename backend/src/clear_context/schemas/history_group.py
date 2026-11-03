@@ -22,6 +22,17 @@ class GroupName(BaseModel):
         return value
 
 
+class InvestigationTitle(BaseModel):
+    # null or an empty title shows the input text again.
+    title: str | None = Field(default=None, max_length=120)
+
+    @field_validator("title")
+    @classmethod
+    def trimmed(cls, value: str | None) -> str | None:
+        value = " ".join((value or "").split())
+        return value or None
+
+
 class GroupAssignment(BaseModel):
     # null puts the investigation back in the ungrouped list.
     group_id: UUID | None = None

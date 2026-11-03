@@ -7,12 +7,14 @@ import {
   CircleHelp,
   Ellipsis,
   FolderPlus,
+  Pencil,
   Plus,
   RefreshCw,
   Settings,
   Trash2,
 } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
+import { historyLabel } from '../lib/labels';
 import type { HistoryGroup, Investigation } from '../lib/types';
 import { LogoMark } from './Logo';
 
@@ -31,6 +33,7 @@ interface Props {
   onRenameGroup: (id: string, name: string) => void;
   onDeleteGroup: (id: string) => void;
   onAssign: (investigationId: string, groupId: string | null) => void;
+  onRename: (investigationId: string, title: string | null) => void;
   onDelete: (item: Investigation) => void;
 }
 
@@ -66,11 +69,13 @@ function writeCollapsed(ids: Set<string>) {
 function NameField({
   initial = '',
   label,
+  maxLength = 60,
   onSave,
   onCancel,
 }: {
   initial?: string;
   label: string;
+  maxLength?: number;
   onSave: (name: string) => void;
   onCancel: () => void;
 }) {
@@ -85,7 +90,7 @@ function NameField({
       className="group-name-field"
       aria-label={label}
       value={value}
-      maxLength={60}
+      maxLength={maxLength}
       autoFocus
       onChange={(event) => setValue(event.currentTarget.value)}
       onBlur={finish}
@@ -102,6 +107,7 @@ function HistoryItem({
   groups,
   onNavigate,
   onAssign,
+  onRename,
   onDelete,
   onDragChange,
 }: {
@@ -109,9 +115,27 @@ function HistoryItem({
   groups: HistoryGroup[];
   onNavigate: () => void;
   onAssign: Props['onAssign'];
+  onRename: Props['onRename'];
   onDelete: Props['onDelete'];
   onDragChange: (id: string | null) => void;
 }) {
+  const [renaming, setRenaming] = useState(false);
+  if (renaming) {
+    return (
+      <div className="history-row">
+        <NameField
+          initial={item.title || ''}
+          label="Name of this investigation"
+          maxLength={120}
+          onSave={(title) => {
+            onRename(item.id, title);
+            setRenaming(false);
+          }}
+          onCancel={() => setRenaming(false)}
+        />
+      </div>
+    );
+  }
   return (
     <div
       className="history-row"
@@ -132,8 +156,8 @@ function HistoryItem({
         onClick={onNavigate}
       >
         <BookOpenText size={15} strokeWidth={1.6} aria-hidden="true" />
-        <span className="history-item-title">
-          {item.text || <em className="muted">Files without text</em>}
+        <span className="history-item-title" title={item.title ? item.text : undefined}>
+          {historyLabel(item) || <em className="muted">Files without text</em>}
         </span>
         {item.status !== 'completed' && (
           <span className={`history-state ${item.status}`}>{HISTORY_STATE[item.status]}</span>
@@ -146,6 +170,13 @@ function HistoryItem({
           </button>
         </Menu.Target>
         <Menu.Dropdown>
+          <Menu.Item leftSection={<Pencil size={14} />} onClick={() => setRenaming(true)}>
+            Rename…
+          </Menu.Item>
+          {item.title && (
+            <Menu.Item onClick={() => onRename(item.id, null)}>Show the input text again</Menu.Item>
+          )}
+          <Menu.Divider />
           {groups.length > 0 && (
             <>
               <Menu.Label>Move to group</Menu.Label>
@@ -225,6 +256,7 @@ export function Sidebar(props: Props) {
       groups={props.groups}
       onNavigate={props.onNavigate}
       onAssign={props.onAssign}
+      onRename={props.onRename}
       onDelete={props.onDelete}
       onDragChange={(id) => {
         setDragging(id);

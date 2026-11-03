@@ -28,3 +28,5 @@ class InvestigationRow(Base):
     relation: Mapped[str | None] = mapped_column(String(20), nullable=True)
     # The history group this investigation is filed in, if any; purely organizational.
     group_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    # A name the user gives it in the history list; the input text is shown when there is none.
+    title: Mapped[str | None] = mapped_column(String(120), nullable=True)

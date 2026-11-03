@@ -63,6 +63,15 @@ class HistoryGroupRepository:
             session.delete(row)
             return True
 
+    def retitle(self, investigation_id: UUID, title: str | None) -> bool:
+        """False when the investigation is unknown."""
+        with self.sessions.begin() as session:
+            investigation = session.get(InvestigationRow, str(investigation_id))
+            if investigation is None:
+                return False
+            investigation.title = title
+            return True
+
     def assign(self, investigation_id: UUID, group_id: UUID | None) -> bool | None:
         """True when assigned, False when the group is unknown, None when the investigation is."""
         with self.sessions.begin() as session:

@@ -170,6 +170,14 @@ function Workspace() {
       if (investigationId === id) navigate('/');
     },
   });
+  const renameInvestigation = useMutation({
+    mutationFn: ({ investigationId, title }: { investigationId: string; title: string | null }) =>
+      api.renameInvestigation(investigationId, title),
+    onSuccess: (_, { investigationId }) => {
+      refreshHistory();
+      queryClient.invalidateQueries({ queryKey: ['investigation', investigationId] });
+    },
+  });
   const assignGroup = useMutation({
     mutationFn: ({
       investigationId,
@@ -192,6 +200,7 @@ function Workspace() {
       onRenameGroup={(groupId, name) => renameGroup.mutate({ id: groupId, name })}
       onDeleteGroup={(groupId) => deleteGroup.mutate(groupId)}
       onAssign={(investigationId, groupId) => assignGroup.mutate({ investigationId, groupId })}
+      onRename={(investigationId, title) => renameInvestigation.mutate({ investigationId, title })}
       onDelete={(item) => {
         deleteInvestigation.reset();
         setPendingDelete(item);

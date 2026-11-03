@@ -25,6 +25,7 @@ Local development only, single process. Mock mode is the default. Meta mode supp
 | PATCH | `/api/groups/{id}` | Rename a group |
 | DELETE | `/api/groups/{id}` | Delete a group; its investigations return to the ungrouped list unchanged |
 | PUT | `/api/investigations/{id}/group` | File an investigation with `{ "group_id": "<uuid>" }`, or pass `null` to ungroup it. `group_id` is also part of the investigation view |
+| PUT | `/api/investigations/{id}/title` | Name an investigation in the history list with `{ "title": "…" }` (up to 120 characters); `null` or an empty title shows the input text again. `title` is also part of the investigation view. Needs migration `0011` |
 | GET | `/api/settings` | Panel settings: key status (configured, source, `preview` with the first eight and last four characters of keys of 24+ characters, the last four for 16-23; never the whole key), models per task, allowed model options, paid calls, advanced options and which fields the panel changed |
 | PUT | `/api/settings` | Save changed fields only; `null` takes the field's current `.env` value (an empty `.env` key removes the saved key). Applies from the next investigation without a restart; 422 when the result cannot run (for example paid calls without a Meta key, or a model that is not allowed) and nothing is saved |
 

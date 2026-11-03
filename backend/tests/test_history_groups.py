@@ -49,3 +49,27 @@ def test_groups_reject_unknown_ids_and_empty_names(settings):
         )
         assert unknown_investigation.status_code == 404
         assert client.get("/api/investigations").json()[0]["group_id"] is None
+
+
+def test_an_investigation_can_be_renamed_and_the_name_cleared(settings):
+    with TestClient(create_app(settings)) as client:
+        investigation = client.post("/api/investigations", json={"text": "A claim."}).json()
+        assert investigation["title"] is None
+        url = f"/api/investigations/{investigation['id']}/title"
+
+        assert client.put(url, json={"title": "  Great Wall   post "}).status_code == 204
+        assert client.get("/api/investigations").json()[0]["title"] == "Great Wall post"
+        assert (
+            client.get(f"/api/investigations/{investigation['id']}").json()["title"]
+            == "Great Wall post"
+        )
+
+        # An empty title shows the input text again.
+        assert client.put(url, json={"title": "   "}).status_code == 204
+        assert client.get("/api/investigations").json()[0]["title"] is None
+
+        assert client.put(url, json={"title": "x" * 121}).status_code == 422
+        assert (
+            client.put(f"/api/investigations/{uuid4()}/title", json={"title": "Nope"}).status_code
+            == 404
+        )

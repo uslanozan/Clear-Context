@@ -36,6 +36,7 @@ class InvestigationView(BaseModel):
     parent_id: UUID | None = None
     relation: Literal["rerun", "continue"] | None = None
     group_id: UUID | None = None
+    title: str | None = None
     # Queued investigations accepted earlier than this one; set only while it is queued.
     queue_position: int | None = None
 

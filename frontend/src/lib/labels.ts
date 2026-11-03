@@ -143,3 +143,22 @@ export function claimSummary(
   else key = 'not_assessed';
   return { key, label: CLAIM_SUMMARY[key].label, tone: CLAIM_SUMMARY[key].tone };
 }
+
+/**
+ * The name shown for an investigation in the history list: the user's title, or the input.
+ * An input that is only a link shows its site and first path part, not the whole address.
+ */
+export function historyLabel(item: { title?: string | null; text: string }): string {
+  if (item.title) return item.title;
+  const text = item.text.trim();
+  if (/^https?:\/\/\S+$/i.test(text)) {
+    try {
+      const url = new URL(text);
+      const first = url.pathname.split('/').find(Boolean);
+      return url.hostname.replace(/^www\./, '') + (first ? `/${first}` : '');
+    } catch {
+      return text;
+    }
+  }
+  return text;
+}

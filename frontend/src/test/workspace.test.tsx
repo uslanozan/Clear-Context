@@ -45,6 +45,7 @@ let researchEnabled: boolean;
 let failPost: boolean;
 let healthOffline: boolean;
 let deletes: string[];
+let puts: { url: string; body: unknown }[];
 
 beforeEach(() => {
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:local-test');
@@ -56,6 +57,7 @@ beforeEach(() => {
   failPost = false;
   healthOffline = false;
   deletes = [];
+  puts = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string, options?: RequestInit) => {
@@ -68,6 +70,10 @@ beforeEach(() => {
           paid_api_calls_enabled: true,
           research_enabled: researchEnabled,
         });
+      }
+      if (options?.method === 'PUT') {
+        puts.push({ url, body: JSON.parse(String(options.body)) });
+        return new Response(null, { status: 204 });
       }
       if (options?.method === 'DELETE') {
         deletes.push(url);
@@ -186,6 +192,21 @@ describe('Investigation workspace', () => {
     await waitFor(() => expect(deletes).toEqual([`/api/investigations/${id}`]));
     // The open report was the deleted one, so the workspace opens instead.
     await screen.findByRole('button', { name: 'Start investigation' });
+    expect(posts).toHaveLength(0);
+  });
+
+  it('renames an investigation in the history list', async () => {
+    mount(`/investigations/${id}`);
+    await screen.findByText('Investigation report');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Investigation actions' })[0]);
+    await userEvent.click(await screen.findByRole('menuitem', { name: /Rename/ }));
+    const field = screen.getByRole('textbox', { name: 'Name of this investigation' });
+    await userEvent.type(field, 'Ohio cars{Enter}');
+    await waitFor(() =>
+      expect(puts).toEqual([
+        { url: `/api/investigations/${id}/title`, body: { title: 'Ohio cars' } },
+      ]),
+    );
     expect(posts).toHaveLength(0);
   });
 

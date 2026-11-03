@@ -3,7 +3,12 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request, Response
 
 from clear_context.repositories.history_group import MAX_GROUPS
-from clear_context.schemas.history_group import GroupAssignment, GroupName, GroupView
+from clear_context.schemas.history_group import (
+    GroupAssignment,
+    GroupName,
+    GroupView,
+    InvestigationTitle,
+)
 
 router = APIRouter()
 
@@ -43,4 +48,11 @@ def assign_group(investigation_id: UUID, payload: GroupAssignment, request: Requ
         raise HTTPException(status_code=404, detail="Investigation not found.")
     if result is False:
         raise HTTPException(status_code=404, detail="Group not found.")
+    return Response(status_code=204)
+
+
+@router.put("/investigations/{investigation_id}/title", status_code=204)
+def retitle(investigation_id: UUID, payload: InvestigationTitle, request: Request):
+    if not request.app.state.groups.retitle(investigation_id, payload.title):
+        raise HTTPException(status_code=404, detail="Investigation not found.")
     return Response(status_code=204)
