@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from langgraph.runtime import Runtime
@@ -10,6 +11,16 @@ from clear_context.domain.investigation import (
 from clear_context.graph.state import InvestigationContext, InvestigationState
 from clear_context.providers.reverse_image import ReverseImageFailure
 from clear_context.services.video_analysis import analyze_video
+
+# A line break inside a statement read from a screenshot is the page's layout, not part of the
+# text. Claims quote the composed text literally, so a sentence wrapped as "visible from" and
+# "space." would never match a quote of the sentence as it reads.
+WRAPPED_LINE = re.compile(r"(?<![.!?:;])[ \t]*\n[ \t]*(?=\S)")
+
+
+def unwrap(statement: str) -> str:
+    """Join lines that a screenshot wrapped; a line that ends a sentence keeps its break."""
+    return WRAPPED_LINE.sub(" ", statement.strip())
 
 
 def clock(seconds: float) -> str:
@@ -31,7 +42,7 @@ def compose_analyzed_text(text: str, findings: list[MediaFinding]) -> str:
     parts = [label + text.strip()] if text.strip() else []
     for index, finding in enumerate(findings, 1):
         kind = finding.kind
-        statements = "\n".join(part.strip() for part in finding.analysis.claim_text if part.strip())
+        statements = "\n".join(unwrap(part) for part in finding.analysis.claim_text if part.strip())
         if statements:
             parts.append(f"[Text read from {kind} {index}]\n{statements}")
         for turn in finding.analysis.speech:

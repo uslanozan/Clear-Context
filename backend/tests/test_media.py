@@ -137,6 +137,28 @@ def test_analyzed_text_skips_images_without_statements():
     )
 
 
+def test_a_statement_wrapped_on_screen_reads_as_one_line():
+    # The extension's screenshot of a post wrapped this sentence. A claim's quote must match the
+    # composed text literally, so the wrap becomes a space; a break after a sentence stays.
+    post = SimpleNamespace(
+        kind="image",
+        analysis=MediaAnalysis(
+            status="analyzed",
+            claim_text=[
+                "USELESS & INTERESTING FACTS",
+                "The Great Wall of China is the only man-made structure visible from\nspace.",
+                "First line ends a sentence.\nSecond line stays apart.",
+            ],
+        ),
+    )
+    assert compose_analyzed_text("", [post]) == (
+        "[Text read from image 1]\n"
+        "USELESS & INTERESTING FACTS\n"
+        "The Great Wall of China is the only man-made structure visible from space.\n"
+        "First line ends a sentence.\nSecond line stays apart."
+    )
+
+
 def test_meta_media_request_sends_the_image_inline_and_reads_the_schema(settings, monkeypatch):
     from clear_context.core.settings import PROJECT_ROOT, ModelSelection
     from clear_context.providers import meta_media
