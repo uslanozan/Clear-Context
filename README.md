@@ -34,7 +34,7 @@
 
 An event can be real while its photograph comes from another place or year. A statement can quote a source accurately while leaving out the condition that changes its meaning. A single true-or-false stamp hides both. Clear Context shows the evidence for each part of a claim, and says plainly where the investigation stays unresolved.
 
-Built solo for the **Meta Global AI Developer Hackathon** (October 26 – November 4, 2026, Indie Developer track).
+Clear Context was started solo for the **Meta Global AI Developer Hackathon** (October 26 – November 4, 2026) and is maintained as an open-source project.
 
 ## Quick start
 
@@ -48,11 +48,24 @@ docker compose up -d --build
 ```
 
 1. Open **http://clearcontext.localhost**.
-2. Add your keys in **Settings** (or in `.env` before starting): a Meta Model API key for Muse; Tavily, SerpApi and Google Fact Check keys add web research, reverse image search and published fact checks.
+2. Add your keys in **Settings** (or in `.env` before starting): a Meta Model API key for Muse; Tavily, SerpApi and Google Fact Check keys add web research, reverse image search and published fact checks. See [API keys and cost](#api-keys-and-cost) for where to get each one.
 3. Turn on **Allow paid calls**. Until then the app runs in preview mode and makes no model or search calls.
 4. Optional: load the Chrome extension from the `chrome-extension` folder ([below](#chrome-extension)).
 
 Your reports stay in a local SQLite database. The inputs and evidence of an investigation are sent to Meta and to the search services you enable; this is not offline inference. No account or subscription is involved, and a Muse Code subscription is not required.
+
+## API keys and cost
+
+Only the Meta key is required. The others are optional; without them the matching step is skipped or, for Tavily, runs on rate-limited keyless access. Each field in **Settings** links to the page where its key is created.
+
+| Key | Used for | Where to get it |
+| --- | --- | --- |
+| Meta Model API (`META_API_KEY`) | Every model step: claims, images, video, research planning and evidence judgment | Create an API key in the [Meta developer dashboard](https://dev.meta.ai/). Billing is pay as you go, per token. |
+| Tavily (`TAVILY_API_KEY`) | Web search and page reading | Sign up at [app.tavily.com](https://app.tavily.com/). The free plan includes monthly credits. |
+| SerpApi (`SERP_API_KEY`) | Optional reverse image search with Google Lens and Bing | Copy the key from [serpapi.com/manage-api-key](https://serpapi.com/manage-api-key). The free plan has a monthly search allowance. |
+| Google (`GOOGLE_FACT_CHECK_API_KEY`) | Optional published fact checks of an image | In Google Cloud, enable the [Fact Check Tools API](https://console.cloud.google.com/apis/library/factchecktools.googleapis.com) and create an API key. The API is free. |
+
+**What a run costs.** Every report shows an estimated model cost under **Model usage**, counted from the recorded tokens at the catalog's list prices. A balanced run on the earthquake sentence above used 49,968 input and 10,127 output tokens with Muse Spark 1.3, about **$0.10** at the prices checked on November 10, 2026. Fast research makes fewer calls and Deep more; long texts, images and video add calls. Search services bill on their own plans, and the estimate leaves them and speech transcription out. Meta's [spend alert](https://dev.meta.ai/help/billing/spend-limit-alert) sends an email but does not stop requests.
 
 ## What it does
 
@@ -280,7 +293,7 @@ Checks from the repository root:
 .\.venv\Scripts\python.exe -m ruff format backend --check
 ```
 
-New project work starts on October 26, 2026. External dependencies and reused components must be attributed; earlier private work must not be presented as hackathon output.
+External dependencies and reused components must be attributed.
 
 </details>
 
@@ -297,7 +310,7 @@ New project work starts on October 26, 2026. External dependencies and reused co
 - [Evaluation plan](evals/README.md) and [initial case specifications](evals/case-specs.json)
 - [Research resources: claim extraction and verification](docs/RESEARCH_RESOURCES.md)
 
-Out of scope for the hackathon: native mobile apps, PWA installation and share targets, downloading videos from platform links, universal image provenance, deepfake detection, and a general-purpose knowledge base. The web interface works on phone screens.
+Not planned: native mobile apps, PWA installation and share targets, downloading videos from platform links, universal image provenance, deepfake detection, and a general-purpose knowledge base. The web interface works on phone screens.
 
 ## License
 
