@@ -1,3 +1,5 @@
+import os
+import sys
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
@@ -6,7 +8,31 @@ import yaml
 from pydantic import BaseModel, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
+
+def _resource_root() -> Path:
+    """Where config/, backend/migrations and the built web app are read from."""
+    # PyInstaller unpacks the desktop build here, with the same layout as the repository.
+    bundle = getattr(sys, "_MEIPASS", None)
+    return Path(bundle) if bundle else Path(__file__).resolve().parents[4]
+
+
+def user_data_dir() -> Path:
+    """Writable folder for the desktop build's database, uploads and research cache."""
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming")
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share")
+    return base / "Clear Context"
+
+
+PROJECT_ROOT = _resource_root()
+# A frozen desktop build cannot write inside its bundle, so its data lives in the user's folder.
+FROZEN = getattr(sys, "frozen", False)
+DATA_DIR = user_data_dir() if FROZEN else PROJECT_ROOT / ".local"
+# The desktop build reads an optional .env beside its data; the Settings page is the usual path.
+ENV_FILE = DATA_DIR / ".env" if FROZEN else PROJECT_ROOT / ".env"
 TASKS = ("claim_extraction", "screenshot", "research", "judge", "report")
 TEXT_MODELS = {
     "muse-wonder-1.0",
@@ -19,9 +45,7 @@ TEXT_MODELS = {
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=PROJECT_ROOT / ".env", extra="ignore", hide_input_in_errors=True
-    )
+    model_config = SettingsConfigDict(env_file=ENV_FILE, extra="ignore", hide_input_in_errors=True)
 
     app_mode: Literal["mock", "meta"] = "mock"
     allow_paid_api_calls: bool = False
@@ -48,8 +72,13 @@ class Settings(BaseSettings):
     allowed_hosts: list[str] = Field(
         default_factory=lambda: ["localhost", "127.0.0.1", "*.localhost"]
     )
-    database_path: Path = PROJECT_ROOT / ".local" / "clear-context.db"
-    media_dir: Path = PROJECT_ROOT / ".local" / "media"
+    database_path: Path = DATA_DIR / "clear-context.db"
+    media_dir: Path = DATA_DIR / "media"
+    # Apply pending database migrations at start-up (the desktop build); Docker and the
+    # development setup run Alembic as a separate step.
+    auto_migrate: bool = False
+    # Built web app to serve beside the API (the desktop build); Docker serves it with nginx.
+    web_dist_dir: Path | None = None
     # Reverse image search adapter (providers/reverse_image.py); none disables it.
     reverse_image_provider: Literal["none", "serpapi_lens"] = "none"
     # Links in the text are opened and read through Tavily in live mode.

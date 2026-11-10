@@ -7,7 +7,9 @@ from sqlalchemy import text
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from clear_context.api.router import router
+from clear_context.api.web import mount_web_app
 from clear_context.core.settings import Settings, resolve_path
+from clear_context.db.migrate import upgrade_database
 from clear_context.db.session import create_database, create_session_factory
 from clear_context.repositories.history_group import HistoryGroupRepository
 from clear_context.repositories.investigation import InvestigationRepository
@@ -29,6 +31,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        if settings.auto_migrate:
+            upgrade_database(resolve_path(settings.database_path))
         engine = create_database(resolve_path(settings.database_path))
         runtime = base_runtime
         try:
@@ -110,5 +114,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
     # Refuses other host names, so a rebound DNS name cannot reach the API from a web page.
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
+
+    @app.middleware("http")
+    async def security_headers(request, call_next):
+        # The same headers nginx adds in the Docker setup.
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        return response
+
     app.include_router(router)
+    if settings.web_dist_dir is not None:
+        mount_web_app(app, resolve_path(settings.web_dist_dir))
     return app
