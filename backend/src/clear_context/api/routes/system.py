@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
 
+from clear_context import __version__
 from clear_context.core.settings import load_model_catalog
 
 router = APIRouter()
@@ -10,6 +11,7 @@ def health(request: Request):
     runtime = request.app.state.service.runtime
     return {
         "status": "ok",
+        "version": __version__,
         "mode": runtime.mode,
         "paid_api_calls_enabled": runtime.mode == "meta",
         "research_enabled": runtime.research_enabled,

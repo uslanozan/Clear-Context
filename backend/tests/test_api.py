@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from clear_context import __version__
 from clear_context.core.settings import Settings
 from clear_context.domain.investigation import InvestigationStatus
 from clear_context.main import create_app
@@ -80,6 +81,7 @@ def test_missing_pending_and_invalid_identifiers(settings):
 def test_health_models_and_openapi_do_not_expose_secrets(settings):
     with TestClient(create_app(settings)) as client:
         assert client.get("/api/health").json()["paid_api_calls_enabled"] is False
+        assert client.get("/api/health").json()["version"] == __version__
         models = client.get("/api/models")
         assert models.json()["configured_models"]["judge"]["api_model_id"] == "muse-spark-1.3"
         for path in ("/api/models", "/api/health", "/api/settings", "/openapi.json"):

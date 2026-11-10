@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from clear_context import __version__
 from clear_context.api.router import router
 from clear_context.api.web import mount_web_app
 from clear_context.core.settings import Settings, resolve_path
@@ -93,7 +94,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(
         title="Clear Context API",
-        version="0.1.0",
+        version=__version__,
         lifespan=lifespan,
         description="Local investigation API with optional bounded text research.",
         docs_url="/docs" if settings.api_docs_enabled else None,

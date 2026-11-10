@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Clear Context",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Send selected text, a link, an image, a video frame or an area of a page to your own Clear Context server, then open its evidence report.",
   "action": {
     "default_popup": "popup.html",
