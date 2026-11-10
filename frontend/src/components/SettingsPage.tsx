@@ -16,26 +16,31 @@ import { api } from '../lib/api';
 import { RESEARCH_MODES } from '../lib/modes';
 import type { AppSettings, KeyName, ModelTask, SettingsUpdate } from '../lib/types';
 
-const KEYS: { name: KeyName; label: string; detail: string }[] = [
+// Where each key is created; opened in a new tab from the field description.
+const KEYS: { name: KeyName; label: string; detail: string; url: string }[] = [
   {
     name: 'meta_api_key',
     label: 'Meta API key',
     detail: 'Muse models that separate claims, read images and assess evidence.',
+    url: 'https://dev.meta.ai/',
   },
   {
     name: 'tavily_api_key',
     label: 'Tavily API key',
     detail: 'Web search and page reading. Without a key, rate-limited keyless access is used.',
+    url: 'https://app.tavily.com/',
   },
   {
     name: 'serp_api_key',
     label: 'SerpApi key',
     detail: 'Reverse image search with Google Lens and Bing.',
+    url: 'https://serpapi.com/manage-api-key',
   },
   {
     name: 'google_fact_check_api_key',
     label: 'Google Fact Check key',
     detail: 'Earlier fact checks of an image or caption.',
+    url: 'https://console.cloud.google.com/apis/library/factchecktools.googleapis.com',
   },
 ];
 
@@ -292,12 +297,19 @@ function SettingsForm({
       <section className="settings-section" aria-labelledby="keys-title">
         <h2 id="keys-title">API keys</h2>
         <div className="settings-fields">
-          {KEYS.map(({ name, label, detail }) => {
+          {KEYS.map(({ name, label, detail, url }) => {
             return (
               <div key={name} className="settings-key">
                 <PasswordInput
                   label={label}
-                  description={detail}
+                  description={
+                    <>
+                      {detail}{' '}
+                      <a href={url} target="_blank" rel="noopener noreferrer">
+                        Get a key
+                      </a>
+                    </>
+                  }
                   // The saved key is shown masked inside the field; the server never sends the full key.
                   placeholder={
                     settings.keys[name].preview ??

@@ -83,6 +83,18 @@ it('shows key status without values and saves only changed fields', async () => 
   expect(await screen.findByText(/Saved\. The next investigation/)).toBeInTheDocument();
 });
 
+it('links each key to the page where it is created', async () => {
+  renderPage();
+  const links = await screen.findAllByRole('link', { name: 'Get a key' });
+  expect(links.map((link) => link.getAttribute('href'))).toEqual([
+    'https://dev.meta.ai/',
+    'https://app.tavily.com/',
+    'https://serpapi.com/manage-api-key',
+    'https://console.cloud.google.com/apis/library/factchecktools.googleapis.com',
+  ]);
+  for (const link of links) expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
 it('keeps entries when saving fails', async () => {
   failPut = true;
   renderPage();
