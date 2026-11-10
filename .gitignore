@@ -54,3 +54,7 @@ Thumbs.db
 # Local-only research data and reports
 /evals/corpus/local/
 /docs/local/
+
+# PyInstaller output of the desktop build.
+/build/
+/dist/

@@ -39,19 +39,31 @@ Clear Context was started solo for the **Meta Global AI Developer Hackathon** (O
 
 ## Quick start
 
-Requires Docker with Compose v2.24 or newer.
+Pick one way to run it. All three keep your reports on your own computer.
+
+**Desktop app (Windows, macOS, Linux).** Download the archive for your system from the [latest release](https://github.com/uslanozan/Clear-Context/releases/latest), unpack it and start **Clear Context** in the unpacked folder. A small window shows the address and your browser opens the app at `http://127.0.0.1:8765`; closing the window stops it. Nothing else needs to be installed. The app is not signed, so the first start shows a warning: on Windows choose **More info** and **Run anyway**; on macOS use **Open Anyway** under System Settings > Privacy & Security. The `README.txt` in the archive covers this, where your data is kept and how to remove it.
+
+**Docker with the published images.** Requires Docker with Compose v2.24 or newer.
 
 ```bash
 git clone https://github.com/uslanozan/Clear-Context.git
 cd Clear-Context
-cp .env.example .env
+docker compose -f compose.yaml -f compose.ghcr.yaml up -d
+```
+
+**Docker, built from source.** Same requirements; this builds both images on your machine:
+
+```bash
+git clone https://github.com/uslanozan/Clear-Context.git
+cd Clear-Context
 docker compose up -d --build
 ```
 
-1. Open **http://clearcontext.localhost**.
-2. Add your keys in **Settings** (or in `.env` before starting): a Meta Model API key for Muse; Tavily, SerpApi and Google Fact Check keys add web research, reverse image search and published fact checks. See [API keys and cost](#api-keys-and-cost) for where to get each one.
-3. Turn on **Allow paid calls**. Until then the app runs in preview mode and makes no model or search calls.
-4. Optional: load the Chrome extension from the `chrome-extension` folder ([below](#chrome-extension)).
+With Docker, open **http://clearcontext.localhost**. Then, whichever way you started it:
+
+1. Open **Settings** and add a Meta Model API key for Muse; Tavily, SerpApi and Google Fact Check keys add web research, reverse image search and published fact checks. See [API keys and cost](#api-keys-and-cost) for where to get each one. Docker users can also put the keys in a `.env` file (copy `.env.example`) before starting.
+2. Turn on **Allow paid calls**. Until then the app runs in preview mode and makes no model or search calls.
+3. Optional: load the Chrome extension ([below](#chrome-extension)).
 
 Your reports stay in a local SQLite database. The inputs and evidence of an investigation are sent to Meta and to the search services you enable; this is not offline inference. No account or subscription is involved, and a Muse Code subscription is not required.
 
@@ -194,14 +206,14 @@ More detail: [architecture and evidence contract](docs/ARCHITECTURE.md), [text a
 - **Research depends on third parties.** Without a `TAVILY_API_KEY`, search uses keyless access, which is rate-limited and stopped repeated or Deep runs in testing. Reverse image search is off by default and sends images to SerpApi and Google.
 - **Not a hosted service.** The app has no authentication and binds to loopback; do not expose it to an untrusted network. Run one server instance per database. A running investigation cannot be cancelled, and graph checkpoints are not implemented: after a restart, queued investigations run again and running ones are marked failed as interrupted.
 - **Not implemented:** adding a correction or a source of your own to see which findings change, a per-user trusted-source list, and a statistics page across reports.
-- **Clients.** The web app is responsive but not an installable PWA. The extension is for Chrome, is not on the Chrome Web Store, and is loaded unpacked from this repository. PDF export leaves emoji out of quotes (the JSON keeps the exact text).
+- **Clients.** The web app is responsive but not an installable PWA. The desktop app is a local server that opens in your browser, not a native window, and it is not signed, so Windows and macOS warn on its first start. The extension is for Chrome, is not on the Chrome Web Store, and is loaded unpacked. PDF export leaves emoji out of quotes (the JSON keeps the exact text).
 - **Evaluation.** The reviewed evaluation set is small; its results are not a benchmark.
 
 ## Chrome extension
 
 The extension sends something from the page you are reading to your own Clear Context server and opens the web report. It does not show reports itself.
 
-The repository ships it ready to load, with no build step: open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select the `chrome-extension` folder of your clone. After a `git pull`, press the reload button on its card in `chrome://extensions`. The source is in `frontend/extension/`; developers rebuild the folder with `npm run build:extension` in `frontend/` and check it with `npm run check:extension`.
+It ships ready to load, with no build step: unzip `Clear-Context-chrome-extension.zip` from the [latest release](https://github.com/uslanozan/Clear-Context/releases/latest), or use the `chrome-extension` folder of a clone. Open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and select that folder. After an update, press the reload button on its card in `chrome://extensions`. The source is in `frontend/extension/`; developers rebuild the folder with `npm run build:extension` in `frontend/` and check it with `npm run check:extension`.
 
 <details>
 <summary><b>Ways to capture, and what the extension does</b></summary>
@@ -211,7 +223,7 @@ The repository ships it ready to load, with no build step: open `chrome://extens
 - **An area:** toolbar button, **Capture an area**, then drag over anything on screen, such as a post or a paused video.
 - **A link:** right-click a link and choose **Check this link with Clear Context**, or paste text or a link (for example a post's address copied from the address bar) into **Paste text or a link** in the toolbar button and press **Continue**. The link appears in the box as text; the server reads it like a link typed into the web app.
 
-A window then shows what was captured, lets you edit the text, choose the research depth and press **Investigate**; nothing is sent before that, and a failed request keeps the capture. It then shows the steps the server records and, when the report is ready, a short summary: each claim with the count of its supported, contradicted and unsettled details, and for a picture the earliest page found with the same picture and caption details it does not fit. The evidence itself stays in the web report (**Open report**). The extension finds the server itself, with no setting: it tries the address that worked last time, Clear Context tabs you have open (so any port works once you have opened the app in that browser), then `http://clearcontext.localhost` (Docker) and `http://clearcontext.localhost:5173` (development). When nothing answers it says so and offers **Check again**. The API key stays on the server; original image files ask for permission to the image's site when used. Videos on platforms such as YouTube or X are not downloaded; capture a frame or an area instead.
+A window then shows what was captured, lets you edit the text, choose the research depth and press **Investigate**; nothing is sent before that, and a failed request keeps the capture. It then shows the steps the server records and, when the report is ready, a short summary: each claim with the count of its supported, contradicted and unsettled details, and for a picture the earliest page found with the same picture and caption details it does not fit. The evidence itself stays in the web report (**Open report**). The extension finds the server itself, with no setting: it tries the address that worked last time, Clear Context tabs you have open (so any port works once you have opened the app in that browser), then `http://clearcontext.localhost` (Docker), `http://127.0.0.1:8765` (desktop app) and `http://clearcontext.localhost:5173` (development). When nothing answers it says so and offers **Check again**. The API key stays on the server; original image files ask for permission to the image's site when used. Videos on platforms such as YouTube or X are not downloaded; capture a frame or an area instead.
 
 </details>
 
@@ -285,6 +297,16 @@ npm run dev
 ```
 
 Open `http://clearcontext.localhost:5173` (or `http://127.0.0.1:5173`). Root `.env` settings `WEB_HOST`, `WEB_PORT`, and optional `API_PROXY_TARGET` configure the dev server; by default `/api` proxies to `API_HOST` / `API_PORT`. Starting an investigation in Meta mode uses credits. Opening saved reports does not call the model. A report exports as JSON with every recorded field, or as a Clear Context PDF built in the browser; the PDF leaves emoji out of quotes and says so, while the JSON keeps the exact text. See the [frontend guide](docs/FRONTEND.md) for production routing and checks.
+
+To build the desktop app for the system you are on, build the web app (`npm run build` in `frontend/`), then from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r packaging/desktop/requirements.txt
+.\.venv\Scripts\python.exe -m PyInstaller packaging/desktop/clear-context.spec --noconfirm
+.\.venv\Scripts\python.exe packaging/desktop/smoke_test.py "dist/Clear Context"
+```
+
+The smoke test starts the build with empty data in preview mode, runs one investigation and stops it. `python -m clear_context.desktop` runs the same launcher from a checkout. The Release workflow builds and smoke-tests Windows, macOS (Apple Silicon and Intel) and Linux on GitHub; a manual run keeps the archives as workflow artifacts, and a `v*` tag also publishes the Docker images and drafts a release.
 
 Checks from the repository root:
 

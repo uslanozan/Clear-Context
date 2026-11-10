@@ -69,9 +69,9 @@ def main() -> None:
         auto_migrate=True,
         web_dist_dir=web if web.is_dir() else PROJECT_ROOT / "frontend" / "dist",
     )
-    print(f"Clear Context is running at {url}")
-    print(f"Your data is stored in {resolve_path(settings.database_path).parent}")
-    print("Keep this window open while you use it; close it to stop Clear Context.")
+    print(f"Clear Context is running at {url}", flush=True)
+    print(f"Your data is stored in {resolve_path(settings.database_path).parent}", flush=True)
+    print("Keep this window open while you use it; close it to stop Clear Context.", flush=True)
     threading.Thread(target=open_when_ready, args=(url, port), daemon=True).start()
     uvicorn.run(create_app(settings), host=HOST, port=port, log_level="warning", workers=1)
 

@@ -1,0 +1,11 @@
+# Runs the published images instead of building them; everything else comes from compose.yaml,
+# including the data volume, so both ways share the same reports:
+#   docker compose -f compose.yaml -f compose.ghcr.yaml up -d
+# CLEAR_CONTEXT_VERSION picks a release (for example 1.0.0); the default is the latest one.
+services:
+  api:
+    image: ghcr.io/uslanozan/clear-context-api:${CLEAR_CONTEXT_VERSION:-latest}
+    build: !reset null
+  web:
+    image: ghcr.io/uslanozan/clear-context-web:${CLEAR_CONTEXT_VERSION:-latest}
+    build: !reset null
