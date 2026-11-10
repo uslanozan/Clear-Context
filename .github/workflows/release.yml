@@ -120,6 +120,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           path: assets
@@ -128,6 +129,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # The notes start with this version's CHANGELOG section; GitHub appends the commits.
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '/^## /{found = index($0, "## " v) == 1} found' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "CHANGELOG.md has no section for $version."; exit 1; }
           gh release create "$GITHUB_REF_NAME" assets/* \
             --repo "$GITHUB_REPOSITORY" --draft --verify-tag --generate-notes \
-            --title "Clear Context $GITHUB_REF_NAME"
+            --notes-file notes.md --title "Clear Context $GITHUB_REF_NAME"
