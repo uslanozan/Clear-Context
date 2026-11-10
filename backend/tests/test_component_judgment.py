@@ -159,3 +159,33 @@ def test_rejects_one_excerpt_cited_as_both_support_and_contradiction():
     )
     with pytest.raises(ValueError, match="both support and contradict"):
         validate_components(content, packet())
+
+
+def packet_with_text(text):
+    base = packet()
+    evidence = base.evidence[0].model_copy(update={"quote": text, "end": 30 + len(text)})
+    return base.model_copy(update={"evidence": [evidence]})
+
+
+def test_citations_tolerate_page_whitespace_and_keep_the_page_text():
+    # Pages keep non-breaking spaces and line breaks; models write plain spaces.
+    page = "Record:\nThe bridge opened\nin 2019. Later works followed."
+    _, citations = validate_components(response(), packet_with_text(page))
+    citation = citations[0]
+    assert citation["quote"] == "The bridge opened\nin 2019."
+    assert page[citation["start"] - 30 : citation["end"] - 30] == citation["quote"]
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        # Different words or punctuation are not whitespace.
+        "The bridge was opened in 2019.",
+        "The bridge opened in 2019",
+        # Two places match, so the cited span is ambiguous.
+        "The bridge opened in 2019. Again: The bridge opened in\n2019.",
+    ],
+)
+def test_citations_still_reject_changed_or_ambiguous_quotes(page):
+    with pytest.raises(ValueError):
+        validate_components(response(), packet_with_text(page))

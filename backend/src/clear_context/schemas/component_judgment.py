@@ -1,5 +1,6 @@
 """Evidence-bound component assessments with literal source positions."""
 
+import re
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -47,6 +48,25 @@ def parent_claim(packet: JudgmentPacket) -> str:
     return next(c.statement for c in packet.claims if c.id == packet.needs[0].claim_id)
 
 
+def locate_quote(text: str, quote: str) -> tuple[int, int] | None:
+    """Start and end of the one place a cited quote occurs in a passage, or None.
+
+    Pages keep non-breaking spaces and line breaks that a model writes as plain spaces, so
+    runs of whitespace may differ; every other character must match. Reports show the
+    page's own text at these positions, never the model's copy.
+    """
+    if text.count(quote) == 1:
+        start = text.index(quote)
+        return start, start + len(quote)
+    words = quote.split()
+    if not words:
+        return None
+    matches = list(re.finditer(r"\s+".join(map(re.escape, words)), text))
+    if len(matches) != 1:
+        return None
+    return matches[0].start(), matches[0].end()
+
+
 def validate_components(
     content: str, packet: JudgmentPacket, contract: str = "components_v2"
 ) -> tuple[ComponentResponse | AnchoredComponentResponse, list[dict]]:
@@ -68,12 +88,16 @@ def validate_components(
             if ref.evidence_id not in aliases:
                 raise ValueError("Unknown evidence alias.")
             item = evidence[aliases[ref.evidence_id]]
-            if item.need_id != packet.needs[0].id or item.quote.count(ref.quote) != 1:
+            found = (
+                locate_quote(item.quote, ref.quote) if item.need_id == packet.needs[0].id else None
+            )
+            if found is None:
                 raise ValueError("Citation must uniquely match evidence for this need.")
-            start = item.start + item.quote.index(ref.quote)
+            start, end = item.start + found[0], item.start + found[1]
+            page_text = item.quote[found[0] : found[1]]
             # Reports keep one relation per cited span; the same words cannot both support
             # and contradict one component.
-            span = (item.page_id, start, start + len(ref.quote))
+            span = (item.page_id, start, end)
             if span_relations.setdefault(span, ref.relation) != ref.relation:
                 raise ValueError("The same excerpt cannot both support and contradict a component.")
             citations.append(
@@ -84,8 +108,8 @@ def validate_components(
                     "page_id": item.page_id,
                     "source_url": item.source_url,
                     "start": start,
-                    "end": start + len(ref.quote),
-                    "quote": ref.quote,
+                    "end": end,
+                    "quote": page_text,
                     "relation": ref.relation,
                 }
             )
