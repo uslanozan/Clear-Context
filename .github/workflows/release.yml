@@ -1,12 +1,16 @@
 name: Release
 
-# A manual run builds and smoke-tests the desktop apps and uploads them as workflow
-# artifacts only. Pushing a v* tag also publishes the Docker images and creates a draft
-# GitHub release, which stays private until it is published by hand.
+# A manual run, or a push to develop that changes the packaging, builds and smoke-tests the
+# desktop apps and keeps them as workflow artifacts only. Pushing a v* tag also publishes the
+# Docker images and creates a draft GitHub release, which stays private until published by hand.
 on:
   workflow_dispatch:
   push:
     tags: ['v*']
+    branches: [develop]
+    paths:
+      - 'packaging/**'
+      - '.github/workflows/release.yml'
 
 permissions:
   contents: read
