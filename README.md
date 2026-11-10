@@ -22,6 +22,7 @@
   <img alt="React and TypeScript" src="https://img.shields.io/badge/web-React%20%2B%20TypeScript-149eca">
   <img alt="Chrome MV3 extension" src="https://img.shields.io/badge/extension-Chrome%20MV3-4285f4">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-5fd39a"></a>
+  <a href="https://github.com/uslanozan/Clear-Context/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/uslanozan/Clear-Context/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 
 | The report | The PDF | The Chrome extension |
