@@ -91,6 +91,18 @@ def test_health_models_and_openapi_do_not_expose_secrets(settings):
                 assert "meta_api_key" not in response.text.lower()
 
 
+def test_prices_list_token_priced_models_only(settings):
+    with TestClient(create_app(settings)) as client:
+        body = client.get("/api/prices").json()
+    assert body["currency"] == "USD"
+    assert body["checked_on"]
+    spark = body["per_million_tokens"]["muse-spark-1.3"]
+    assert spark == {"input": 1.25, "cached_input": 0.15, "output": 4.25}
+    # Models priced per image or per audio hour are not token-priced.
+    assert "muse-voice-transcribe-1.0" not in body["per_million_tokens"]
+    assert "sam-3.1" not in body["per_million_tokens"]
+
+
 def test_provider_failure_is_sanitized_and_persisted(settings):
     class FailingProvider:
         def extract_claims(self, *args):

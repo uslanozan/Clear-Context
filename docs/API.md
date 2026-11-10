@@ -8,6 +8,7 @@ Local development only, single process. Mock mode is the default. Meta mode supp
 | --- | --- | --- |
 | GET | `/api/health` | Mode and paid-call status; no credentials |
 | GET | `/api/models` | Validated task selections; not live provider availability |
+| GET | `/api/prices` | Catalog list prices per million tokens and the date they were checked; the report uses them for its estimated model cost |
 | POST | `/api/investigations` | Accept `{ "text": "A claim to investigate", "research_mode": "balanced" }`; return 202 and Location |
 | GET | `/api/investigations?limit=20&offset=0` | Recent history, newest first |
 | GET | `/api/investigations/{id}` | Persisted status and input |

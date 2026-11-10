@@ -1,6 +1,6 @@
 # Models
 
-Catalog: [config/models.yaml](../config/models.yaml). Prices checked October 26, 2026, in USD; access depends on the account. Recommendations are starting points, not benchmark winners. One extraction connectivity smoke test was run October 27; no comparative evaluation exists yet.
+Catalog: [config/models.yaml](../config/models.yaml). Prices checked November 10, 2026, in USD; access depends on the account. Recommendations are starting points, not benchmark winners. One extraction connectivity smoke test was run October 27; no comparative evaluation exists yet.
 
 ## Catalog and prices
 
@@ -20,6 +20,9 @@ Token prices are per **1M tokens**, in input / cached input / output order.
 | Muse Spark 1.2 | Earlier version; audio/comparison baseline | $1.25 / $0.15 / $4.25 |
 | Muse Spark 1.2 Contributor | Earlier discounted version with training-use permission | $0.10 / $0.002 / $0.20; select countries |
 | Muse Spark 1.1 | Earlier multimodal/computer-use baseline | $1.25 / $0.15 / $4.25 |
+| Muse Ember 1.0 | Listed by Meta after the hackathon; not in the catalog and not evaluated here | $0.10 / $0.004 / $0.50 up to 200K input tokens; $0.30 / $0.012 / $1.50 above |
+
+The report shows an estimated model cost from the recorded token counts and these list prices (`GET /api/prices`). It leaves out search services and speech transcription, and free credits may cover it. A balanced run on the earthquake example recorded 49,968 input and 10,127 output tokens with Spark 1.3, about $0.10.
 
 Standard mode does not use content to train Meta models; Contributor permits training use. Default to Standard for uploads. Spark 1.3 has an audio-quality caveat: use transcription or evaluate 1.2 for audio. Text-model web search adds **$2.50/1,000 queries** beyond tokens.
 

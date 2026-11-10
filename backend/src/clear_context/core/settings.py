@@ -109,6 +109,8 @@ class CatalogModel(BaseModel):
     api_model_id: str | None
     access: str
     training_use: bool = False
+    # List price as the catalog records it; shapes differ by unit, null means unknown.
+    price: dict | None = None
 
 
 class CatalogDefaults(BaseModel):
@@ -117,6 +119,8 @@ class CatalogDefaults(BaseModel):
 
 class ModelCatalog(BaseModel):
     schema_version: Literal[1]
+    checked_on: str | None = None
+    currency: str = "USD"
     defaults: CatalogDefaults
     models: dict[str, CatalogModel]
 

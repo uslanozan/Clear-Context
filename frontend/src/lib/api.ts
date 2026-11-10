@@ -4,6 +4,7 @@ import type {
   ResearchOverview,
   HistoryGroup,
   Investigation,
+  ModelPrices,
   Report,
   ResearchMode,
   ResearchStep,
@@ -42,6 +43,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   health: (signal?: AbortSignal) => request<Health>('/health', { signal }),
+  prices: (signal?: AbortSignal) => request<ModelPrices>('/prices', { signal }),
   history: (offset = 0, signal?: AbortSignal) =>
     request<Investigation[]>(`/investigations?limit=20&offset=${offset}`, { signal }),
   investigation: (id: string, signal?: AbortSignal) =>

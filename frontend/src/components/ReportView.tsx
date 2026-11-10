@@ -26,6 +26,7 @@ import { EvidenceExcerpt, SourceTypeLabel, sourceDisplayName } from './EvidenceE
 import { ClaimVerdict, DetailTag } from './VerdictTag';
 import { detailSummary } from '../lib/labels';
 import { modeLabel } from '../lib/modes';
+import { estimateModelCost, formatCost } from '../lib/cost';
 import type { Investigation, Report, ResearchStep } from '../lib/types';
 
 /** Lists excerpts under one label per source, so repeated excerpts do not repeat the source. */
@@ -112,6 +113,13 @@ export function ReportView({
     queryFn: ({ signal }) => api.research(investigation.id, signal),
     staleTime: Infinity,
   });
+  const prices = useQuery({
+    queryKey: ['prices'],
+    queryFn: ({ signal }) => api.prices(signal),
+    staleTime: Infinity,
+    retry: false,
+  });
+  const cost = prices.data ? estimateModelCost(report.model_usage, prices.data) : null;
   // An open stage widens the side column so its details are easier to read.
   const [stageOpen, setStageOpen] = useState(false);
   const [pdfState, setPdfState] = useState<'idle' | 'working' | 'failed'>('idle');
@@ -497,6 +505,17 @@ export function ReportView({
               ))
             ) : (
               <p className="muted">No model calls in this preview.</p>
+            )}
+            {cost !== null && prices.data && report.model_usage.length > 0 && (
+              <div className="cost-estimate">
+                <span>Estimated model cost</span>
+                <strong>{formatCost(cost, prices.data.currency)}</strong>
+                <p className="muted">
+                  At list prices
+                  {prices.data.checked_on ? ` checked ${prices.data.checked_on}` : ''}. Search
+                  services and speech transcription are not included; free credits may cover it.
+                </p>
+              </div>
             )}
           </section>
           <div className="saved-note">

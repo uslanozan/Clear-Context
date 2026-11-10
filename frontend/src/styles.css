@@ -3010,3 +3010,24 @@ h2,
     height: 64px;
   }
 }
+.cost-estimate {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.cost-estimate span {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+}
+.cost-estimate strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 500;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.cost-estimate p {
+  font-size: 12px;
+  margin-top: 6px;
+}

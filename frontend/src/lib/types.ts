@@ -12,6 +12,15 @@ export interface ModelUsage {
   chunk_end?: number | null;
   outcome?: 'accepted' | 'capacity_reached' | 'truncated' | 'invalid' | null;
 }
+// Catalog list prices per million tokens, keyed by API model ID.
+export interface ModelPrices {
+  currency: string;
+  checked_on: string | null;
+  per_million_tokens: Record<
+    string,
+    { input: number; cached_input: number | null; output: number }
+  >;
+}
 export interface TextSpan {
   start: number;
   end: number;

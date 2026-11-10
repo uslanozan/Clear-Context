@@ -1,5 +1,5 @@
 schema_version: 1
-checked_on: '2026-10-26'
+checked_on: '2026-11-10'
 sources:
   - https://dev.meta.ai/docs/models
   - https://dev.meta.ai/docs/pricing-rate-limits
