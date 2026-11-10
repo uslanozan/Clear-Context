@@ -124,9 +124,9 @@ export function SettingsPage() {
     <div className="settings-page">
       <h1>Settings</h1>
       <p className="settings-intro">
-        Settings start from <code>.env</code> and are then kept on your server. Changes apply from
-        the next investigation, without a restart; later <code>.env</code> edits are marked here
-        instead of replacing saved values. Keys are never shown again.
+        Settings are saved on this computer and apply from the next investigation, without a
+        restart. Keys are never shown again. If you run the server with a <code>.env</code> file, it
+        fills in values that were never saved here, and later edits to it are marked below.
       </p>
       {settings.isPending ? (
         <div aria-label="Loading settings">

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Alert, Button, SegmentedControl, Textarea } from '@mantine/core';
 import { ArrowRight, ImagePlus, Paperclip, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { Health, ResearchMode } from '../lib/types';
 import { RESEARCH_MODES } from '../lib/modes';
 import { formatBytes, MEDIA_ACCEPT, useMediaAttachments } from '../lib/media';
@@ -189,6 +190,16 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
               }}
             />
           </form>
+          {health?.mode === 'mock' && (
+            <div className="media-notice preview-notice" role="status">
+              <strong>Preview mode</strong>
+              <p>
+                Investigations make no model or search calls yet, so a report only keeps your input.
+                To check claims, add a Meta API key and turn on Allow paid calls in{' '}
+                <Link to="/settings">Settings</Link>.
+              </p>
+            </div>
+          )}
           {health?.research_enabled && (
             <div className="research-mode">
               <span className="research-mode-label" id="research-mode-label">

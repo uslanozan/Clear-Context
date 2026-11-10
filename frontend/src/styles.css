@@ -3031,3 +3031,17 @@ h2,
   font-size: 12px;
   margin-top: 6px;
 }
+.preview-notice p {
+  margin-bottom: 0;
+}
+.preview-notice a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.settings-key .mantine-InputWrapper-description a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

@@ -1,6 +1,6 @@
 import { MantineProvider } from '@mantine/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -44,6 +44,7 @@ let uploads: { url: string; form: FormData }[];
 let researchEnabled: boolean;
 let failPost: boolean;
 let healthOffline: boolean;
+let previewMode: boolean;
 let deletes: string[];
 let puts: { url: string; body: unknown }[];
 
@@ -56,6 +57,7 @@ beforeEach(() => {
   researchEnabled = false;
   failPost = false;
   healthOffline = false;
+  previewMode = false;
   deletes = [];
   puts = [];
   vi.stubGlobal(
@@ -66,8 +68,8 @@ beforeEach(() => {
         if (healthOffline) throw new TypeError('offline');
         return Response.json({
           status: 'ok',
-          mode: 'meta',
-          paid_api_calls_enabled: true,
+          mode: previewMode ? 'mock' : 'meta',
+          paid_api_calls_enabled: !previewMode,
           research_enabled: researchEnabled,
         });
       }
@@ -123,6 +125,23 @@ describe('Investigation workspace', () => {
     await screen.findByRole('textbox', { name: 'Passage to investigate' });
     expect(screen.queryByText('Try a text example')).not.toBeInTheDocument();
     expect(posts).toHaveLength(0);
+  });
+
+  it('says when investigations will not research anything yet', async () => {
+    previewMode = true;
+    mount();
+    const notice = (await screen.findByText('Preview mode')).closest('[role="status"]');
+    expect(notice).toHaveTextContent('add a Meta API key');
+    expect(within(notice as HTMLElement).getByRole('link', { name: 'Settings' })).toHaveAttribute(
+      'href',
+      '/settings',
+    );
+  });
+
+  it('shows no preview notice when paid calls are on', async () => {
+    mount();
+    await screen.findByRole('textbox', { name: 'Passage to investigate' });
+    expect(screen.queryByText('Preview mode')).not.toBeInTheDocument();
   });
 
   it('submits once, opens a report, and labels missing evidence honestly', async () => {
