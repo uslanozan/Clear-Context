@@ -1,0 +1,368 @@
+[
+ {
+  "id": "F01",
+  "kind": "false",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "contradicted": 1
+  },
+  "cost_usd": 0.06540345,
+  "seconds": 51.2
+ },
+ {
+  "id": "F02",
+  "kind": "false",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1,
+   "contradicted": 1
+  },
+  "cost_usd": 0.05564235,
+  "seconds": 54.2
+ },
+ {
+  "id": "F03",
+  "kind": "false",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "contradicted": 1
+  },
+  "cost_usd": 0.023896950000000004,
+  "seconds": 39.2
+ },
+ {
+  "id": "F04",
+  "kind": "false",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "contradicted": 1
+  },
+  "cost_usd": 0.044416,
+  "seconds": 42.2
+ },
+ {
+  "id": "F05",
+  "kind": "false",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "contradicted": 1
+  },
+  "cost_usd": 0.030563299999999998,
+  "seconds": 36.2
+ },
+ {
+  "id": "F06",
+  "kind": "false",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "unsettled",
+  "details": {
+   "not_assessed": 1
+  },
+  "cost_usd": 0.02869895,
+  "seconds": 39.2
+ },
+ {
+  "id": "F07",
+  "kind": "false",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "contradicted": 1
+  },
+  "cost_usd": 0.029112850000000003,
+  "seconds": 39.2
+ },
+ {
+  "id": "F08",
+  "kind": "false",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "contradicted": 1
+  },
+  "cost_usd": 0.05174635,
+  "seconds": 42.2
+ },
+ {
+  "id": "F09",
+  "kind": "false",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "contradicted": 1
+  },
+  "cost_usd": 0.0515263,
+  "seconds": 54.2
+ },
+ {
+  "id": "F10",
+  "kind": "false",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "contradicted": 1
+  },
+  "cost_usd": 0.07132569999999999,
+  "seconds": 51.2
+ },
+ {
+  "id": "H01",
+  "kind": "half",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "conflicting": 1,
+   "contradicted": 1
+  },
+  "cost_usd": 0.07441015,
+  "seconds": 72.3
+ },
+ {
+  "id": "H02",
+  "kind": "half",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 2,
+   "contradicted": 1
+  },
+  "cost_usd": 0.08410465,
+  "seconds": 60.3
+ },
+ {
+  "id": "H03",
+  "kind": "half",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1,
+   "contradicted": 1
+  },
+  "cost_usd": 0.0529124,
+  "seconds": 48.3
+ },
+ {
+  "id": "H04",
+  "kind": "half",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1,
+   "contradicted": 1
+  },
+  "cost_usd": 0.10637409999999999,
+  "seconds": 78.3
+ },
+ {
+  "id": "H05",
+  "kind": "half",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1,
+   "contradicted": 1
+  },
+  "cost_usd": 0.05690415,
+  "seconds": 54.2
+ },
+ {
+  "id": "H06",
+  "kind": "half",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1,
+   "contradicted": 1
+  },
+  "cost_usd": 0.045848450000000006,
+  "seconds": 54.3
+ },
+ {
+  "id": "H07",
+  "kind": "half",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1,
+   "contradicted": 1
+  },
+  "cost_usd": 0.06835535,
+  "seconds": 72.3
+ },
+ {
+  "id": "T01",
+  "kind": "true",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1
+  },
+  "cost_usd": 0.039141749999999996,
+  "seconds": 36.2
+ },
+ {
+  "id": "T02",
+  "kind": "true",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1
+  },
+  "cost_usd": 0.03716225,
+  "seconds": 39.2
+ },
+ {
+  "id": "T03",
+  "kind": "true",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1
+  },
+  "cost_usd": 0.038402,
+  "seconds": 30.1
+ },
+ {
+  "id": "T04",
+  "kind": "true",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 3
+  },
+  "cost_usd": 0.04283535,
+  "seconds": 48.2
+ },
+ {
+  "id": "T05",
+  "kind": "true",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1
+  },
+  "cost_usd": 0.0243921,
+  "seconds": 30.1
+ },
+ {
+  "id": "T06",
+  "kind": "true",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1
+  },
+  "cost_usd": 0.045677999999999996,
+  "seconds": 36.2
+ },
+ {
+  "id": "T07",
+  "kind": "true",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1
+  },
+  "cost_usd": 0.03581975,
+  "seconds": 39.2
+ },
+ {
+  "id": "T08",
+  "kind": "true",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "unsettled",
+  "details": {
+   "not_assessed": 1
+  },
+  "cost_usd": 0.0748133,
+  "seconds": 39.3
+ },
+ {
+  "id": "T09",
+  "kind": "true",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1
+  },
+  "cost_usd": 0.0385031,
+  "seconds": 48.2
+ },
+ {
+  "id": "T10",
+  "kind": "true",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "supported": 1
+  },
+  "cost_usd": 0.0558356,
+  "seconds": 42.1
+ },
+ {
+  "id": "U01",
+  "kind": "unsettleable",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {},
+  "cost_usd": 0.0023765,
+  "seconds": 9.1
+ },
+ {
+  "id": "U02",
+  "kind": "unsettleable",
+  "lang": "tr",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "not_assessed": 1
+  },
+  "cost_usd": 0.00914215,
+  "seconds": 21.1
+ },
+ {
+  "id": "U03",
+  "kind": "unsettleable",
+  "lang": "en",
+  "status": "completed",
+  "outcome": "correct",
+  "details": {
+   "not_assessed": 1
+  },
+  "cost_usd": 0.01137665,
+  "seconds": 30.2
+ }
+]

@@ -80,6 +80,12 @@ Only the Meta key is required. The others are optional; without them the matchin
 
 **What a run costs.** Every report shows an estimated model cost under **Model usage**, counted from the recorded tokens at the catalog's list prices. A balanced run on the earthquake sentence above used 49,968 input and 10,127 output tokens with Muse Spark 1.3, about **$0.10** at the prices checked on November 10, 2026. Fast research makes fewer calls and Deep more; long texts, images and video add calls. Search services bill on their own plans, and the estimate leaves them and speech transcription out. Meta's [spend alert](https://dev.meta.ai/help/billing/spend-limit-alert) sends an email but does not stop requests.
 
+## Measured accuracy
+
+On 30 short claims with known answers (10 true, 10 false, 7 with one wrong detail, 3 that no source can settle; 20 in English, 10 in Turkish), one balanced run each with the default settings gave **28 correct, 2 unsettled and 0 wrong** results. No true claim was contradicted and no false detail was supported; for every half-true claim the contradicted detail was the wrong one. The two unsettled claims lost a correct judgment because the citation check rejected quotes that differed from the page only by a non-breaking space or a line break. The run cost $1.40 in model calls, about $0.05 and 45 seconds per claim.
+
+These are well-known facts, run once with one model: the result shows the method works on simple claims, not how it does on long posts, recent events, images or video. Cases, rules and per-claim results are in [evals/accuracy-v1](evals/accuracy-v1/README.md).
+
 ## What it does
 
 | | |
@@ -199,7 +205,7 @@ More detail: [architecture and evidence contract](docs/ARCHITECTURE.md), [text a
 ## Known limitations
 
 - **No verdict on truth.** The report shows what recorded sources say about each detail. No supporting evidence is not evidence that a claim is false, and evidence assessments do not establish source reliability; the source type (fact check, reference, social, web) describes a page, it does not rate it.
-- **Models can be wrong.** An exact quote match proves only that the sentence is on the page, not that a model read its meaning correctly. Semantic completeness of claim extraction is not established, and a claim's label covers only the details that were checked. No accuracy figure is claimed.
+- **Models can be wrong.** An exact quote match proves only that the sentence is on the page, not that a model read its meaning correctly. Semantic completeness of claim extraction is not established, and a claim's label covers only the details that were checked. The [measured accuracy](#measured-accuracy) comes from a small set of simple claims.
 - **Image and video provenance is limited.** Visual inspection cannot establish an image's date, location or authenticity, and there is no AI-generated-image or deepfake detection. Lens dates are the dates shown for a page, not verified first publication. Videos from platform links (YouTube, X, Instagram) are not downloaded; capture a frame or an area instead.
 - **Dates and language.** Source language is inferred by the model; a publication date is known only when a news index reports one.
 - **Some social links cannot be read.** Pages are read by Tavily's servers, never by yours. In testing on November 2, 2026, Instagram and Reddit posts came back empty and TikTok returned a regional notice instead of the post, so these links are reported as unreadable; X, Threads and public Facebook posts were read. For an unreadable post, paste its text or capture it with the extension's **Capture an area**, which takes what you see on screen.
@@ -207,7 +213,7 @@ More detail: [architecture and evidence contract](docs/ARCHITECTURE.md), [text a
 - **Not a hosted service.** The app has no authentication and binds to loopback; do not expose it to an untrusted network. Run one server instance per database. A running investigation cannot be cancelled, and graph checkpoints are not implemented: after a restart, queued investigations run again and running ones are marked failed as interrupted.
 - **Not implemented:** adding a correction or a source of your own to see which findings change, a per-user trusted-source list, and a statistics page across reports.
 - **Clients.** The web app is responsive but not an installable PWA. The desktop app is a local server that opens in your browser, not a native window, and it is not signed, so Windows and macOS warn on its first start. The extension is for Chrome, is not on the Chrome Web Store, and is loaded unpacked. PDF export leaves emoji out of quotes (the JSON keeps the exact text).
-- **Evaluation.** The reviewed evaluation set is small; its results are not a benchmark.
+- **Evaluation.** The accuracy set has 30 simple claims run once with one model; its result is not a benchmark.
 
 ## Chrome extension
 
