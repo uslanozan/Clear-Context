@@ -2,3 +2,5 @@
 frontend/src/pdf/fonts/OFL-*.txt -whitespace
 # Built extension output: keep the bytes exactly as the build writes them.
 chrome-extension/** -text -diff
+# Extension sources check out as LF on every OS, so the committed build is the same everywhere.
+frontend/extension/** text=auto eol=lf
