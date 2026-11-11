@@ -3,7 +3,10 @@
  * next to it. It has no server, so it starts nothing and saves nothing.
  */
 export const DEMO = import.meta.env.MODE === 'demo';
-export const DOWNLOAD_URL = 'https://github.com/uslanozan/Clear-Context/releases/latest';
+// The demo is served under the project website, whose root page offers the downloads.
+export const WEBSITE_URL = '/';
+export const DOWNLOAD_URL = '/#download';
+export const DEMO_APP_ONLY = 'Available in the app';
 export const DEMO_READ_ONLY =
   'This demo only shows recorded reports. Download Clear Context to check your own claims.';
 

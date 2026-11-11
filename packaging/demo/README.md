@@ -13,7 +13,9 @@ To rebuild it:
    .\.venv\Scripts\python.exe packaging/demo/export_demo.py frontend/public-demo-data --server http://127.0.0.1:8000 <investigation-id> ...
    ```
 
-   Running it again against another server adds to the same history. The export keeps only
+   Running it again against another server adds to the same history. `--group "Name=ID,ID"`
+   (repeatable, no server needed) files the reports under history groups, so the demo shows
+   grouping; its controls are visible but disabled. The export keeps only
    about 200 characters around each quoted passage of a source page, so the demo does not
    republish whole third-party pages, and removes email addresses outside the quotes.
    Settings and API keys are never exported.

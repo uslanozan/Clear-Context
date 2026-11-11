@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Drawer, Loader, Modal, Skeleton } from '@mantine/core';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  ArrowLeft,
   ArrowRight,
   BookOpenText,
   Check,
@@ -22,7 +23,7 @@ import { Sidebar } from './components/Sidebar';
 import { HelpGuide } from './components/HelpGuide';
 import { api, ApiError, failureMessage } from './lib/api';
 import { queueMessage } from './lib/stages';
-import { DEMO, DOWNLOAD_URL } from './lib/demo';
+import { DEMO, DOWNLOAD_URL, WEBSITE_URL } from './lib/demo';
 import type { Investigation, ResearchMode } from './lib/types';
 
 // Dialogs use the same glass surface as the settings sections.
@@ -262,6 +263,9 @@ function Workspace() {
           </div>
           {DEMO && (
             <div className="demo-badge">
+              <a href={WEBSITE_URL} className="demo-back">
+                <ArrowLeft size={14} aria-hidden="true" /> Back to the website
+              </a>
               <span>Recorded demo · read-only</span>
               <a href={DOWNLOAD_URL}>Download the app</a>
             </div>

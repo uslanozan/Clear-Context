@@ -3063,3 +3063,17 @@ h2,
     display: none;
   }
 }
+.demo-badge a.demo-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.demo-badge a.demo-back:hover {
+  text-decoration: underline;
+}
+.sidebar-tool:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

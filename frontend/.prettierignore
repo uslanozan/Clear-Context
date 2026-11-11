@@ -3,3 +3,5 @@ dist/
 package-lock.json
 *.tsbuildinfo
 dist-extension
+dist-demo
+public-demo-data

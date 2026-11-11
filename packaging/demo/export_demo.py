@@ -10,6 +10,7 @@ import argparse
 import json
 import re
 import urllib.request
+import uuid
 from pathlib import Path
 
 
@@ -64,25 +65,33 @@ def write(path: Path, data) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("out", type=Path)
-    parser.add_argument("ids", nargs="+")
+    parser.add_argument("ids", nargs="*")
+    parser.add_argument(
+        "--group",
+        action="append",
+        default=[],
+        metavar="NAME=ID,ID",
+        help="File exported reports under a history group; applies to the whole folder.",
+    )
     parser.add_argument("--server", default="http://127.0.0.1:8000")
     args = parser.parse_args()
 
-    health = get(args.server, "/api/health")
-    # The demo reports live mode so the app shows reports as they were; it can start nothing.
-    write(
-        args.out / "health.json",
-        {
-            "status": "ok",
-            "version": health.get("version"),
-            "mode": "meta",
-            "paid_api_calls_enabled": True,
-            "research_enabled": True,
-            "default_research_mode": "balanced",
-        },
-    )
-    write(args.out / "prices.json", get(args.server, "/api/prices"))
-    write(args.out / "groups.json", [])
+    # Only exporting reports needs a server; --group alone rewrites the folder.
+    if args.ids:
+        health = get(args.server, "/api/health")
+        # The demo reports live mode so the app shows reports as they were; it can start nothing.
+        write(
+            args.out / "health.json",
+            {
+                "status": "ok",
+                "version": health.get("version"),
+                "mode": "meta",
+                "paid_api_calls_enabled": True,
+                "research_enabled": True,
+                "default_research_mode": "balanced",
+            },
+        )
+        write(args.out / "prices.json", get(args.server, "/api/prices"))
 
     history_path = args.out / "history.json"
     history = json.loads(history_path.read_text(encoding="utf-8")) if history_path.exists() else []
@@ -90,7 +99,7 @@ def main() -> None:
         row = get(args.server, f"/api/investigations/{investigation_id}")
         if row["status"] != "completed":
             raise SystemExit(f"{investigation_id} is {row['status']}; only completed runs.")
-        # The demo has no history groups.
+        # Groups come only from --group, never from the source database.
         row["group_id"] = None
         base = args.out / "investigations" / investigation_id
         write(base.with_suffix(".json"), row)
@@ -101,6 +110,21 @@ def main() -> None:
             write(base / f"{part}.json", data)
         history = [item for item in history if item["id"] != investigation_id] + [row]
         print(f"exported {investigation_id}: {(row.get('title') or row['text'])[:60]}")
+    groups, members = [], {}
+    for position, spec in enumerate(args.group):
+        name, _, ids = spec.partition("=")
+        group_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"clear-context-demo/{name}"))
+        groups.append({"id": group_id, "name": name, "position": position})
+        members |= {
+            investigation_id: group_id for investigation_id in ids.split(",") if investigation_id
+        }
+    if args.group:
+        for item in history:
+            item["group_id"] = members.get(item["id"])
+            write(args.out / "investigations" / f"{item['id']}.json", item)
+        write(args.out / "groups.json", groups)
+    elif not (args.out / "groups.json").exists():
+        write(args.out / "groups.json", [])
     history.sort(key=lambda item: item["created_at"], reverse=True)
     write(history_path, history)
     print(f"{len(history)} reports in {args.out}")

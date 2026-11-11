@@ -18,7 +18,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { historyLabel } from '../lib/labels';
 import type { HistoryGroup, Investigation } from '../lib/types';
 import { LogoMark } from './Logo';
-import { DEMO, DOWNLOAD_URL } from '../lib/demo';
+import { DEMO, DEMO_APP_ONLY, DOWNLOAD_URL } from '../lib/demo';
 
 interface Props {
   items: Investigation[];
@@ -165,54 +165,57 @@ function HistoryItem({
           <span className={`history-state ${item.status}`}>{HISTORY_STATE[item.status]}</span>
         )}
       </NavLink>
-      {!DEMO && (
-        <Menu position="right-start" withinPortal shadow="md" width={200}>
-          <Menu.Target>
-            <button type="button" className="history-menu" aria-label="Investigation actions">
-              <Ellipsis size={15} />
-            </button>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item leftSection={<Pencil size={14} />} onClick={() => setRenaming(true)}>
-              Rename…
-            </Menu.Item>
-            {item.title && (
-              <Menu.Item onClick={() => onRename(item.id, null)}>
-                Show the input text again
-              </Menu.Item>
-            )}
-            <Menu.Divider />
-            {groups.length > 0 && (
-              <>
-                <Menu.Label>Move to group</Menu.Label>
-                {groups.map((group) => (
-                  <Menu.Item
-                    key={group.id}
-                    disabled={item.group_id === group.id}
-                    onClick={() => onAssign(item.id, group.id)}
-                  >
-                    {group.name}
-                  </Menu.Item>
-                ))}
-                {item.group_id && (
-                  <Menu.Item onClick={() => onAssign(item.id, null)}>Remove from group</Menu.Item>
-                )}
-                <Menu.Divider />
-              </>
-            )}
-            <Menu.Item
-              color="red"
-              leftSection={<Trash2 size={14} />}
-              disabled={item.status === 'queued' || item.status === 'running'}
-              onClick={() => onDelete(item)}
-            >
-              {item.status === 'queued' || item.status === 'running'
-                ? 'Delete after it finishes'
-                : 'Delete…'}
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      )}
+      <Menu position="right-start" withinPortal shadow="md" width={200}>
+        <Menu.Target>
+          <button type="button" className="history-menu" aria-label="Investigation actions">
+            <Ellipsis size={15} />
+          </button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {DEMO && <Menu.Label>{DEMO_APP_ONLY}</Menu.Label>}
+          <Menu.Item
+            leftSection={<Pencil size={14} />}
+            disabled={DEMO}
+            onClick={() => setRenaming(true)}
+          >
+            Rename…
+          </Menu.Item>
+          {item.title && (
+            <Menu.Item onClick={() => onRename(item.id, null)}>Show the input text again</Menu.Item>
+          )}
+          <Menu.Divider />
+          {groups.length > 0 && (
+            <>
+              <Menu.Label>Move to group</Menu.Label>
+              {groups.map((group) => (
+                <Menu.Item
+                  key={group.id}
+                  disabled={DEMO || item.group_id === group.id}
+                  onClick={() => onAssign(item.id, group.id)}
+                >
+                  {group.name}
+                </Menu.Item>
+              ))}
+              {item.group_id && (
+                <Menu.Item disabled={DEMO} onClick={() => onAssign(item.id, null)}>
+                  Remove from group
+                </Menu.Item>
+              )}
+              <Menu.Divider />
+            </>
+          )}
+          <Menu.Item
+            color="red"
+            leftSection={<Trash2 size={14} />}
+            disabled={DEMO || item.status === 'queued' || item.status === 'running'}
+            onClick={() => onDelete(item)}
+          >
+            {item.status === 'queued' || item.status === 'running'
+              ? 'Delete after it finishes'
+              : 'Delete…'}
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
     </div>
   );
 }
@@ -307,17 +310,16 @@ export function Sidebar(props: Props) {
       <div className="sidebar-section-label">
         <span>History</span>
         <span className="sidebar-section-tools">
-          {!DEMO && (
-            <button
-              type="button"
-              className="sidebar-tool"
-              aria-label="New group"
-              title="New group"
-              onClick={() => setCreating(true)}
-            >
-              <FolderPlus size={15} />
-            </button>
-          )}
+          <button
+            type="button"
+            className="sidebar-tool"
+            aria-label="New group"
+            title={DEMO ? `New group: ${DEMO_APP_ONLY.toLowerCase()}` : 'New group'}
+            disabled={DEMO}
+            onClick={() => setCreating(true)}
+          >
+            <FolderPlus size={15} />
+          </button>
           <span>{props.items.length || '—'}</span>
         </span>
       </div>
@@ -393,8 +395,15 @@ export function Sidebar(props: Props) {
                     </button>
                   </Menu.Target>
                   <Menu.Dropdown>
-                    <Menu.Item onClick={() => setRenaming(group.id)}>Rename</Menu.Item>
-                    <Menu.Item color="red" onClick={() => props.onDeleteGroup(group.id)}>
+                    {DEMO && <Menu.Label>{DEMO_APP_ONLY}</Menu.Label>}
+                    <Menu.Item disabled={DEMO} onClick={() => setRenaming(group.id)}>
+                      Rename
+                    </Menu.Item>
+                    <Menu.Item
+                      color="red"
+                      disabled={DEMO}
+                      onClick={() => props.onDeleteGroup(group.id)}
+                    >
                       Delete group
                     </Menu.Item>
                   </Menu.Dropdown>
