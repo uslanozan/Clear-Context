@@ -44,7 +44,7 @@ To look around first, the [live demo](https://clearcontext.uslanozan.com.tr/demo
 
 Pick one way to run it. All three keep your reports on your own computer.
 
-**Desktop app (Windows, macOS, Linux).** Download the archive for your system from the [latest release](https://github.com/uslanozan/Clear-Context/releases/latest), unpack it and start **Clear Context** in the unpacked folder. A small window shows the address and your browser opens the app at `http://127.0.0.1:8765`; closing the window stops it. Nothing else needs to be installed. The app is not signed, so the first start shows a warning: on Windows choose **More info** and **Run anyway**; on macOS use **Open Anyway** under System Settings > Privacy & Security. The `README.txt` in the archive covers this, where your data is kept and how to remove it.
+**Desktop app (Windows, macOS, Linux).** Download it from the [website](https://clearcontext.uslanozan.com.tr/#download), which picks the archive for your system, or from the [latest release](https://github.com/uslanozan/Clear-Context/releases/latest); unpack it and start **Clear Context** in the unpacked folder. A small window shows the address and your browser opens the app at `http://127.0.0.1:8765`; closing the window stops it. Nothing else needs to be installed. The app is not signed, so the first start shows a warning: on Windows choose **More info** and **Run anyway**; on macOS use **Open Anyway** under System Settings > Privacy & Security. The `README.txt` in the archive covers this, where your data is kept and how to remove it.
 
 **Docker with the published images.** Requires Docker with Compose v2.24 or newer.
 
