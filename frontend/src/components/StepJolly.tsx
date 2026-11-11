@@ -1,4 +1,5 @@
 // Jolly, the Muse mascot, doing each recorded stage. Images are served from public/brand/jolly.
+import { assetUrl } from '../lib/demo';
 const EVENTS = new Set([
   'graph_started',
   'analyze_media',
@@ -21,7 +22,7 @@ export function StepJolly({ event, size = 40 }: { event: string; size?: number }
   return (
     <img
       className="step-jolly"
-      src={`/brand/jolly/${event}.webp`}
+      src={assetUrl(`brand/jolly/${event}.webp`)}
       alt=""
       width={size}
       height={size}

@@ -9,6 +9,7 @@
 
 <p align="center">
   <a href="https://clearcontext.uslanozan.com.tr"><b>Website</b></a> ·
+  <a href="https://clearcontext.uslanozan.com.tr/demo/"><b>Live demo</b></a> ·
   <a href="https://clearcontext.uslanozan.com.tr/under-the-hood/"><b>Under the hood</b></a> ·
   <a href="#quick-start"><b>Quick start</b></a> ·
   <a href="#chrome-extension"><b>Chrome extension</b></a>
@@ -38,6 +39,8 @@ An event can be real while its photograph comes from another place or year. A st
 Clear Context was started solo for the **Meta Global AI Developer Hackathon** (October 26 – November 4, 2026) and is maintained as an open-source project.
 
 ## Quick start
+
+To look around first, the [live demo](https://clearcontext.uslanozan.com.tr/demo/) shows recorded reports without installing anything; it is read-only and checks nothing new.
 
 Pick one way to run it. All three keep your reports on your own computer.
 

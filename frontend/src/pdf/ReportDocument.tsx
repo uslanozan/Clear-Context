@@ -20,6 +20,7 @@ import { ASSESSMENT_LABEL } from '../components/VerdictTag';
 import { claimSummary, COMPONENT_STATUS, detailSummary, type ComponentStatus } from '../lib/labels';
 import { modeLabel } from '../lib/modes';
 import type { Assessment, Investigation, Report } from '../lib/types';
+import { assetUrl } from '../lib/demo';
 
 // Brand colors from the app theme; the body is light so the report prints and reads on paper.
 const BRAND = {
@@ -430,7 +431,7 @@ function Footer({ id }: { id: string }) {
   return (
     <>
       <View style={styles.footerLine} fixed />
-      <Image src="/brand/clear-context-mark.png" style={styles.footerMark} fixed />
+      <Image src={assetUrl('brand/clear-context-mark.png')} style={styles.footerMark} fixed />
       <Text style={styles.footerLeft} fixed>
         Clear Context · Investigation report · {id.slice(0, 8)}
       </Text>
@@ -495,7 +496,7 @@ export function ReportDocument({
         <View style={styles.band}>
           <View style={styles.bandRow}>
             <View style={styles.brand}>
-              <Image src="/brand/clear-context-mark.png" style={styles.mark} />
+              <Image src={assetUrl('brand/clear-context-mark.png')} style={styles.mark} />
               <Text style={styles.wordmark}>Clear Context</Text>
             </View>
             <Text style={styles.bandLabel}>

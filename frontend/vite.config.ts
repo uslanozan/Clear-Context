@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => {
   }
   return {
     plugins: [react()],
+    // The read-only demo is served from /demo/ on the project website.
+    ...(mode === 'demo' ? { base: '/demo/', build: { outDir: 'dist-demo' } } : {}),
     envDir: projectRoot,
     envPrefix: 'VITE_PUBLIC_',
     server: {

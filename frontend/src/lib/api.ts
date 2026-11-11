@@ -10,6 +10,7 @@ import type {
   ResearchStep,
   SettingsUpdate,
 } from './types';
+import { DEMO, DEMO_READ_ONLY, demoFile } from './demo';
 
 export class ApiError extends Error {
   constructor(
@@ -20,7 +21,19 @@ export class ApiError extends Error {
   }
 }
 
+/** The demo answers reads from its recorded files and refuses everything else. */
+async function demoRequest<T>(path: string, options?: RequestInit): Promise<T> {
+  if ((options?.method ?? 'GET') !== 'GET') throw new ApiError(403, DEMO_READ_ONLY);
+  const file = demoFile(path);
+  if (Array.isArray(file)) return file as T;
+  if (file === null) throw new ApiError(404, 'This page is not part of the demo.');
+  const response = await fetch(file, { signal: options?.signal });
+  if (!response.ok) throw new ApiError(404, 'This report is not part of the demo.');
+  return response.json() as Promise<T>;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  if (DEMO) return demoRequest<T>(path, options);
   let response: Response;
   try {
     response = await fetch(`/api${path}`, options);

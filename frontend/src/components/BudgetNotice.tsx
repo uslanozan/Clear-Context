@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { completeEstimate, modeLabel } from '../lib/modes';
 import type { Investigation, Report } from '../lib/types';
+import { DEMO } from '../lib/demo';
 
 type Action = 'rerun' | 'continue' | 'complete';
 
@@ -150,11 +151,13 @@ export function BudgetNotice({
               ? 'Research the remaining details as a continuation of this report. Settled details are copied; cached searches and pages are reused.'
               : 'Run the whole report again in Deep, or research only the remaining details. Both start new paid calls; cached searches and pages are reused.'}
           </p>
-          <BudgetActions
-            investigation={investigation}
-            deep={mode === 'deep' || mode === 'complete'}
-            remaining={remaining}
-          />
+          {!DEMO && (
+            <BudgetActions
+              investigation={investigation}
+              deep={mode === 'deep' || mode === 'complete'}
+              remaining={remaining}
+            />
+          )}
         </div>
       )}
       {!!summary?.not_checkable && (

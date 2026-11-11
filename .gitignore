@@ -58,3 +58,7 @@ Thumbs.db
 # PyInstaller output of the desktop build.
 /build/
 /dist/
+
+# Static demo build and its exported data (published from the website repository).
+/frontend/dist-demo/
+/frontend/public-demo-data/

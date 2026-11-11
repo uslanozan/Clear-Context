@@ -3045,3 +3045,21 @@ h2,
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+.demo-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.demo-badge a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+@media (max-width: 600px) {
+  .demo-badge span {
+    display: none;
+  }
+}

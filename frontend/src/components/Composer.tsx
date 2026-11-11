@@ -7,6 +7,7 @@ import { RESEARCH_MODES } from '../lib/modes';
 import { formatBytes, MEDIA_ACCEPT, useMediaAttachments } from '../lib/media';
 import { ProcessTimeline } from './ProcessTimeline';
 import { MediaPreview } from './MediaPreview';
+import { assetUrl, DEMO, DOWNLOAD_URL } from '../lib/demo';
 
 interface Props {
   initialText?: string;
@@ -59,7 +60,7 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
         </div>
         <div className="muse-reference">
           <div>
-            <img src="/brand/meta.svg" alt="Meta" width="68" height="15" />
+            <img src={assetUrl('brand/meta.svg')} alt="Meta" width="68" height="15" />
             <span>Built with Muse</span>
           </div>
         </div>
@@ -171,7 +172,7 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
               <Button
                 type="submit"
                 loading={isPending}
-                disabled={!health || (!count && !hasMedia)}
+                disabled={DEMO || !health || (!count && !hasMedia)}
                 rightSection={<ArrowRight size={16} />}
               >
                 Start investigation
@@ -190,7 +191,17 @@ export function Composer({ initialText = '', health, isPending, error, onSubmit 
               }}
             />
           </form>
-          {health?.mode === 'mock' && (
+          {DEMO && (
+            <div className="media-notice preview-notice" role="status">
+              <strong>Read-only demo</strong>
+              <p>
+                These are recorded reports from real runs; nothing you type here is checked. Open a
+                report in the history, or <a href={DOWNLOAD_URL}>download Clear Context</a> to check
+                your own claims with your own keys.
+              </p>
+            </div>
+          )}
+          {!DEMO && health?.mode === 'mock' && (
             <div className="media-notice preview-notice" role="status">
               <strong>Preview mode</strong>
               <p>

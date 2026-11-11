@@ -22,6 +22,7 @@ import { Sidebar } from './components/Sidebar';
 import { HelpGuide } from './components/HelpGuide';
 import { api, ApiError, failureMessage } from './lib/api';
 import { queueMessage } from './lib/stages';
+import { DEMO, DOWNLOAD_URL } from './lib/demo';
 import type { Investigation, ResearchMode } from './lib/types';
 
 // Dialogs use the same glass surface as the settings sections.
@@ -259,6 +260,12 @@ function Workspace() {
             <span className="breadcrumb-divider">/</span>
             <span>{isSettings ? 'Settings' : id ? 'Investigation' : 'New investigation'}</span>
           </div>
+          {DEMO && (
+            <div className="demo-badge">
+              <span>Recorded demo · read-only</span>
+              <a href={DOWNLOAD_URL}>Download the app</a>
+            </div>
+          )}
         </header>
         <main id="main-content" className="workspace-main">
           {health.isError && (

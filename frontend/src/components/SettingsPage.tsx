@@ -15,6 +15,7 @@ import { Check, ChevronRight, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import { RESEARCH_MODES } from '../lib/modes';
 import type { AppSettings, KeyName, ModelTask, SettingsUpdate } from '../lib/types';
+import { assetUrl } from '../lib/demo';
 
 // Where each key is created; opened in a new tab from the field description.
 const KEYS: { name: KeyName; label: string; detail: string; url: string }[] = [
@@ -347,14 +348,14 @@ function SettingsForm({
           <div className="provider-logos">
             <img
               className="provider-meta"
-              src="/brand/meta.svg"
+              src={assetUrl('brand/meta.svg')}
               alt="Meta"
               width="68"
               height="15"
             />
             <img
               className="provider-muse"
-              src="/brand/muse-logo.svg"
+              src={assetUrl('brand/muse-logo.svg')}
               alt="Muse"
               width="30"
               height="30"

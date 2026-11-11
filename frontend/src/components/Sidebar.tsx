@@ -5,6 +5,7 @@ import {
   BookOpenText,
   ChevronRight,
   CircleHelp,
+  Download,
   Ellipsis,
   FolderPlus,
   Pencil,
@@ -17,6 +18,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { historyLabel } from '../lib/labels';
 import type { HistoryGroup, Investigation } from '../lib/types';
 import { LogoMark } from './Logo';
+import { DEMO, DOWNLOAD_URL } from '../lib/demo';
 
 interface Props {
   items: Investigation[];
@@ -139,7 +141,7 @@ function HistoryItem({
   return (
     <div
       className="history-row"
-      draggable
+      draggable={!DEMO}
       onDragStart={(event) => {
         event.dataTransfer.setData(DRAG_TYPE, item.id);
         event.dataTransfer.effectAllowed = 'move';
@@ -163,50 +165,54 @@ function HistoryItem({
           <span className={`history-state ${item.status}`}>{HISTORY_STATE[item.status]}</span>
         )}
       </NavLink>
-      <Menu position="right-start" withinPortal shadow="md" width={200}>
-        <Menu.Target>
-          <button type="button" className="history-menu" aria-label="Investigation actions">
-            <Ellipsis size={15} />
-          </button>
-        </Menu.Target>
-        <Menu.Dropdown>
-          <Menu.Item leftSection={<Pencil size={14} />} onClick={() => setRenaming(true)}>
-            Rename…
-          </Menu.Item>
-          {item.title && (
-            <Menu.Item onClick={() => onRename(item.id, null)}>Show the input text again</Menu.Item>
-          )}
-          <Menu.Divider />
-          {groups.length > 0 && (
-            <>
-              <Menu.Label>Move to group</Menu.Label>
-              {groups.map((group) => (
-                <Menu.Item
-                  key={group.id}
-                  disabled={item.group_id === group.id}
-                  onClick={() => onAssign(item.id, group.id)}
-                >
-                  {group.name}
-                </Menu.Item>
-              ))}
-              {item.group_id && (
-                <Menu.Item onClick={() => onAssign(item.id, null)}>Remove from group</Menu.Item>
-              )}
-              <Menu.Divider />
-            </>
-          )}
-          <Menu.Item
-            color="red"
-            leftSection={<Trash2 size={14} />}
-            disabled={item.status === 'queued' || item.status === 'running'}
-            onClick={() => onDelete(item)}
-          >
-            {item.status === 'queued' || item.status === 'running'
-              ? 'Delete after it finishes'
-              : 'Delete…'}
-          </Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
+      {!DEMO && (
+        <Menu position="right-start" withinPortal shadow="md" width={200}>
+          <Menu.Target>
+            <button type="button" className="history-menu" aria-label="Investigation actions">
+              <Ellipsis size={15} />
+            </button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item leftSection={<Pencil size={14} />} onClick={() => setRenaming(true)}>
+              Rename…
+            </Menu.Item>
+            {item.title && (
+              <Menu.Item onClick={() => onRename(item.id, null)}>
+                Show the input text again
+              </Menu.Item>
+            )}
+            <Menu.Divider />
+            {groups.length > 0 && (
+              <>
+                <Menu.Label>Move to group</Menu.Label>
+                {groups.map((group) => (
+                  <Menu.Item
+                    key={group.id}
+                    disabled={item.group_id === group.id}
+                    onClick={() => onAssign(item.id, group.id)}
+                  >
+                    {group.name}
+                  </Menu.Item>
+                ))}
+                {item.group_id && (
+                  <Menu.Item onClick={() => onAssign(item.id, null)}>Remove from group</Menu.Item>
+                )}
+                <Menu.Divider />
+              </>
+            )}
+            <Menu.Item
+              color="red"
+              leftSection={<Trash2 size={14} />}
+              disabled={item.status === 'queued' || item.status === 'running'}
+              onClick={() => onDelete(item)}
+            >
+              {item.status === 'queued' || item.status === 'running'
+                ? 'Delete after it finishes'
+                : 'Delete…'}
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      )}
     </div>
   );
 }
@@ -284,25 +290,34 @@ export function Sidebar(props: Props) {
       >
         New investigation
       </Button>
-      <NavLink
-        to="/settings"
-        className={({ isActive }) => `evaluation-nav settings-nav ${isActive ? 'active' : ''}`}
-        onClick={props.onNavigate}
-      >
-        <Settings size={16} /> Settings
-      </NavLink>
+      {DEMO ? (
+        // The demo has no server to configure; it points to the app instead.
+        <a className="evaluation-nav settings-nav" href={DOWNLOAD_URL}>
+          <Download size={16} /> Download the app
+        </a>
+      ) : (
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => `evaluation-nav settings-nav ${isActive ? 'active' : ''}`}
+          onClick={props.onNavigate}
+        >
+          <Settings size={16} /> Settings
+        </NavLink>
+      )}
       <div className="sidebar-section-label">
         <span>History</span>
         <span className="sidebar-section-tools">
-          <button
-            type="button"
-            className="sidebar-tool"
-            aria-label="New group"
-            title="New group"
-            onClick={() => setCreating(true)}
-          >
-            <FolderPlus size={15} />
-          </button>
+          {!DEMO && (
+            <button
+              type="button"
+              className="sidebar-tool"
+              aria-label="New group"
+              title="New group"
+              onClick={() => setCreating(true)}
+            >
+              <FolderPlus size={15} />
+            </button>
+          )}
           <span>{props.items.length || '—'}</span>
         </span>
       </div>
