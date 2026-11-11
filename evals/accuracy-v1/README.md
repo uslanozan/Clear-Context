@@ -20,7 +20,9 @@ labeled one, and the supported details were the true parts.
 
 Result: 28 correct, 2 unsettled, 0 wrong. Both unsettled cases (`T08`, `F06`) lost a correct
 judgment because the citation check rejected quotes that differed from the page only by a
-non-breaking space or a line break. Model cost was $1.40 in total ($0.05 per claim on
+non-breaking space or a line break. Version 1.0.0 accepts such whitespace differences (the
+report still stores the page's own text); the result above was measured before that fix and
+was not rerun. Model cost was $1.40 in total ($0.05 per claim on
 average) and a run took 45 seconds on average.
 
 This is a small set of well-known facts, run once with one model. It shows the method works

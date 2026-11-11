@@ -82,7 +82,7 @@ Only the Meta key is required. The others are optional; without them the matchin
 
 ## Measured accuracy
 
-On 30 short claims with known answers (10 true, 10 false, 7 with one wrong detail, 3 that no source can settle; 20 in English, 10 in Turkish), one balanced run each with the default settings gave **28 correct, 2 unsettled and 0 wrong** results. No true claim was contradicted and no false detail was supported; for every half-true claim the contradicted detail was the wrong one. The two unsettled claims lost a correct judgment because the citation check rejected quotes that differed from the page only by a non-breaking space or a line break. The run cost $1.40 in model calls, about $0.05 and 45 seconds per claim.
+On 30 short claims with known answers (10 true, 10 false, 7 with one wrong detail, 3 that no source can settle; 20 in English, 10 in Turkish), one balanced run each with the default settings gave **28 correct, 2 unsettled and 0 wrong** results. No true claim was contradicted and no false detail was supported; for every half-true claim the contradicted detail was the wrong one. The two unsettled claims lost a correct judgment because the citation check rejected quotes that differed from the page only by a non-breaking space or a line break; 1.0.0 fixes this, and the figures above are from before the fix. The run cost $1.40 in model calls, about $0.05 and 45 seconds per claim.
 
 These are well-known facts, run once with one model: the result shows the method works on simple claims, not how it does on long posts, recent events, images or video. Cases, rules and per-claim results are in [evals/accuracy-v1](evals/accuracy-v1/README.md).
 

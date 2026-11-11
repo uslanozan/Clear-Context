@@ -20,6 +20,7 @@ Clear Context was started at the Meta Global AI Developer Hackathon (October 26 
 - **Estimated model cost** on every report, from recorded tokens and catalog list prices.
 - **Preview mode notice** on the start screen until a Meta key is added and paid calls are allowed; each key in Settings links to the page where it is created.
 - **Measured accuracy** on a small labeled set; see the README.
+- **Citations** that differ from the page only by a non-breaking space or a line break are accepted; the measurement found two correct judgments lost this way.
 - Continuous integration for the backend, the web app, the extension and the Docker build, and release builds that smoke-test every desktop app.
 
 ### Known limitations
